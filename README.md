@@ -39,6 +39,13 @@ Run only gameplay scenario tests:
 npm.cmd run scenarios
 ```
 
+Run one scenario by filename fragment:
+
+```powershell
+node src/harness.js scenarios --no-build --scenario=core-owner
+node src/harness.js scenarios --no-build --scenario=bct-corebreaker
+```
+
 Build plugin jars first, then run gameplay scenarios in a separate Node process:
 
 ```powershell

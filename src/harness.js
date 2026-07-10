@@ -323,7 +323,7 @@ async function runBotSmoke(config, server) {
 }
 
 async function runScenarios(config, server) {
-  const scenarios = config.scenarios ?? [];
+  const scenarios = selectedScenarios(config);
   if (scenarios.length === 0) return;
 
   const bot = await createScenarioBot(config, "ScenarioBot");
@@ -354,6 +354,18 @@ async function runScenarios(config, server) {
     bot.quit("scenario tests complete");
     await delay(1000);
   }
+}
+
+function selectedScenarios(config) {
+  const scenarios = config.scenarios ?? [];
+  const selected = flags.scenario;
+  if (!selected) return scenarios;
+  const needles = String(selected).split(",").map((value) => value.trim().toLowerCase());
+  return scenarios.filter((scenarioPath) => {
+    const normalized = scenarioPath.toLowerCase();
+    const base = path.basename(scenarioPath).toLowerCase();
+    return needles.some((needle) => normalized.includes(needle) || base.includes(needle));
+  });
 }
 
 async function createScenarioBot(config, username) {
