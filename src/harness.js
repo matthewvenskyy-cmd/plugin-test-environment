@@ -171,7 +171,7 @@ async function buildProjects(config) {
 }
 
 async function prepareServer(config) {
-  await fs.rm(serverDir, { recursive: true, force: true });
+  await resetServerDir();
   await fs.mkdir(path.join(serverDir, "plugins"), { recursive: true });
   await fs.copyFile(paperJarPath(config), path.join(serverDir, "paper.jar"));
   await fs.writeFile(path.join(serverDir, "eula.txt"), "eula=true\n");
@@ -192,6 +192,29 @@ async function prepareServer(config) {
     const jar = newestFile(matches);
     await fs.copyFile(jar, path.join(serverDir, "plugins", `${project.name}.jar`));
   }
+}
+
+async function resetServerDir() {
+  await fs.mkdir(serverDir, { recursive: true });
+  const removeNames = [
+    "plugins",
+    "world",
+    "world_nether",
+    "world_the_end",
+    "logs",
+    "crash-reports",
+    "config",
+    "eula.txt",
+    "server.properties",
+    "ops.json",
+    "banned-ips.json",
+    "banned-players.json",
+    "whitelist.json",
+    "usercache.json"
+  ];
+  await Promise.all(removeNames.map((name) => {
+    return fs.rm(path.join(serverDir, name), { recursive: true, force: true });
+  }));
 }
 
 function newestFile(files) {
@@ -307,7 +330,11 @@ async function runScenarios(config, server) {
       const scenario = await import(`file://${absolutePath.replace(/\\/g, "/")}?t=${Date.now()}`);
       const name = scenario.name ?? path.basename(scenarioPath);
       console.log(`Scenario: ${name}`);
-      await scenario.run(createScenarioContext(config, server, bot, name));
+      await withTimeout(
+        scenario.run(createScenarioContext(config, server, bot, name)),
+        config.scenarioTimeoutMs ?? 60000,
+        `Scenario timed out: ${name}`
+      );
       console.log(`Scenario passed: ${name}`);
     }
   } finally {
@@ -444,6 +471,14 @@ function onceExit(child) {
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function withTimeout(promise, timeoutMs, message) {
+  let timeout;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeout = setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeout));
 }
 
 function commandName(base) {

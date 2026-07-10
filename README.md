@@ -39,7 +39,7 @@ Run only gameplay scenario tests:
 npm.cmd run scenarios
 ```
 
-The first scenario covers a real cross-plugin regression: a player places a Bigger Crafting Table, equips Corebreaker, tries to break the BCT, and verifies the BCT block does not break or duplicate into the inventory.
+The first scenarios cover Bigger Crafting Table break behavior: normal survival break returns exactly one BCT, while a Corebreaker break attempt against a non-core BCT leaves the block in place and does not duplicate the item.
 
 If Mineflayer is behind the newest Minecraft protocol, run the server-only smoke test:
 

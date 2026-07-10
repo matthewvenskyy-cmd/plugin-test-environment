@@ -23,8 +23,10 @@
     "enable-command-block": "true"
   },
   "scenarios": [
+    "tests/scenarios/bct-normal-break-single-drop.js",
     "tests/scenarios/bct-corebreaker-no-dupe.js"
   ],
+  "scenarioTimeoutMs": 60000,
   "projectsRoot": "..",
   "projects": [
     {
