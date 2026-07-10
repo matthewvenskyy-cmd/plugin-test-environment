@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { countBctItems, isBiggerCraftingTableItem } from "./helpers.js";
+import { countBctItems, countNearbyDroppedItems, isBiggerCraftingTableItem } from "./helpers.js";
 
 export const name = "BCT normal break returns one item";
 
@@ -54,8 +54,11 @@ export async function run(ctx) {
 
   assert(bot.blockAt(BCT_BLOCK)?.name === "air", "normal BCT break should remove the block");
   await command("tp ScenarioBot 2.5 80 1.5 0 0", 1000);
-  await waitForInventory(() => countBctItems(bot) === 1, 5000);
-  assert(countBctItems(bot) === 1, "normal BCT break should return exactly one BCT item");
+  await waitForInventory(() => {
+    return countBctItems(bot) + countNearbyDroppedItems(bot, BCT_BLOCK.offset(0.5, 0.5, 0.5)) === 1;
+  }, 5000);
+  const returnedBctCount = countBctItems(bot) + countNearbyDroppedItems(bot, BCT_BLOCK.offset(0.5, 0.5, 0.5));
+  assert(returnedBctCount === 1, `normal BCT break should leave exactly one BCT item, found ${returnedBctCount}`);
 
   await command("kill @e[type=item]", 250);
   await command("clear ScenarioBot minecraft:crafter", 250);

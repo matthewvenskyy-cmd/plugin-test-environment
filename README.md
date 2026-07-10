@@ -39,7 +39,13 @@ Run only gameplay scenario tests:
 npm.cmd run scenarios
 ```
 
-The first scenarios cover Bigger Crafting Table break behavior: normal survival break returns exactly one BCT, while a Corebreaker break attempt against a non-core BCT leaves the block in place and does not duplicate the item.
+Build plugin jars first, then run gameplay scenarios in a separate Node process:
+
+```powershell
+npm.cmd run scenarios:build
+```
+
+The first scenarios cover Bigger Crafting Table break behavior and CorePlugin interactions: normal survival BCT break returns exactly one BCT, a Corebreaker break attempt against a non-core BCT leaves the block in place and does not duplicate the item, and Corebreaker can destroy another online player's core.
 
 If Mineflayer is behind the newest Minecraft protocol, run the server-only smoke test:
 

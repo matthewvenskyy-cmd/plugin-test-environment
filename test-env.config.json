@@ -24,9 +24,11 @@
   },
   "scenarios": [
     "tests/scenarios/bct-normal-break-single-drop.js",
-    "tests/scenarios/bct-corebreaker-no-dupe.js"
+    "tests/scenarios/bct-corebreaker-no-dupe.js",
+    "tests/scenarios/corebreaker-destroys-player-core.js"
   ],
   "scenarioTimeoutMs": 60000,
+  "botTimeoutMs": 120000,
   "projectsRoot": "..",
   "projects": [
     {

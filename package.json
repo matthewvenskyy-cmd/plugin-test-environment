@@ -9,7 +9,8 @@
     "build": "node src/harness.js build",
     "server": "node src/harness.js server",
     "test": "node src/harness.js test",
-    "scenarios": "node src/harness.js scenarios",
+    "scenarios": "node src/harness.js scenarios --no-build",
+    "scenarios:build": "npm run build && npm run scenarios",
     "smoke": "node src/harness.js smoke",
     "clean": "node src/harness.js clean"
   },

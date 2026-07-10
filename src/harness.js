@@ -255,6 +255,9 @@ async function runServer(config, options) {
   };
   child.stdout.on("data", append);
   child.stderr.on("data", append);
+  child.stdin.on("error", () => {
+    // The server may already be gone during failure cleanup.
+  });
 
   if (options.interactive) {
     console.log(`Server running in ${serverDir}`);
@@ -299,6 +302,8 @@ async function runBotSmoke(config, server) {
     username: "TestBot",
     auth: "offline",
     version: config.minecraftVersion
+    ,
+    checkTimeoutInterval: config.botTimeoutMs ?? 120000
   });
 
   await waitForBot(bot, "spawn", 45000);
@@ -326,16 +331,24 @@ async function runScenarios(config, server) {
     send(server, "op ScenarioBot");
     await delay(1000);
     for (const scenarioPath of scenarios) {
+      const extraBots = [];
       const absolutePath = path.resolve(root, scenarioPath);
       const scenario = await import(`file://${absolutePath.replace(/\\/g, "/")}?t=${Date.now()}`);
       const name = scenario.name ?? path.basename(scenarioPath);
       console.log(`Scenario: ${name}`);
-      await withTimeout(
-        scenario.run(createScenarioContext(config, server, bot, name)),
-        config.scenarioTimeoutMs ?? 60000,
-        `Scenario timed out: ${name}`
-      );
-      console.log(`Scenario passed: ${name}`);
+      try {
+        await withTimeout(
+          scenario.run(createScenarioContext(config, server, bot, name, extraBots)),
+          config.scenarioTimeoutMs ?? 60000,
+          `Scenario timed out: ${name}`
+        );
+        console.log(`Scenario passed: ${name}`);
+      } finally {
+        for (const extraBot of extraBots) {
+          extraBot.quit("scenario complete");
+        }
+        await delay(500);
+      }
     }
   } finally {
     bot.quit("scenario tests complete");
@@ -356,7 +369,7 @@ async function createScenarioBot(config, username) {
   return bot;
 }
 
-function createScenarioContext(config, server, bot, name) {
+function createScenarioContext(config, server, bot, name, extraBots) {
   return {
     bot,
     config,
@@ -369,6 +382,15 @@ function createScenarioContext(config, server, bot, name) {
     chat: async (message, waitMs = 500) => {
       bot.chat(message);
       await delay(waitMs);
+    },
+    spawnBot: async (username, options = {}) => {
+      const extraBot = await createScenarioBot(config, username);
+      extraBots.push(extraBot);
+      if (options.op !== false) {
+        send(server, `op ${username}`);
+        await delay(500);
+      }
+      return extraBot;
     },
     wait: delay,
     waitForInventory: async (predicate, timeoutMs = 5000) => {
@@ -420,7 +442,14 @@ async function stopServer(server) {
 }
 
 function send(server, commandText) {
-  server.child.stdin.write(`${commandText}\n`);
+  if (!server.child || server.child.killed || !server.child.stdin.writable) {
+    return;
+  }
+  try {
+    server.child.stdin.write(`${commandText}\n`);
+  } catch {
+    // Cleanup paths may race with Paper shutdown.
+  }
 }
 
 function waitForOutput(lines, pattern, timeoutMs) {
