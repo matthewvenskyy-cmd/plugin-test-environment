@@ -1,0 +1,119 @@
+{
+  "minecraftVersion": "1.21.11",
+  "paperProject": "paper",
+  "paperChannel": "STABLE",
+  "userAgent": "plugin-testing-environment/1.0.0 (local@example.invalid)",
+  "javaArgs": [
+    "-Xms256M",
+    "-Xmx512M",
+    "-XX:+UseSerialGC",
+    "-Dpaper.disablePluginRemapping=true"
+  ],
+  "serverProperties": {
+    "online-mode": "false",
+    "enforce-secure-profile": "false",
+    "motd": "Codex plugin test server",
+    "server-port": "25566",
+    "difficulty": "peaceful",
+    "gamemode": "creative",
+    "level-type": "minecraft:flat",
+    "spawn-protection": "0",
+    "view-distance": "4",
+    "simulation-distance": "4",
+    "enable-command-block": "true"
+  },
+  "scenarios": [
+    "tests/scenarios/bct-corebreaker-no-dupe.js"
+  ],
+  "projectsRoot": "..",
+  "projects": [
+    {
+      "name": "adminplugin",
+      "path": "../adminplugin",
+      "build": "gradle",
+      "jar": "build/libs/*.jar",
+      "plugin": "AdminPlugin",
+      "consoleCommands": [
+        "version AdminPlugin"
+      ],
+      "botCommands": [
+        "/adminplugin"
+      ]
+    },
+    {
+      "name": "Bigger-Crafting-Table",
+      "path": "../Bigger-Crafting-Table",
+      "build": "maven",
+      "jar": "target/*.jar",
+      "plugin": "BiggerCraftingTable",
+      "consoleCommands": [
+        "version BiggerCraftingTable"
+      ],
+      "botCommands": [
+        "/bctgive"
+      ]
+    },
+    {
+      "name": "classes-plugin",
+      "path": "../classes-plugin",
+      "build": "maven",
+      "jar": "target/*.jar",
+      "plugin": "ClassesPlugin",
+      "consoleCommands": [
+        "version ClassesPlugin"
+      ],
+      "botCommands": [
+        "/classes status"
+      ]
+    },
+    {
+      "name": "Core-Plugin",
+      "path": "../Core-Plugin",
+      "build": "maven",
+      "jar": "target/*.jar",
+      "plugin": "CorePlugin",
+      "consoleCommands": [
+        "version CorePlugin"
+      ],
+      "botCommands": [
+        "/kills"
+      ]
+    },
+    {
+      "name": "Fireworks-Elytra-plugin",
+      "path": "../Fireworks-Elytra-plugin",
+      "build": "maven",
+      "jar": "target/*.jar",
+      "plugin": "FireworksElytraPlugin",
+      "consoleCommands": [
+        "version FireworksElytraPlugin"
+      ],
+      "botCommands": []
+    },
+    {
+      "name": "Lighting-Pearl-plugin",
+      "path": "../Lighting-Pearl-plugin",
+      "build": "maven",
+      "jar": "target/*.jar",
+      "plugin": "LightningPearlPlugin",
+      "consoleCommands": [
+        "version LightningPearlPlugin"
+      ],
+      "botCommands": []
+    },
+    {
+      "name": "MountPlugin",
+      "path": "../MountPlugin",
+      "build": "maven",
+      "jar": "target/*.jar",
+      "plugin": "MountPlugin",
+      "consoleCommands": [
+        "version MountPlugin"
+      ],
+      "botCommands": [
+        "/mount",
+        "/unmount"
+      ]
+    }
+  ]
+}

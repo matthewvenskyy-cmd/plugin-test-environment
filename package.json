@@ -1,0 +1,21 @@
+{
+  "name": "minecraft-plugin-testing-environment",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Headless Paper server test harness for local Minecraft plugins.",
+  "scripts": {
+    "setup": "node src/harness.js setup",
+    "build": "node src/harness.js build",
+    "server": "node src/harness.js server",
+    "test": "node src/harness.js test",
+    "scenarios": "node src/harness.js scenarios",
+    "smoke": "node src/harness.js smoke",
+    "clean": "node src/harness.js clean"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.3",
+    "mineflayer": "^4.37.1"
+  },
+  "devDependencies": {}
+}
