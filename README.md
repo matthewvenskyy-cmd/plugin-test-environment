@@ -27,7 +27,7 @@ npm.cmd run setup
 
 ## Run Everything
 
-Build all plugins, start a clean headless Paper server, run console smoke checks, connect a bot, run basic player commands, scan the log for startup/enabling failures, then stop the server:
+Build all plugins, run headless Paper startup smoke checks, then run gameplay scenario tests:
 
 ```powershell
 npm.cmd test

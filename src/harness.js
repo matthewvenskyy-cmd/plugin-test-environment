@@ -376,8 +376,10 @@ function createScenarioContext(config, server, bot, name, extraBots) {
     server,
     name,
     command: async (commandText, waitMs = 500) => {
+      const before = server.lines.join("");
       send(server, commandText);
       await delay(waitMs);
+      return server.lines.join("").slice(before.length);
     },
     chat: async (message, waitMs = 500) => {
       bot.chat(message);

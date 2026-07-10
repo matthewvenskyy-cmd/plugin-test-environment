@@ -27,6 +27,15 @@ export function countNearbyDroppedItems(bot, position, radius = 3) {
     .length;
 }
 
+export async function queryDroppedItemEntityCount(ctx, position, radius = 3) {
+  const objective = "scenario_count";
+  await ctx.command(`scoreboard objectives add ${objective} dummy`, 100);
+  await ctx.command(`execute store result score item_count ${objective} if entity @e[type=item,x=${position.x},y=${position.y},z=${position.z},distance=..${radius}]`, 100);
+  const output = await ctx.command(`scoreboard players get item_count ${objective}`, 250);
+  const match = output.match(/item_count has (\d+) \[/);
+  return match ? Number(match[1]) : 0;
+}
+
 export function displayText(item) {
   return JSON.stringify(item?.displayName ?? "") + JSON.stringify(item?.customName ?? "") + JSON.stringify(item?.nbt ?? "");
 }
