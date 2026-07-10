@@ -25,6 +25,7 @@
   "scenarios": [
     "tests/scenarios/bct-normal-break-single-drop.js",
     "tests/scenarios/bct-corebreaker-no-dupe.js",
+    "tests/scenarios/core-owner-cannot-corebreak-own-core.js",
     "tests/scenarios/corebreaker-destroys-player-core.js"
   ],
   "scenarioTimeoutMs": 60000,
