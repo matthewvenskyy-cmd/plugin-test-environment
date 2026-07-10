@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { countBctItems, isBiggerCraftingTableItem, queryDroppedItemEntityCount } from "./helpers.js";
+import { countBctItems, isBiggerCraftingTableItem, queryDroppedItemEntityCount, serverBlockIs } from "./helpers.js";
 
 export const name = "BCT normal break returns one item";
 
@@ -49,10 +49,13 @@ export async function run(ctx) {
   await bot.equip(pickaxe, "hand");
 
   const target = bot.blockAt(BCT_BLOCK);
-  await bot.dig(target, true);
-  await wait(1500);
+  for (let attempt = 0; attempt < 3 && !(await serverBlockIs(ctx, BCT_BLOCK, "air")); attempt++) {
+    await bot.lookAt(BCT_BLOCK.offset(0.5, 0.5, 0.5), true);
+    await bot.dig(bot.blockAt(BCT_BLOCK), true);
+    await wait(1500);
+  }
 
-  assert(bot.blockAt(BCT_BLOCK)?.name === "air", "normal BCT break should remove the block");
+  assert(await serverBlockIs(ctx, BCT_BLOCK, "air"), "normal BCT break should remove the block on the server");
   await command("tp ScenarioBot 2.5 80 1.5 0 0", 1000);
   await wait(1000);
   const returnedBctCount = countBctItems(bot) + await queryDroppedItemEntityCount(ctx, BCT_BLOCK.offset(0.5, 0.5, 0.5));

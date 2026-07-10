@@ -36,6 +36,11 @@ export async function queryDroppedItemEntityCount(ctx, position, radius = 3) {
   return match ? Number(match[1]) : 0;
 }
 
+export async function serverBlockIs(ctx, position, blockName) {
+  const output = await ctx.command(`execute if block ${position.x} ${position.y} ${position.z} minecraft:${blockName}`, 250);
+  return /Test passed/.test(output);
+}
+
 export function displayText(item) {
   return JSON.stringify(item?.displayName ?? "") + JSON.stringify(item?.customName ?? "") + JSON.stringify(item?.nbt ?? "");
 }

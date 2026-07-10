@@ -10,8 +10,9 @@ const BREAKER_FLOOR = new Vec3(5, 79, 0);
 const BREAKER_BREAK_FLOOR = new Vec3(5, 79, 1);
 
 export async function run(ctx) {
-  const { bot: breaker, assert, command, wait, waitForInventory, spawnBot } = ctx;
-  const owner = await spawnBot("CoreOwner");
+  const { assert, command, wait, spawnBot } = ctx;
+  const owner = await spawnBot("CoreVictim");
+  const breaker = await spawnBot("CoreBreaker");
 
   await command("kill @e[type=item]", 250);
   await command(`setblock ${OWNER_FLOOR.x} ${OWNER_FLOOR.y} ${OWNER_FLOOR.z} minecraft:stone`, 250);
@@ -20,12 +21,12 @@ export async function run(ctx) {
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:stone`, 250);
   await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
 
-  await command("gamemode creative CoreOwner", 250);
-  await command("gamemode creative ScenarioBot", 250);
-  await command("tp CoreOwner 4 80 0 0 0", 500);
-  await command("tp ScenarioBot 5 80 0 0 0", 500);
-  await command("gamemode survival CoreOwner", 250);
-  await command("gamemode survival ScenarioBot", 250);
+  await command("gamemode creative CoreVictim", 250);
+  await command("gamemode creative CoreBreaker", 250);
+  await command("tp CoreVictim 4 80 0 0 0", 500);
+  await command("tp CoreBreaker 5 80 0 0 0", 500);
+  await command("gamemode survival CoreVictim", 250);
+  await command("gamemode survival CoreBreaker", 250);
 
   await waitForOwnerInventory(owner, isCoreItem, "owner core item");
   const coreItem = owner.inventory.items().find(isCoreItem);
@@ -46,13 +47,13 @@ export async function run(ctx) {
   await wait(1000);
   assert(owner.blockAt(CORE_BLOCK)?.name === "beacon", "owner core was not placed as a beacon");
 
-  await waitForInventory((items) => items.some(isCorebreakerItem));
+  await waitForBotInventory(breaker, isCorebreakerItem, "breaker Corebreaker");
   const corebreaker = breaker.inventory.items().find(isCorebreakerItem);
   assert(corebreaker, "breaker did not receive a Corebreaker");
   await breaker.equip(corebreaker, "hand");
-  await command("gamemode creative ScenarioBot", 250);
-  await command("tp ScenarioBot 5 80 1 90 0", 500);
-  await command("gamemode survival ScenarioBot", 250);
+  await command("gamemode creative CoreBreaker", 250);
+  await command("tp CoreBreaker 5 80 1 90 0", 500);
+  await command("gamemode survival CoreBreaker", 250);
 
   const target = breaker.blockAt(CORE_BLOCK);
   assert(target?.name === "beacon", "breaker could not see the placed core block");
@@ -74,9 +75,13 @@ export async function run(ctx) {
 }
 
 async function waitForOwnerInventory(owner, predicate, label) {
+  return waitForBotInventory(owner, predicate, label);
+}
+
+async function waitForBotInventory(bot, predicate, label) {
   const started = Date.now();
   while (Date.now() - started < 5000) {
-    if (owner.inventory.items().some(predicate)) return;
+    if (bot.inventory.items().some(predicate)) return;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   throw new Error(`Timed out waiting for ${label}`);
