@@ -48,6 +48,7 @@
     "tests/scenarios/classes-movement-modifier-resets.js",
     "tests/scenarios/rocketlytra-recipe-discoverable.js",
     "tests/scenarios/rocketlytra-craft-adds-charges.js",
+    "tests/scenarios/rocketlytra-recraft-preserves-charges.js",
     "tests/scenarios/mount-player-riding-cycle.js",
     "tests/scenarios/corebreaker-destroys-player-core.js"
   ],
