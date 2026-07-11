@@ -51,6 +51,7 @@
     "tests/scenarios/rocketlytra-craft-adds-charges.js",
     "tests/scenarios/rocketlytra-recraft-preserves-charges.js",
     "tests/scenarios/mount-player-riding-cycle.js",
+    "tests/scenarios/mount-already-mounted-denied.js",
     "tests/scenarios/corebreaker-destroys-player-core.js"
   ],
   "scenarioTimeoutMs": 60000,
