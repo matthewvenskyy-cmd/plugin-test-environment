@@ -40,6 +40,7 @@
     "tests/scenarios/admin-triple-shift-toggles-gamemode.js",
     "tests/scenarios/classes-item-selects-class.js",
     "tests/scenarios/rocketlytra-recipe-discoverable.js",
+    "tests/scenarios/mount-player-riding-cycle.js",
     "tests/scenarios/corebreaker-destroys-player-core.js"
   ],
   "scenarioTimeoutMs": 60000,

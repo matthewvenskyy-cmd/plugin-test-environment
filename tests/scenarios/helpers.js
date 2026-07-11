@@ -36,6 +36,27 @@ export async function waitForInventoryItem(bot, predicate, label, timeoutMs = 50
   throw new Error(`Timed out waiting for ${label}`);
 }
 
+export function waitForChat(bot, action, pattern, timeoutMs = 5000) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error(`Timed out waiting for chat message matching ${pattern}`));
+    }, timeoutMs);
+    const onMessage = (message) => {
+      const text = message.toString();
+      if (!pattern.test(text)) return;
+      cleanup();
+      resolve(text);
+    };
+    const cleanup = () => {
+      clearTimeout(timeout);
+      bot.off("message", onMessage);
+    };
+    bot.on("message", onMessage);
+    action();
+  });
+}
+
 export function countNearbyDroppedItems(bot, position, radius = 3) {
   return Object.values(bot.entities)
     .filter((entity) => entity?.name === "item")
