@@ -35,6 +35,7 @@
       "expectedFailure": true,
       "reason": "CorePlugin currently allows breaking a core during the offline-protection grace window."
     },
+    "tests/scenarios/corebreaker-without-charges-cannot-break-core.js",
     "tests/scenarios/non-corebreaker-cannot-break-player-core.js",
     "tests/scenarios/core-bound-items-cannot-drop.js",
     "tests/scenarios/admin-triple-shift-toggles-gamemode.js",
