@@ -35,6 +35,7 @@
     "tests/scenarios/core-selfdestruct-restores-core.js",
     "tests/scenarios/core-selfdestruct-without-core-denied.js",
     "tests/scenarios/core-breakcore-denies-non-op.js",
+    "tests/scenarios/core-breakcore-without-target-core-denied.js",
     {
       "path": "tests/scenarios/offline-owner-core-is-protected.js",
       "expectedFailure": true,
