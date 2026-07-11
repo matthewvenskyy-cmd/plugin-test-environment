@@ -44,6 +44,7 @@
     "tests/scenarios/admin-triple-shift-toggles-gamemode.js",
     "tests/scenarios/admin-non-op-triple-shift-no-toggle.js",
     "tests/scenarios/classes-item-selects-class.js",
+    "tests/scenarios/classes-non-op-cannot-give-items.js",
     "tests/scenarios/classes-reset-clears-class.js",
     "tests/scenarios/classes-movement-modifier-resets.js",
     "tests/scenarios/rocketlytra-recipe-discoverable.js",
