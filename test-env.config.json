@@ -33,6 +33,7 @@
     "tests/scenarios/core-cannot-place-on-beacon-base.js",
     "tests/scenarios/core-owner-cannot-corebreak-own-core.js",
     "tests/scenarios/core-selfdestruct-restores-core.js",
+    "tests/scenarios/core-selfdestruct-without-core-denied.js",
     {
       "path": "tests/scenarios/offline-owner-core-is-protected.js",
       "expectedFailure": true,
