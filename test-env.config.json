@@ -30,6 +30,7 @@
     },
     "tests/scenarios/bct-corebreaker-no-dupe.js",
     "tests/scenarios/bct-display-lifecycle.js",
+    "tests/scenarios/core-cannot-place-on-beacon-base.js",
     "tests/scenarios/core-owner-cannot-corebreak-own-core.js",
     "tests/scenarios/core-selfdestruct-restores-core.js",
     {
