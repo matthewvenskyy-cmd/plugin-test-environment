@@ -20,6 +20,12 @@ export function countBctItems(bot) {
   return countMatchingItems(bot, isBiggerCraftingTableItem);
 }
 
+export function countItemsByName(bot, itemName) {
+  return bot.inventory.items()
+    .filter((item) => item?.name === itemName)
+    .reduce((total, item) => total + item.count, 0);
+}
+
 export function countNearbyDroppedItems(bot, position, radius = 3) {
   return Object.values(bot.entities)
     .filter((entity) => entity?.name === "item")

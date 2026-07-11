@@ -266,7 +266,7 @@ async function runServer(config, options) {
   }
 
   try {
-    await waitForOutput(lines, /Done \([\d.]+s\)! For help, type "help"/, 120000);
+    await waitForOutput(lines, /Done \([\d.]+s\)! For help, type "help"/, config.serverStartupTimeoutMs ?? 120000);
   } catch (error) {
     child.kill("SIGTERM");
     throw error;
@@ -332,17 +332,28 @@ async function runScenarios(config, server) {
     await delay(1000);
     for (const scenarioPath of scenarios) {
       const extraBots = [];
-      const absolutePath = path.resolve(root, scenarioPath);
+      const scenarioSpec = normalizeScenarioSpec(scenarioPath);
+      const absolutePath = path.resolve(root, scenarioSpec.path);
       const scenario = await import(`file://${absolutePath.replace(/\\/g, "/")}?t=${Date.now()}`);
-      const name = scenario.name ?? path.basename(scenarioPath);
+      const name = scenario.name ?? path.basename(scenarioSpec.path);
       console.log(`Scenario: ${name}`);
       try {
-        await withTimeout(
-          scenario.run(createScenarioContext(config, server, bot, name, extraBots)),
-          config.scenarioTimeoutMs ?? 60000,
-          `Scenario timed out: ${name}`
-        );
-        console.log(`Scenario passed: ${name}`);
+        try {
+          await withTimeout(
+            scenario.run(createScenarioContext(config, server, bot, name, extraBots)),
+            config.scenarioTimeoutMs ?? 60000,
+            `Scenario timed out: ${name}`
+          );
+          if (scenarioSpec.expectedFailure) {
+            throw new Error(`Scenario unexpectedly passed: ${name}. Expected failure: ${scenarioSpec.reason ?? "no reason provided"}`);
+          }
+          console.log(`Scenario passed: ${name}`);
+        } catch (error) {
+          if (!scenarioSpec.expectedFailure) {
+            throw error;
+          }
+          console.log(`Scenario expected failure: ${name} (${scenarioSpec.reason ?? error.message})`);
+        }
       } finally {
         for (const extraBot of extraBots) {
           extraBot.quit("scenario complete");
@@ -359,13 +370,20 @@ async function runScenarios(config, server) {
 function selectedScenarios(config) {
   const scenarios = config.scenarios ?? [];
   const selected = flags.scenario;
-  if (!selected) return scenarios;
+  if (!selected) {
+    return scenarios.filter((scenario) => !normalizeScenarioSpec(scenario).manual);
+  }
   const needles = String(selected).split(",").map((value) => value.trim().toLowerCase());
-  return scenarios.filter((scenarioPath) => {
+  return scenarios.filter((scenario) => {
+    const scenarioPath = normalizeScenarioSpec(scenario).path;
     const normalized = scenarioPath.toLowerCase();
     const base = path.basename(scenarioPath).toLowerCase();
     return needles.some((needle) => normalized.includes(needle) || base.includes(needle));
   });
+}
+
+function normalizeScenarioSpec(scenario) {
+  return typeof scenario === "string" ? { path: scenario } : scenario;
 }
 
 async function createScenarioBot(config, username) {

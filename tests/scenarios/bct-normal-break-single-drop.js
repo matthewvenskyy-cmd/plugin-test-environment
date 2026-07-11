@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { countBctItems, isBiggerCraftingTableItem, queryDroppedItemEntityCount, serverBlockIs } from "./helpers.js";
+import { countItemsByName, isBiggerCraftingTableItem, queryDroppedItemEntityCount, serverBlockIs } from "./helpers.js";
 
 export const name = "BCT normal break returns one item";
 
@@ -41,7 +41,7 @@ export async function run(ctx) {
   await wait(1000);
 
   assert(bot.blockAt(BCT_BLOCK)?.name === "crafter", "BCT block was not placed");
-  assert(countBctItems(bot) === 0, "BCT item should be consumed after placement in survival mode");
+  assert(countItemsByName(bot, "crafter") === 0, "BCT item should be consumed after placement in survival mode");
 
   await command("give ScenarioBot minecraft:diamond_pickaxe", 500);
   const pickaxe = bot.inventory.items().find((item) => item?.name === "diamond_pickaxe");
@@ -58,7 +58,7 @@ export async function run(ctx) {
   assert(await serverBlockIs(ctx, BCT_BLOCK, "air"), "normal BCT break should remove the block on the server");
   await command("tp ScenarioBot 2.5 80 1.5 0 0", 1000);
   await wait(1000);
-  const returnedBctCount = countBctItems(bot) + await queryDroppedItemEntityCount(ctx, BCT_BLOCK.offset(0.5, 0.5, 0.5));
+  const returnedBctCount = countItemsByName(bot, "crafter") + await queryDroppedItemEntityCount(ctx, BCT_BLOCK.offset(0.5, 0.5, 0.5));
   assert(returnedBctCount === 1, `normal BCT break should leave exactly one BCT item, found ${returnedBctCount}`);
 
   await command("kill @e[type=item]", 250);

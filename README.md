@@ -52,7 +52,7 @@ Build plugin jars first, then run gameplay scenarios in a separate Node process:
 npm.cmd run scenarios:build
 ```
 
-The first scenarios cover Bigger Crafting Table break behavior and CorePlugin interactions: normal survival BCT break returns exactly one BCT, a Corebreaker break attempt against a non-core BCT leaves the block in place and does not duplicate the item, core owners cannot Corebreak their own core, plain tools cannot break another player's core, and Corebreaker can destroy another online player's core.
+The first scenarios cover Bigger Crafting Table break behavior and CorePlugin interactions: normal survival BCT break returns exactly one BCT, a Corebreaker break attempt against a non-core BCT leaves the block in place and does not duplicate the item, core owners cannot Corebreak their own core, plain tools cannot break another player's core, offline owners are protected, and Corebreaker can destroy another online player's core.
 
 If Mineflayer is behind the newest Minecraft protocol, run the server-only smoke test:
 
@@ -99,8 +99,10 @@ Useful fields:
 - `projects`: plugin folder, build type, jar glob, expected plugin name, smoke commands.
 - `consoleCommands`: commands sent from the server console after startup.
 - `botCommands`: commands sent by the `TestBot` Mineflayer client after it is op'd.
-- `scenarios`: Mineflayer scenario modules that perform real in-server actions and assertions.
+- `scenarios`: Mineflayer scenario modules, or objects with `path`, `manual`, `expectedFailure`, and `reason`.
 - `serverProperties`: generated fresh for every run.
+
+Manual scenarios are skipped by default and can be run with `--scenario=<name>`. Expected-failure scenarios are useful for regressions the environment can already detect but the plugin has not fixed yet. The suite fails if an expected-failure scenario unexpectedly starts passing, which is the cue to remove the `expectedFailure` marker.
 
 ## Suggested Testing Strategy
 
