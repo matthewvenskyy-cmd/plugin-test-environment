@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCorebreakerItem, isCoreItem } from "./helpers.js";
+import { isCorebreakerItem, isCoreItem, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Offline owner's core is protected from Corebreaker";
 
@@ -25,8 +25,7 @@ export async function run(ctx) {
   await command("gamemode survival OffCoreOwner", 250);
   await command("gamemode survival ScenarioBot", 250);
 
-  await waitForBotInventory(owner, isCoreItem, "owner core item");
-  const coreItem = owner.inventory.items().find(isCoreItem);
+  const coreItem = await waitForInventoryItem(owner, isCoreItem, "owner core item");
   assert(coreItem, "owner did not receive a core item");
   await owner.equip(coreItem, "hand");
 
@@ -47,8 +46,7 @@ export async function run(ctx) {
   owner.quit("testing offline protection");
   await wait(1000);
 
-  await waitForBotInventory(breaker, isCorebreakerItem, "breaker Corebreaker");
-  const corebreaker = breaker.inventory.items().find(isCorebreakerItem);
+  const corebreaker = await waitForInventoryItem(breaker, isCorebreakerItem, "breaker Corebreaker");
   assert(corebreaker, "breaker did not receive a Corebreaker");
   await breaker.equip(corebreaker, "hand");
 
@@ -68,13 +66,4 @@ export async function run(ctx) {
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:air`, 250);
   await command(`setblock ${OWNER_FLOOR.x} ${OWNER_FLOOR.y} ${OWNER_FLOOR.z} minecraft:air`, 250);
   await command(`setblock ${BREAKER_FLOOR.x} ${BREAKER_FLOOR.y} ${BREAKER_FLOOR.z} minecraft:air`, 250);
-}
-
-async function waitForBotInventory(bot, predicate, label) {
-  const started = Date.now();
-  while (Date.now() - started < 5000) {
-    if (bot.inventory.items().some(predicate)) return;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  throw new Error(`Timed out waiting for ${label}`);
 }

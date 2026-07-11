@@ -26,6 +26,16 @@ export function countItemsByName(bot, itemName) {
     .reduce((total, item) => total + item.count, 0);
 }
 
+export async function waitForInventoryItem(bot, predicate, label, timeoutMs = 5000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const item = bot.inventory.items().find(predicate);
+    if (item) return item;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(`Timed out waiting for ${label}`);
+}
+
 export function countNearbyDroppedItems(bot, position, radius = 3) {
   return Object.values(bot.entities)
     .filter((entity) => entity?.name === "item")
