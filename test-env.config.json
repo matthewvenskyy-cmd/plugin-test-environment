@@ -29,6 +29,7 @@
       "reason": "Mineflayer custom item placement can behave like a plain crafter placement; keep this as an explicit investigation scenario."
     },
     "tests/scenarios/bct-corebreaker-no-dupe.js",
+    "tests/scenarios/bct-display-lifecycle.js",
     "tests/scenarios/core-owner-cannot-corebreak-own-core.js",
     {
       "path": "tests/scenarios/offline-owner-core-is-protected.js",
