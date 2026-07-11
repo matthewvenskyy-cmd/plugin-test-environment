@@ -52,7 +52,7 @@ Build plugin jars first, then run gameplay scenarios in a separate Node process:
 npm.cmd run scenarios:build
 ```
 
-The first scenarios cover Bigger Crafting Table break behavior and CorePlugin interactions: normal survival BCT break returns exactly one BCT, a Corebreaker break attempt against a non-core BCT leaves the block in place and does not duplicate the item, core owners cannot Corebreak their own core, plain tools cannot break another player's core, bound CorePlugin items cannot be dropped, offline owners are protected, and Corebreaker can destroy another online player's core.
+The first scenarios cover Bigger Crafting Table break behavior and CorePlugin interactions: normal survival BCT break returns exactly one BCT, a Corebreaker break attempt against a non-core BCT leaves the block in place and does not duplicate the item, core owners cannot Corebreak their own core, plain tools cannot break another player's core, bound CorePlugin items cannot be dropped, Fireworks Elytra exposes the Rocketlytra recipe, offline owners are protected, and Corebreaker can destroy another online player's core.
 
 If Mineflayer is behind the newest Minecraft protocol, run the server-only smoke test:
 

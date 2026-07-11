@@ -37,6 +37,7 @@
     },
     "tests/scenarios/non-corebreaker-cannot-break-player-core.js",
     "tests/scenarios/core-bound-items-cannot-drop.js",
+    "tests/scenarios/rocketlytra-recipe-discoverable.js",
     "tests/scenarios/corebreaker-destroys-player-core.js"
   ],
   "scenarioTimeoutMs": 60000,
