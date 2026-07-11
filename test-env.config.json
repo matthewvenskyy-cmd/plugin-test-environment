@@ -42,6 +42,7 @@
     "tests/scenarios/non-corebreaker-cannot-break-player-core.js",
     "tests/scenarios/core-bound-items-cannot-drop.js",
     "tests/scenarios/admin-triple-shift-toggles-gamemode.js",
+    "tests/scenarios/admin-non-op-triple-shift-no-toggle.js",
     "tests/scenarios/classes-item-selects-class.js",
     "tests/scenarios/rocketlytra-recipe-discoverable.js",
     "tests/scenarios/mount-player-riding-cycle.js",
