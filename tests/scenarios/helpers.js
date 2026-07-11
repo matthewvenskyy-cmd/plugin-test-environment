@@ -57,6 +57,24 @@ export function waitForChat(bot, action, pattern, timeoutMs = 5000) {
   });
 }
 
+export function waitForEvent(emitter, eventName, timeoutMs = 5000) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error(`Timed out waiting for ${eventName}`));
+    }, timeoutMs);
+    const onEvent = (...args) => {
+      cleanup();
+      resolve(args);
+    };
+    const cleanup = () => {
+      clearTimeout(timeout);
+      emitter.off(eventName, onEvent);
+    };
+    emitter.once(eventName, onEvent);
+  });
+}
+
 export function countNearbyDroppedItems(bot, position, radius = 3) {
   return Object.values(bot.entities)
     .filter((entity) => entity?.name === "item")
