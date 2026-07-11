@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCorebreakerItem, isCoreItem, waitForInventoryItem } from "./helpers.js";
+import { isCorebreakerItem, isCoreItem, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Corebreaker without charges cannot break player core";
 
@@ -43,6 +43,8 @@ export async function run(ctx) {
 
   await breakCore(ctx, breaker, CORE_BLOCK, "default charge should break the first core");
   assert(breaker.blockAt(CORE_BLOCK)?.name === "air", "default Corebreaker charge should remove the first core");
+  const emptyKills = await waitForChat(breaker, () => breaker.chat("/kills"), /kill queue is empty\. Corebreaker charges: 0/i);
+  assert(emptyKills, "/kills should report zero charges after the default Corebreaker charge is consumed");
 
   await command("tp NoChargeBreaker 17 80 1 90 0", 500);
   await breakCore(ctx, breaker, SECOND_CORE_BLOCK, "exhausted Corebreaker should be cancelled");
