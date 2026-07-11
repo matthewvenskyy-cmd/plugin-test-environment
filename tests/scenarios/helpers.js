@@ -101,5 +101,18 @@ export async function serverBlockIs(ctx, position, blockName) {
 }
 
 export function displayText(item) {
-  return JSON.stringify(item?.displayName ?? "") + JSON.stringify(item?.customName ?? "") + JSON.stringify(item?.nbt ?? "");
+  return [
+    item?.displayName,
+    item?.customName,
+    item?.nbt,
+    item?.components,
+    item?.componentMap
+  ].map((value) => stringifyItemData(value)).join("");
+}
+
+function stringifyItemData(value) {
+  if (value instanceof Map) {
+    return JSON.stringify(Array.from(value.entries()));
+  }
+  return JSON.stringify(value ?? "");
 }

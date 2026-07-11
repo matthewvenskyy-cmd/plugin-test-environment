@@ -45,6 +45,7 @@
     "tests/scenarios/admin-non-op-triple-shift-no-toggle.js",
     "tests/scenarios/classes-item-selects-class.js",
     "tests/scenarios/rocketlytra-recipe-discoverable.js",
+    "tests/scenarios/rocketlytra-craft-adds-charges.js",
     "tests/scenarios/mount-player-riding-cycle.js",
     "tests/scenarios/corebreaker-destroys-player-core.js"
   ],
