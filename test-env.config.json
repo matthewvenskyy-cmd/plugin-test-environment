@@ -33,6 +33,7 @@
     "tests/scenarios/core-cannot-place-on-beacon-base.js",
     "tests/scenarios/core-command-without-core-denied.js",
     "tests/scenarios/core-command-teleports-to-placed-core.js",
+    "tests/scenarios/core-nearby-break-alerts-owner.js",
     "tests/scenarios/core-owner-cannot-corebreak-own-core.js",
     "tests/scenarios/core-selfdestruct-restores-core.js",
     "tests/scenarios/core-selfdestruct-without-core-denied.js",
