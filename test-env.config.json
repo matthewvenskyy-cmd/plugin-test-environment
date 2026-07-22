@@ -55,6 +55,7 @@
     "tests/scenarios/classes-reset-clears-class.js",
     "tests/scenarios/classes-movement-modifier-resets.js",
     "tests/scenarios/classes-viking-axe-increases-damage.js",
+    "tests/scenarios/classes-mage-melee-reduces-damage.js",
     "tests/scenarios/rocketlytra-recipe-discoverable.js",
     "tests/scenarios/rocketlytra-craft-adds-charges.js",
     "tests/scenarios/rocketlytra-recraft-preserves-charges.js",
