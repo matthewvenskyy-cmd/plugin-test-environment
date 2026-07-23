@@ -48,6 +48,7 @@
     "tests/scenarios/non-corebreaker-cannot-break-player-core.js",
     "tests/scenarios/core-bound-items-cannot-drop.js",
     "tests/scenarios/core-bound-items-cannot-store-in-chest.js",
+    "tests/scenarios/core-duplicate-kill-does-not-add-charge.js",
     "tests/scenarios/admin-triple-shift-toggles-gamemode.js",
     "tests/scenarios/admin-non-op-triple-shift-no-toggle.js",
     "tests/scenarios/classes-item-selects-class.js",
