@@ -59,6 +59,7 @@
     "tests/scenarios/classes-reset-clears-class.js",
     "tests/scenarios/classes-movement-modifier-resets.js",
     "tests/scenarios/classes-viking-axe-increases-damage.js",
+    "tests/scenarios/classes-viking-berserk-increases-health.js",
     "tests/scenarios/classes-mage-melee-reduces-damage.js",
     "tests/scenarios/classes-knight-sword-reduces-incoming-damage.js",
     "tests/scenarios/rocketlytra-recipe-discoverable.js",
