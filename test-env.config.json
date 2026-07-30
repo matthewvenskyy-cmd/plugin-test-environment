@@ -62,6 +62,7 @@
     "tests/scenarios/rocketlytra-recipe-discoverable.js",
     "tests/scenarios/rocketlytra-craft-adds-charges.js",
     "tests/scenarios/rocketlytra-recraft-preserves-charges.js",
+    "tests/scenarios/rocketlytra-recipe-range-registered.js",
     "tests/scenarios/mount-player-riding-cycle.js",
     "tests/scenarios/mount-already-mounted-denied.js",
     "tests/scenarios/mount-target-already-ridden-denied.js",
