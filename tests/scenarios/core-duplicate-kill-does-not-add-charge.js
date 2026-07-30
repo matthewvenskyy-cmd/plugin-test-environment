@@ -55,7 +55,7 @@ async function killVictim(ctx, victim) {
 
   const respawned = waitForEvent(victim, "respawn", 8000);
   const output = await command("damage DupVictim 40 minecraft:player_attack by DupKiller", 500);
-  assert(/Applied|damaged/i.test(output), `duplicate-kill damage command did not report success: ${output}`);
+  assert(/Applied|damaged|was slain by/i.test(output), `duplicate-kill damage command did not report success: ${output}`);
   await respawned;
   await wait(1500);
 }

@@ -110,7 +110,7 @@ async function killPlayerWithBreaker(ctx, victim) {
 
   const respawned = waitForEvent(victim, "respawn", 8000);
   const output = await command("damage EarnVictim 40 minecraft:player_attack by EarnBreaker", 500);
-  assert(/Applied|damaged/i.test(output), `earned-charge damage command did not report success: ${output}`);
+  assert(/Applied|damaged|was slain by/i.test(output), `earned-charge damage command did not report success: ${output}`);
   await respawned;
   await wait(1500);
 }
