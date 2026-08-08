@@ -61,6 +61,7 @@
     "tests/scenarios/classes-viking-axe-increases-damage.js",
     "tests/scenarios/classes-viking-berserk-increases-health.js",
     "tests/scenarios/classes-mage-melee-reduces-damage.js",
+    "tests/scenarios/classes-dark-mage-death-affects-nearby.js",
     "tests/scenarios/classes-knight-sword-reduces-incoming-damage.js",
     "tests/scenarios/rocketlytra-recipe-discoverable.js",
     "tests/scenarios/rocketlytra-craft-adds-charges.js",
