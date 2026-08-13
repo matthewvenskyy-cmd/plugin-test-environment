@@ -73,6 +73,11 @@
     "tests/scenarios/rocketlytra-recipe-discoverable.js",
     "tests/scenarios/rocketlytra-craft-adds-charges.js",
     "tests/scenarios/rocketlytra-recraft-preserves-charges.js",
+    {
+      "path": "tests/scenarios/rocketlytra-crafts-in-bct.js",
+      "expectedFailure": true,
+      "reason": "Bigger Crafting Table currently matches the Rocketlytra one-firework recipe even when three fireworks are present."
+    },
     "tests/scenarios/rocketlytra-recipe-range-registered.js",
     "tests/scenarios/mount-player-riding-cycle.js",
     "tests/scenarios/mount-already-mounted-denied.js",
