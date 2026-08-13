@@ -60,6 +60,7 @@
     "tests/scenarios/classes-offhand-item-selects-class.js",
     "tests/scenarios/classes-non-op-cannot-give-items.js",
     "tests/scenarios/classes-reset-clears-class.js",
+    "tests/scenarios/classes-rechooser-opens-menu.js",
     "tests/scenarios/classes-movement-modifier-resets.js",
     "tests/scenarios/classes-heavy-knight-speed-penalty.js",
     "tests/scenarios/classes-viking-axe-increases-damage.js",
