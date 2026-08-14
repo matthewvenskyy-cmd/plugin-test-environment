@@ -82,6 +82,7 @@
     "tests/scenarios/rocketlytra-recipe-discoverable.js",
     "tests/scenarios/rocketlytra-craft-adds-charges.js",
     "tests/scenarios/rocketlytra-recraft-preserves-charges.js",
+    "tests/scenarios/rocketlytra-standing-sprint-keeps-charges.js",
     {
       "path": "tests/scenarios/rocketlytra-crafts-in-bct.js",
       "expectedFailure": true,
