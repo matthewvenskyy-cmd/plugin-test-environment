@@ -80,6 +80,7 @@
     "tests/scenarios/classes-divine-mage-death-affects-nearby.js",
     "tests/scenarios/classes-necromancer-darkness-blinds-target.js",
     "tests/scenarios/classes-necromancer-night-speed.js",
+    "tests/scenarios/classes-necromancer-reduces-melee-damage.js",
     "tests/scenarios/classes-knight-sword-reduces-incoming-damage.js",
     "tests/scenarios/rocketlytra-recipe-discoverable.js",
     "tests/scenarios/rocketlytra-craft-adds-charges.js",
