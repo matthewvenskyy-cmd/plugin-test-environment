@@ -54,6 +54,7 @@
     "tests/scenarios/classes-viking-kill-grants-corebreaker-charge.js",
     "tests/scenarios/corebreaker-earned-charge-breaks-core.js",
     "tests/scenarios/corebreaker-op-unlimited-breaks-two-cores.js",
+    "tests/scenarios/corebreaker-drops-owner-inventory-at-core.js",
     "tests/scenarios/admin-triple-shift-toggles-gamemode.js",
     "tests/scenarios/admin-non-op-triple-shift-no-toggle.js",
     "tests/scenarios/classes-item-selects-class.js",
