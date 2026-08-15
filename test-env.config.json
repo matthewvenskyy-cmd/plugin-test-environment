@@ -102,6 +102,7 @@
     "tests/scenarios/mount-already-mounted-denied.js",
     "tests/scenarios/mount-target-already-ridden-denied.js",
     "tests/scenarios/mount-rider-logout-releases-target.js",
+    "tests/scenarios/mount-target-logout-releases-rider.js",
     "tests/scenarios/mount-command-denials.js",
     "tests/scenarios/mount-rider-cannot-bypass-core-protection.js",
     "tests/scenarios/corebreaker-destroys-player-core.js"
