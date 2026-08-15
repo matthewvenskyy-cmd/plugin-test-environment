@@ -65,6 +65,11 @@
     "tests/scenarios/classes-reset-clears-class.js",
     "tests/scenarios/classes-rechooser-opens-menu.js",
     "tests/scenarios/classes-movement-modifier-resets.js",
+    {
+      "path": "tests/scenarios/classes-archer-movement-clears-invisibility.js",
+      "expectedFailure": true,
+      "reason": "ClassesPlugin currently leaves Archer Invisibility active after teleport-style movement."
+    },
     "tests/scenarios/classes-heavy-knight-speed-penalty.js",
     "tests/scenarios/classes-light-knight-speed-boost.js",
     "tests/scenarios/classes-viking-axe-increases-damage.js",
