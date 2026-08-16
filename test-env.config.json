@@ -69,6 +69,7 @@
     "tests/scenarios/classes-non-op-cannot-give-items.js",
     "tests/scenarios/classes-reset-clears-class.js",
     "tests/scenarios/classes-rechooser-opens-menu.js",
+    "tests/scenarios/classes-rechooser-selection-grants-item.js",
     "tests/scenarios/classes-movement-modifier-resets.js",
     {
       "path": "tests/scenarios/classes-archer-movement-clears-invisibility.js",
