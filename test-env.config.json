@@ -35,6 +35,7 @@
     "tests/scenarios/core-cannot-place-second-owned-core.js",
     "tests/scenarios/core-command-without-core-denied.js",
     "tests/scenarios/core-command-teleports-to-placed-core.js",
+    "tests/scenarios/core-right-click-identifies-owner.js",
     "tests/scenarios/core-nearby-break-alerts-owner.js",
     "tests/scenarios/core-owner-nearby-break-does-not-alert.js",
     "tests/scenarios/core-owner-cannot-corebreak-own-core.js",
