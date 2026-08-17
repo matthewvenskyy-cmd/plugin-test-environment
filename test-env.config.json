@@ -65,6 +65,7 @@
     "tests/scenarios/corebreaker-drops-owner-inventory-at-core.js",
     "tests/scenarios/admin-triple-shift-toggles-gamemode.js",
     "tests/scenarios/admin-non-op-triple-shift-no-toggle.js",
+    "tests/scenarios/admin-slow-shift-chain-no-toggle.js",
     "tests/scenarios/classes-item-selects-class.js",
     "tests/scenarios/classes-archer-stillness-grants-invisibility.js",
     "tests/scenarios/classes-offhand-item-selects-class.js",
