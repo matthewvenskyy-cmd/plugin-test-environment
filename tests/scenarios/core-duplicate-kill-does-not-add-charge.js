@@ -1,4 +1,4 @@
-import { waitForChat, waitForEvent } from "./helpers.js";
+import { queryCorebreakerCharges, waitForEvent } from "./helpers.js";
 
 export const name = "Core duplicate kill does not add Corebreaker charge";
 
@@ -18,13 +18,13 @@ export async function run(ctx) {
   await command("tp DupVictim 73 80 0 180 0", 500);
   await wait(1000);
 
-  const startingCharges = await queryCharges(killer);
+  const startingCharges = await queryCorebreakerCharges(killer);
   await killVictim(ctx, victim);
-  const firstCharges = await queryCharges(killer);
+  const firstCharges = await queryCorebreakerCharges(killer);
   assert(firstCharges === startingCharges + 1, `first unique kill should add one Corebreaker charge; before=${startingCharges}, after=${firstCharges}`);
 
   await killVictim(ctx, victim);
-  const secondCharges = await queryCharges(killer);
+  const secondCharges = await queryCorebreakerCharges(killer);
   assert(secondCharges === firstCharges, `killing the same victim twice should not add another Corebreaker charge; first=${firstCharges}, second=${secondCharges}`);
 
   await command("gamerule keepInventory false", 250);
@@ -32,15 +32,6 @@ export async function run(ctx) {
   await command("clear DupKiller", 250);
   await command("clear DupVictim", 250);
   await command("fill 72 79 -1 74 79 1 minecraft:air", 250);
-}
-
-async function queryCharges(bot) {
-  const message = await waitForChat(bot, () => bot.chat("/kills"), /Corebreaker charges: \d+/i);
-  const match = message.match(/Corebreaker charges: (\d+)/i);
-  if (!match) {
-    throw new Error(`Could not parse Corebreaker charges from: ${message}`);
-  }
-  return Number(match[1]);
 }
 
 async function killVictim(ctx, victim) {

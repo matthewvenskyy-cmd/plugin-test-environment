@@ -1,4 +1,4 @@
-import { waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { queryCorebreakerCharges, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Classes Viking kill grants one Corebreaker charge";
 
@@ -30,9 +30,9 @@ export async function run(ctx) {
   const status = await waitForChat(killer, () => killer.chat("/classes status"), /Current class: Viking/);
   assert(status, "Viking class axe should set class status before the kill");
 
-  const beforeCharges = await queryCharges(killer);
+  const beforeCharges = await queryCorebreakerCharges(killer);
   await killVictim(ctx, victim);
-  const afterCharges = await queryCharges(killer);
+  const afterCharges = await queryCorebreakerCharges(killer);
 
   assert(afterCharges === beforeCharges + 1, `Viking kill should add exactly one Corebreaker charge; before=${beforeCharges}, after=${afterCharges}`);
 
@@ -43,15 +43,6 @@ export async function run(ctx) {
   await command("clear VikingCharge", 250);
   await command("clear VikingVictim", 250);
   await command("fill 116 79 -2 118 79 1 minecraft:air", 250);
-}
-
-async function queryCharges(bot) {
-  const message = await waitForChat(bot, () => bot.chat("/kills"), /Corebreaker charges: \d+|kill queue is empty\. Corebreaker charges: 0/i);
-  const match = message.match(/Corebreaker charges: (\d+)/i);
-  if (!match) {
-    throw new Error(`Could not parse Corebreaker charges from: ${message}`);
-  }
-  return Number(match[1]);
 }
 
 async function killVictim(ctx, victim) {

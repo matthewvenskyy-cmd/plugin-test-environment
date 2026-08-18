@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCorebreakerItem, isCoreItem, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { isCorebreakerItem, isCoreItem, queryCorebreakerCharges, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Corebreaker earned charge breaks player core";
 
@@ -47,15 +47,15 @@ export async function run(ctx) {
   await command("tp EarnBreaker 79 80 1 90 0", 500);
   await breakCore(ctx, breaker, FIRST_CORE, "default charge");
   assert(breaker.blockAt(FIRST_CORE)?.name === "air", "default Corebreaker charge should destroy the first core");
-  assert(await queryCharges(breaker) === 0, "default charge should be consumed before earning a kill charge");
+  assert(await queryCorebreakerCharges(breaker) === 0, "default charge should be consumed before earning a kill charge");
 
   await killPlayerWithBreaker(ctx, killVictim);
-  assert(await queryCharges(breaker) === 1, "unique kill should grant one Corebreaker charge");
+  assert(await queryCorebreakerCharges(breaker) === 1, "unique kill should grant one Corebreaker charge");
 
   await command("tp EarnBreaker 79 80 1 90 0", 500);
   await breakCore(ctx, breaker, SECOND_CORE, "earned kill charge");
   assert(breaker.blockAt(SECOND_CORE)?.name === "air", "earned kill charge should destroy the second core");
-  assert(await queryCharges(breaker) === 0, "earned kill charge should be consumed after breaking a core");
+  assert(await queryCorebreakerCharges(breaker) === 0, "earned kill charge should be consumed after breaking a core");
 
   await command("gamerule keepInventory false", 250);
   await command("gamerule naturalRegeneration true", 250);
@@ -113,13 +113,4 @@ async function killPlayerWithBreaker(ctx, victim) {
   assert(/Applied|damaged|was slain by/i.test(output), `earned-charge damage command did not report success: ${output}`);
   await respawned;
   await wait(1500);
-}
-
-async function queryCharges(bot) {
-  const message = await waitForChat(bot, () => bot.chat("/kills"), /Corebreaker charges: \d+|kill queue is empty\. Corebreaker charges: 0/i);
-  const match = message.match(/Corebreaker charges: (\d+)/i);
-  if (!match) {
-    throw new Error(`Could not parse Corebreaker charges from: ${message}`);
-  }
-  return Number(match[1]);
 }

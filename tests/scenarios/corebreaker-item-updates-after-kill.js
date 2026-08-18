@@ -1,4 +1,4 @@
-import { displayText, isCorebreakerItem, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { displayText, isCorebreakerItem, queryCorebreakerCharges, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Corebreaker item updates after unique kill";
 
@@ -22,9 +22,9 @@ export async function run(ctx) {
     await command("tp LoreVictim 121 80 0 180 0", 500);
     await wait(1000);
 
-    const beforeCharges = await queryCharges(killer);
+    const beforeCharges = await queryCorebreakerCharges(killer);
     await killVictim(ctx, victim);
-    const afterCharges = await queryCharges(killer);
+    const afterCharges = await queryCorebreakerCharges(killer);
     assert(afterCharges === beforeCharges + 1, `unique kill should add one charge; before=${beforeCharges}, after=${afterCharges}`);
 
     const corebreaker = await waitForInventoryItem(killer, isCorebreakerItem, "updated Corebreaker item");
@@ -40,15 +40,6 @@ export async function run(ctx) {
     await command("attribute LoreVictim minecraft:max_health base set 20", 250);
     await command("fill 120 79 -2 122 79 1 minecraft:air", 250);
   }
-}
-
-async function queryCharges(bot) {
-  const message = await waitForChat(bot, () => bot.chat("/kills"), /Corebreaker charges: \d+|kill queue is empty\. Corebreaker charges: 0/i);
-  const match = message.match(/Corebreaker charges: (\d+)/i);
-  if (!match) {
-    throw new Error(`Could not parse Corebreaker charges from: ${message}`);
-  }
-  return Number(match[1]);
 }
 
 async function killVictim(ctx, victim) {
