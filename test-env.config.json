@@ -29,6 +29,11 @@
       "reason": "Mineflayer custom item placement can behave like a plain crafter placement; keep this as an explicit investigation scenario."
     },
     "tests/scenarios/bct-corebreaker-no-dupe.js",
+    {
+      "path": "tests/scenarios/bct-corebreaker-preserves-contents.js",
+      "expectedFailure": true,
+      "reason": "Bigger Crafting Table currently loses stored contents after a cancelled Corebreaker break attempt."
+    },
     "tests/scenarios/bct-display-lifecycle.js",
     "tests/scenarios/core-cannot-place-another-player-core.js",
     "tests/scenarios/core-cannot-place-on-beacon-base.js",
