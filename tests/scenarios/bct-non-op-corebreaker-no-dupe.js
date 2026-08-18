@@ -4,6 +4,7 @@ import {
   countMatchingItems,
   isBiggerCraftingTableItem,
   isCorebreakerItem,
+  queryCorebreakerCharges,
   queryDroppedItemEntityCount,
   queryEntityCount,
   waitForChat,
@@ -64,6 +65,7 @@ export async function run(ctx) {
 
     const corebreaker = await waitForInventoryItem(breaker, isCorebreakerItem, "non-op Corebreaker");
     const startingCorebreakers = countMatchingItems(breaker, isCorebreakerItem);
+    const startingCharges = await queryCorebreakerCharges(breaker);
     await breaker.equip(corebreaker, "hand");
     await breaker.lookAt(BCT_BLOCK.offset(0.5, 0.5, 0.5), true);
 
@@ -82,6 +84,7 @@ export async function run(ctx) {
     const producedBctCount = countBctItems(bot) + countBctItems(breaker) + await queryDroppedItemEntityCount(ctx, BCT_BLOCK.offset(0.5, 0.5, 0.5));
     assert(producedBctCount === 0, `non-op Corebreaker attempt produced ${producedBctCount} BCT item(s)`);
     assert(countMatchingItems(breaker, isCorebreakerItem) === startingCorebreakers, "denied BCT break should keep the non-op Corebreaker item");
+    assert(await queryCorebreakerCharges(breaker) === startingCharges, "denied BCT break should not consume a Corebreaker charge");
   } finally {
     await command("kill @e[type=item]", 250);
     await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);

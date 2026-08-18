@@ -75,6 +75,15 @@ export function waitForEvent(emitter, eventName, timeoutMs = 5000) {
   });
 }
 
+export async function queryCorebreakerCharges(bot) {
+  const message = await waitForChat(bot, () => bot.chat("/kills"), /Corebreaker charges: \d+|kill queue is empty\. Corebreaker charges: 0/i);
+  const match = message.match(/Corebreaker charges: (\d+)/i);
+  if (!match) {
+    throw new Error(`Could not parse Corebreaker charges from: ${message}`);
+  }
+  return Number(match[1]);
+}
+
 export function countNearbyDroppedItems(bot, position, radius = 3) {
   return Object.values(bot.entities)
     .filter((entity) => entity?.name === "item")
