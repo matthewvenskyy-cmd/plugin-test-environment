@@ -34,6 +34,7 @@
     "tests/scenarios/core-cannot-place-on-beacon-base.js",
     "tests/scenarios/core-cannot-place-second-owned-core.js",
     "tests/scenarios/core-command-without-core-denied.js",
+    "tests/scenarios/core-command-without-safe-location-denied.js",
     "tests/scenarios/core-command-teleports-to-placed-core.js",
     "tests/scenarios/core-teleport-fails-if-destination-becomes-unsafe.js",
     "tests/scenarios/core-right-click-identifies-owner.js",
