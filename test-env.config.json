@@ -55,6 +55,7 @@
     "tests/scenarios/corebreaker-cannot-break-normal-block.js",
     "tests/scenarios/non-corebreaker-cannot-break-player-core.js",
     "tests/scenarios/core-bound-items-cannot-drop.js",
+    "tests/scenarios/core-bound-items-do-not-drop-on-death.js",
     "tests/scenarios/core-bound-items-cannot-store-in-chest.js",
     "tests/scenarios/core-bound-items-cannot-hotbar-swap-into-chest.js",
     "tests/scenarios/core-bound-items-cannot-store-in-bct.js",
