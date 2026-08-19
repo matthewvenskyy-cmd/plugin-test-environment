@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCoreItem, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { countItemsByName, isCoreItem, selectedItemHasNoDamage, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted rider cannot bypass core protection";
 
@@ -53,6 +53,7 @@ export async function run(ctx) {
   await command("clear MountCoreRider minecraft:netherite_pickaxe", 250);
   await command("give MountCoreRider minecraft:diamond_pickaxe", 500);
   const pickaxe = await waitForInventoryItem(rider, (item) => item?.name === "diamond_pickaxe", "plain diamond pickaxe");
+  const startingPickaxes = countItemsByName(rider, "diamond_pickaxe");
   await rider.equip(pickaxe, "hand");
 
   await rider.lookAt(mount.entity.position.offset(0, 1.2, 0), true);
@@ -71,6 +72,8 @@ export async function run(ctx) {
   await wait(1500);
 
   assert(rider.blockAt(CORE_BLOCK)?.name === "beacon", "mounted plain-tool rider should not remove another player's core");
+  assert(countItemsByName(rider, "diamond_pickaxe") === startingPickaxes, "mounted denied core break should keep the diamond pickaxe");
+  assert(await selectedItemHasNoDamage(ctx, "MountCoreRider"), "mounted denied core break should not damage the diamond pickaxe");
 
   rider.chat("/unmount");
   await wait(500);
