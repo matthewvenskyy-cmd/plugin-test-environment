@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCoreItem } from "./helpers.js";
+import { countItemsByName, isCoreItem, selectedItemHasNoDamage } from "./helpers.js";
 
 export const name = "Non-Corebreaker cannot break another player's core";
 
@@ -48,6 +48,7 @@ export async function run(ctx) {
   await command("give ScenarioBot minecraft:diamond_pickaxe", 500);
   const pickaxe = breaker.inventory.items().find((item) => item?.name === "diamond_pickaxe");
   assert(pickaxe, "breaker did not receive a plain diamond pickaxe");
+  const startingPickaxes = countItemsByName(breaker, "diamond_pickaxe");
   await breaker.equip(pickaxe, "hand");
 
   const target = breaker.blockAt(CORE_BLOCK);
@@ -60,6 +61,8 @@ export async function run(ctx) {
   await wait(1500);
 
   assert(breaker.blockAt(CORE_BLOCK)?.name === "beacon", "plain tools should not remove another player's core");
+  assert(countItemsByName(breaker, "diamond_pickaxe") === startingPickaxes, "denied plain-tool core break should keep the diamond pickaxe");
+  assert(await selectedItemHasNoDamage(ctx, "ScenarioBot"), "denied plain-tool core break should not damage the diamond pickaxe");
 
   await command("clear ScenarioBot minecraft:diamond_pickaxe", 250);
   await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);

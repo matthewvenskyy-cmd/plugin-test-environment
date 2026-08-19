@@ -3,6 +3,7 @@ import {
   countMatchingItems,
   isCorebreakerItem,
   queryCorebreakerCharges,
+  selectedItemHasNoDamage,
   serverBlockIs,
   waitForChat,
   waitForInventoryItem
@@ -52,7 +53,7 @@ export async function run(ctx) {
     assert(await serverBlockIs(ctx, TEST_BLOCK, "stone"), "Corebreaker should not break normal stone blocks");
     assert(countMatchingItems(breaker, isCorebreakerItem) === startingCorebreakers, "denied normal-block break should keep the Corebreaker item");
     assert(await queryCorebreakerCharges(breaker) === startingCharges, "denied normal-block break should not consume a Corebreaker charge");
-    assert(await querySelectedItemHasNoDamage(ctx), "denied normal-block break should not damage the Corebreaker");
+    assert(await selectedItemHasNoDamage(ctx, "CoreNormal"), "denied normal-block break should not damage the Corebreaker");
   } finally {
     await command("kill @e[type=item]", 250);
     await command(`setblock ${TEST_BLOCK.x} ${TEST_BLOCK.y} ${TEST_BLOCK.z} minecraft:air`, 250);
@@ -60,9 +61,4 @@ export async function run(ctx) {
     await command(`setblock ${PLAYER_FLOOR.x} ${PLAYER_FLOOR.y} ${PLAYER_FLOOR.z} minecraft:air`, 250);
     await command("forceload remove 174 1", 250);
   }
-}
-
-async function querySelectedItemHasNoDamage(ctx) {
-  const output = await ctx.command("data get entity CoreNormal SelectedItem.components.minecraft:damage", 500);
-  return /No element matching|Found no elements|Unknown path|nothing found/i.test(output);
 }

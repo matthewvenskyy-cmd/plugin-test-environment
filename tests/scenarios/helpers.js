@@ -109,6 +109,11 @@ export async function serverBlockIs(ctx, position, blockName) {
   return /Test passed/.test(output);
 }
 
+export async function selectedItemHasNoDamage(ctx, username) {
+  const output = await ctx.command(`data get entity ${username} SelectedItem.components.minecraft:damage`, 500);
+  return /No element matching|Found no elements|Unknown path|nothing found/i.test(output);
+}
+
 export function displayText(item) {
   return [
     item?.displayName,
