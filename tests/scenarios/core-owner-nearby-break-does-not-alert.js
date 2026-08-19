@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCoreItem, serverBlockIs, waitForInventoryItem } from "./helpers.js";
+import { isCoreItem, serverBlockIs, waitForBlock, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Core owner nearby break does not alert";
 
@@ -75,14 +75,4 @@ function waitForNoChat(bot, pattern, timeoutMs = 1500) {
     };
     bot.on("message", onMessage);
   });
-}
-
-async function waitForBlock(bot, position, blockName, label, timeoutMs = 5000) {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    const block = bot.blockAt(position);
-    if (block?.name === blockName) return block;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  throw new Error(`Timed out waiting for ${label}`);
 }

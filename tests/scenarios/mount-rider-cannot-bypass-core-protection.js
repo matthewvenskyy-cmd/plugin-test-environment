@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { countItemsByName, isCoreItem, selectedItemHasNoDamage, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { countItemsByName, isCoreItem, selectedItemHasNoDamage, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted rider cannot bypass core protection";
 
@@ -80,14 +80,4 @@ export async function run(ctx) {
   await command("clear MountCoreRider minecraft:diamond_pickaxe", 250);
   await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
   await command("fill 29 79 -2 32 79 2 minecraft:air", 250);
-}
-
-async function waitForBlock(bot, position, blockName, label, timeoutMs = 5000) {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    const block = bot.blockAt(position);
-    if (block?.name === blockName) return block;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  throw new Error(`Timed out waiting for ${label}`);
 }

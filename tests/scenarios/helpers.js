@@ -36,6 +36,16 @@ export async function waitForInventoryItem(bot, predicate, label, timeoutMs = 50
   throw new Error(`Timed out waiting for ${label}`);
 }
 
+export async function waitForBlock(bot, position, blockName, label, timeoutMs = 5000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const block = bot.blockAt(position);
+    if (block?.name === blockName) return block;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error(`Timed out waiting for ${label}`);
+}
+
 export function waitForChat(bot, action, pattern, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {

@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCorebreakerItem, isCoreItem, queryDroppedItemEntityCount, serverBlockIs, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { isCorebreakerItem, isCoreItem, queryDroppedItemEntityCount, serverBlockIs, waitForBlock, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Corebreaker drops owner inventory at core";
 
@@ -69,14 +69,4 @@ export async function run(ctx) {
     await command("fill 131 79 -1 133 82 2 minecraft:air", 250);
     await command("forceload remove 132 0", 250);
   }
-}
-
-async function waitForBlock(bot, position, blockName, label, timeoutMs = 5000) {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    const block = bot.blockAt(position);
-    if (block?.name === blockName) return block;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  throw new Error(`Timed out waiting for ${label}`);
 }
