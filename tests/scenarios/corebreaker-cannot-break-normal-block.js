@@ -2,6 +2,7 @@ import { Vec3 } from "vec3";
 import {
   countMatchingItems,
   isCorebreakerItem,
+  queryCorebreakerCharges,
   serverBlockIs,
   waitForChat,
   waitForInventoryItem
@@ -15,11 +16,12 @@ const PLAYER_FLOOR = new Vec3(174, 79, 0);
 
 export async function run(ctx) {
   const { assert, command, wait, spawnBot } = ctx;
-  const breaker = await spawnBot("CoreNormal");
+  const breaker = await spawnBot("CoreNormal", { op: false });
 
   try {
     await command("kill @e[type=item]", 250);
     await command("forceload add 174 1", 250);
+    await command("deop CoreNormal", 250);
     await command(`setblock ${PLAYER_FLOOR.x} ${PLAYER_FLOOR.y} ${PLAYER_FLOOR.z} minecraft:stone`, 250);
     await command(`setblock ${FLOOR_BLOCK.x} ${FLOOR_BLOCK.y} ${FLOOR_BLOCK.z} minecraft:stone`, 250);
     await command(`setblock ${TEST_BLOCK.x} ${TEST_BLOCK.y} ${TEST_BLOCK.z} minecraft:stone`, 250);
@@ -31,6 +33,7 @@ export async function run(ctx) {
 
     const corebreaker = await waitForInventoryItem(breaker, isCorebreakerItem, "Corebreaker");
     const startingCorebreakers = countMatchingItems(breaker, isCorebreakerItem);
+    const startingCharges = await queryCorebreakerCharges(breaker);
     await breaker.equip(corebreaker, "hand");
 
     const target = breaker.blockAt(TEST_BLOCK);
@@ -48,6 +51,7 @@ export async function run(ctx) {
 
     assert(await serverBlockIs(ctx, TEST_BLOCK, "stone"), "Corebreaker should not break normal stone blocks");
     assert(countMatchingItems(breaker, isCorebreakerItem) === startingCorebreakers, "denied normal-block break should keep the Corebreaker item");
+    assert(await queryCorebreakerCharges(breaker) === startingCharges, "denied normal-block break should not consume a Corebreaker charge");
     assert(await querySelectedItemHasNoDamage(ctx), "denied normal-block break should not damage the Corebreaker");
   } finally {
     await command("kill @e[type=item]", 250);
