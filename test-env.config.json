@@ -30,6 +30,7 @@
     },
     "tests/scenarios/bct-corebreaker-no-dupe.js",
     "tests/scenarios/bct-non-op-corebreaker-no-dupe.js",
+    "tests/scenarios/bct-repeated-corebreaker-no-leak.js",
     {
       "path": "tests/scenarios/bct-corebreaker-preserves-contents.js",
       "expectedFailure": true,
