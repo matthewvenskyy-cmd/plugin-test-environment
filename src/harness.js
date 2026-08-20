@@ -338,6 +338,8 @@ async function runFreshScenarios(config) {
   if (scenarios.length === 0) return;
 
   for (const scenarioSpec of scenarios) {
+    const progress = scenarioProgress(scenarioSpec, scenarios);
+    console.log(`Fresh server scenario ${progress}`);
     await prepareServer(config);
     const server = await runServer(config, { interactive: false });
     try {
@@ -361,7 +363,7 @@ async function runScenarioBatch(config, server, scenarios) {
       const absolutePath = path.resolve(root, scenarioSpec.path);
       const scenario = await import(`file://${absolutePath.replace(/\\/g, "/")}?t=${Date.now()}`);
       const name = scenario.name ?? path.basename(scenarioSpec.path);
-      console.log(`Scenario: ${name}`);
+      console.log(`Scenario ${scenarioProgress(scenarioPath, scenarios)}: ${name}`);
       try {
         try {
           await withTimeout(
@@ -409,6 +411,12 @@ function selectedScenarios(config) {
 
 function normalizeScenarioSpec(scenario) {
   return typeof scenario === "string" ? { path: scenario } : scenario;
+}
+
+function scenarioProgress(scenario, scenarios) {
+  const index = scenarios.indexOf(scenario) + 1;
+  const spec = normalizeScenarioSpec(scenario);
+  return `[${index}/${scenarios.length}] ${spec.path}`;
 }
 
 async function createScenarioBot(config, username) {
