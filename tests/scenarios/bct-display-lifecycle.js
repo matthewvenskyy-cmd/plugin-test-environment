@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isBiggerCraftingTableItem, queryEntityCount, serverBlockIs, waitForInventoryItem } from "./helpers.js";
+import { placeBiggerCraftingTable, queryEntityCount, serverBlockIs, waitForInventoryItem } from "./helpers.js";
 
 export const name = "BCT display lifecycle follows block";
 
@@ -21,24 +21,7 @@ export async function run(ctx) {
   await command("tp BctDisplayBot 22 80 0 0 0", 500);
   await command("gamemode survival BctDisplayBot", 250);
 
-  bot.chat("/bctgive");
-  const bctItem = await waitForInventoryItem(bot, isBiggerCraftingTableItem, "Bigger Crafting Table item");
-  await bot.equip(bctItem, "hand");
-
-  const support = bot.blockAt(SUPPORT_BLOCK);
-  assert(support?.name === "stone", "support block was not prepared");
-  await bot.lookAt(BCT_BLOCK.offset(0.5, 0.5, 0.5), true);
-  try {
-    await bot.placeBlock(support, new Vec3(0, 1, 0));
-  } catch (error) {
-    await wait(750);
-    if (bot.blockAt(BCT_BLOCK)?.name !== "crafter") {
-      throw error;
-    }
-  }
-  await wait(1250);
-
-  assert(bot.blockAt(BCT_BLOCK)?.name === "crafter", "BCT block was not placed");
+  await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK, { settleMs: 1250 });
   assert(await queryBctDisplays(ctx) === 1, "placing a BCT should create exactly one display entity");
 
   await command("give BctDisplayBot minecraft:diamond_pickaxe", 500);

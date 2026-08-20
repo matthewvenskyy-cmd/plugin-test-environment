@@ -1,9 +1,9 @@
 import { Vec3 } from "vec3";
 import {
   countMatchingItems,
-  isBiggerCraftingTableItem,
   isCoreItem,
   isCorebreakerItem,
+  placeBiggerCraftingTable,
   waitForChat,
   waitForInventoryItem
 } from "./helpers.js";
@@ -28,23 +28,7 @@ export async function run(ctx) {
   await command("gamemode survival BoundBct", 500);
   await wait(1000);
 
-  bot.chat("/bctgive");
-  const bctItem = await waitForInventoryItem(bot, isBiggerCraftingTableItem, "Bigger Crafting Table item");
-  await bot.equip(bctItem, "hand");
-
-  const support = bot.blockAt(SUPPORT_BLOCK);
-  assert(support?.name === "stone", "support block was not prepared for BCT placement");
-  await bot.lookAt(BCT_BLOCK.offset(0.5, 0.5, 0.5), true);
-  try {
-    await bot.placeBlock(support, new Vec3(0, 1, 0));
-  } catch (error) {
-    await wait(750);
-    if (bot.blockAt(BCT_BLOCK)?.name !== "crafter") {
-      throw error;
-    }
-  }
-  await wait(1250);
-  assert(bot.blockAt(BCT_BLOCK)?.name === "crafter", "BCT block was not placed");
+  await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK, { settleMs: 1250 });
 
   const coreItem = await waitForInventoryItem(bot, isCoreItem, "bound core item");
   const corebreaker = await waitForInventoryItem(bot, isCorebreakerItem, "bound Corebreaker");

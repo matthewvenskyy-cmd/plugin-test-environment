@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { countBctItems, isBiggerCraftingTableItem, isCorebreakerItem, queryDroppedItemEntityCount, queryEntityCount } from "./helpers.js";
+import { countBctItems, isCorebreakerItem, placeBiggerCraftingTable, queryDroppedItemEntityCount, queryEntityCount } from "./helpers.js";
 
 export const name = "BCT cannot be duplicated by Corebreaker";
 
@@ -8,7 +8,7 @@ const SUPPORT_BLOCK = new Vec3(0, 79, 1);
 const FLOOR_BLOCK = new Vec3(0, 79, 0);
 
 export async function run(ctx) {
-  const { bot, assert, command, chat, wait, waitForInventory } = ctx;
+  const { bot, assert, command, wait } = ctx;
 
   await command("kill @e[type=item]", 250);
   await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
@@ -20,27 +20,7 @@ export async function run(ctx) {
   await command("tp ScenarioBot 0 80 0 0 0", 500);
   await command("gamemode survival ScenarioBot", 250);
 
-  await chat("/bctgive", 500);
-  await waitForInventory((items) => items.some(isBiggerCraftingTableItem));
-
-  const bctItem = bot.inventory.items().find(isBiggerCraftingTableItem);
-  assert(bctItem, "Bigger Crafting Table item was not given by /bctgive");
-  await bot.equip(bctItem, "hand");
-
-  const support = bot.blockAt(SUPPORT_BLOCK);
-  assert(support?.name === "stone", "support block was not prepared");
-  await bot.lookAt(BCT_BLOCK.offset(0.5, 0.5, 0.5), true);
-  try {
-    await bot.placeBlock(support, new Vec3(0, 1, 0));
-  } catch (error) {
-    await wait(750);
-    if (bot.blockAt(BCT_BLOCK)?.name !== "crafter") {
-      throw error;
-    }
-  }
-  await wait(1000);
-
-  const placed = bot.blockAt(BCT_BLOCK);
+  const placed = await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK);
   assert(placed?.name === "crafter", `expected placed BCT block to be crafter, got ${placed?.name ?? "nothing"}`);
   assert(countBctItems(bot) === 0, "BCT item should be consumed after placement in survival mode");
   assert(await queryBctDisplays(ctx) === 1, "placing a BCT should create exactly one display entity before Corebreaker attempt");

@@ -1,8 +1,8 @@
 import { Vec3 } from "vec3";
 import {
   countBctItems,
-  isBiggerCraftingTableItem,
   isCorebreakerItem,
+  placeBiggerCraftingTable,
   queryDroppedItemEntityCount,
   queryEntityCount,
   waitForInventoryItem
@@ -15,7 +15,7 @@ const SUPPORT_BLOCK = new Vec3(68, 79, 1);
 const FLOOR_BLOCK = new Vec3(68, 79, 0);
 
 export async function run(ctx) {
-  const { bot, assert, command, chat, wait, waitForInventory } = ctx;
+  const { bot, assert, command, wait } = ctx;
 
   try {
     await command("kill @e[type=item]", 250);
@@ -29,27 +29,7 @@ export async function run(ctx) {
     await command(`tp ScenarioBot ${FLOOR_BLOCK.x} 80 ${FLOOR_BLOCK.z} 0 0`, 500);
     await command("gamemode survival ScenarioBot", 250);
 
-    await chat("/bctgive", 500);
-    await waitForInventory((items) => items.some(isBiggerCraftingTableItem));
-
-    const bctItem = bot.inventory.items().find(isBiggerCraftingTableItem);
-    assert(bctItem, "Bigger Crafting Table item was not given by /bctgive");
-    await bot.equip(bctItem, "hand");
-
-    const support = bot.blockAt(SUPPORT_BLOCK);
-    assert(support?.name === "stone", "support block was not prepared");
-    await bot.lookAt(BCT_BLOCK.offset(0.5, 0.5, 0.5), true);
-    try {
-      await bot.placeBlock(support, new Vec3(0, 1, 0));
-    } catch (error) {
-      await wait(750);
-      if (bot.blockAt(BCT_BLOCK)?.name !== "crafter") {
-        throw error;
-      }
-    }
-    await wait(1000);
-
-    assert(bot.blockAt(BCT_BLOCK)?.name === "crafter", "BCT block was not placed");
+    await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK);
     assert(await queryBctDisplays(ctx) === 1, "placing a BCT should create exactly one display entity");
 
     await command("give ScenarioBot minecraft:diamond 1", 500);

@@ -1,3 +1,5 @@
+import { Vec3 } from "vec3";
+
 export function isBiggerCraftingTableItem(item) {
   return item?.name === "crafter" && displayText(item).includes("Bigger Crafting Table");
 }
@@ -44,6 +46,32 @@ export async function waitForBlock(bot, position, blockName, label, timeoutMs = 
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
   throw new Error(`Timed out waiting for ${label}`);
+}
+
+export async function placeBiggerCraftingTable(ctx, bot, bctPosition, supportPosition, options = {}) {
+  const { assert, wait } = ctx;
+  const settleMs = options.settleMs ?? 1000;
+
+  bot.chat("/bctgive");
+  const bctItem = await waitForInventoryItem(bot, isBiggerCraftingTableItem, "Bigger Crafting Table item");
+  await bot.equip(bctItem, "hand");
+
+  const support = bot.blockAt(supportPosition);
+  assert(support?.name === "stone", "support block was not prepared for BCT placement");
+  await bot.lookAt(bctPosition.offset(0.5, 0.5, 0.5), true);
+  try {
+    await bot.placeBlock(support, new Vec3(0, 1, 0));
+  } catch (error) {
+    await wait(750);
+    if (bot.blockAt(bctPosition)?.name !== "crafter") {
+      throw error;
+    }
+  }
+  await wait(settleMs);
+
+  const placed = bot.blockAt(bctPosition);
+  assert(placed?.name === "crafter", "BCT block was not placed");
+  return placed;
 }
 
 export function waitForChat(bot, action, pattern, timeoutMs = 5000) {
