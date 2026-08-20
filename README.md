@@ -52,6 +52,8 @@ Run matching scenarios with a fresh disposable Paper server for each scenario. T
 node src/harness.js scenarios --no-build --fresh-scenarios --scenario=core-command
 ```
 
+When a scenario fails, the harness writes a text artifact under `.work/failures/` with the scenario path, error stack, and recent server log tail. Expected-failure scenarios still fail the suite if they unexpectedly start passing.
+
 Build plugin jars first, then run gameplay scenarios in a separate Node process:
 
 ```powershell

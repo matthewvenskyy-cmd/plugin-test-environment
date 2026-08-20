@@ -363,7 +363,8 @@ async function runScenarioBatch(config, server, scenarios) {
       const absolutePath = path.resolve(root, scenarioSpec.path);
       const scenario = await import(`file://${absolutePath.replace(/\\/g, "/")}?t=${Date.now()}`);
       const name = scenario.name ?? path.basename(scenarioSpec.path);
-      console.log(`Scenario ${scenarioProgress(scenarioPath, scenarios)}: ${name}`);
+      const progress = scenarioProgress(scenarioPath, scenarios);
+      console.log(`Scenario ${progress}: ${name}`);
       try {
         try {
           await withTimeout(
@@ -372,14 +373,18 @@ async function runScenarioBatch(config, server, scenarios) {
             `Scenario timed out: ${name}`
           );
           if (scenarioSpec.expectedFailure) {
-            throw new Error(`Scenario unexpectedly passed: ${name}. Expected failure: ${scenarioSpec.reason ?? "no reason provided"}`);
+            const error = new Error(`Scenario unexpectedly passed: ${name}. Expected failure: ${scenarioSpec.reason ?? "no reason provided"}`);
+            await writeScenarioFailureArtifact(server, scenarioSpec, name, progress, error);
+            throw error;
           }
           console.log(`Scenario passed: ${name}`);
         } catch (error) {
-          if (!scenarioSpec.expectedFailure) {
+          if (scenarioSpec.expectedFailure && !error.message.startsWith("Scenario unexpectedly passed:")) {
+            console.log(`Scenario expected failure: ${name} (${scenarioSpec.reason ?? error.message})`);
+          } else {
+            await writeScenarioFailureArtifact(server, scenarioSpec, name, progress, error);
             throw error;
           }
-          console.log(`Scenario expected failure: ${name} (${scenarioSpec.reason ?? error.message})`);
         }
       } finally {
         for (const extraBot of extraBots) {
@@ -417,6 +422,33 @@ function scenarioProgress(scenario, scenarios) {
   const index = scenarios.indexOf(scenario) + 1;
   const spec = normalizeScenarioSpec(scenario);
   return `[${index}/${scenarios.length}] ${spec.path}`;
+}
+
+async function writeScenarioFailureArtifact(server, scenarioSpec, name, progress, error) {
+  const failuresDir = path.join(workDir, "failures");
+  await fs.mkdir(failuresDir, { recursive: true });
+  const filename = `${new Date().toISOString().replace(/[:.]/g, "-")}-${safeArtifactName(scenarioSpec.path)}.txt`;
+  const artifactPath = path.join(failuresDir, filename);
+  const logTail = server.lines.join("").split(/\r?\n/).slice(-200).join("\n");
+  const body = [
+    `Scenario: ${name}`,
+    `Progress: ${progress}`,
+    `Path: ${scenarioSpec.path}`,
+    `Expected failure: ${scenarioSpec.expectedFailure ? "yes" : "no"}`,
+    scenarioSpec.reason ? `Reason: ${scenarioSpec.reason}` : null,
+    "",
+    "Error:",
+    error.stack ?? error.message ?? String(error),
+    "",
+    "Server log tail:",
+    logTail
+  ].filter((line) => line !== null).join("\n");
+  await fs.writeFile(artifactPath, body);
+  console.error(`Scenario failure artifact written to ${artifactPath}`);
+}
+
+function safeArtifactName(value) {
+  return value.replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "");
 }
 
 async function createScenarioBot(config, username) {
