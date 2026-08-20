@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { countItemsByName, isCoreItem, selectedItemHasNoDamage } from "./helpers.js";
+import { countItemsByName, isCoreItem, selectedItemHasNoDamage, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Non-Corebreaker cannot break another player's core";
 
@@ -25,9 +25,7 @@ export async function run(ctx) {
   await command("gamemode survival PlainToolOwner", 250);
   await command("gamemode survival ScenarioBot", 250);
 
-  await waitForOwnerInventory(owner, isCoreItem, "owner core item");
-  const coreItem = owner.inventory.items().find(isCoreItem);
-  assert(coreItem, "owner did not receive a core item");
+  const coreItem = await waitForInventoryItem(owner, isCoreItem, "owner core item");
   await owner.equip(coreItem, "hand");
 
   const support = owner.blockAt(SUPPORT_BLOCK);
@@ -69,13 +67,4 @@ export async function run(ctx) {
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:air`, 250);
   await command(`setblock ${OWNER_FLOOR.x} ${OWNER_FLOOR.y} ${OWNER_FLOOR.z} minecraft:air`, 250);
   await command(`setblock ${BREAKER_FLOOR.x} ${BREAKER_FLOOR.y} ${BREAKER_FLOOR.z} minecraft:air`, 250);
-}
-
-async function waitForOwnerInventory(owner, predicate, label) {
-  const started = Date.now();
-  while (Date.now() - started < 5000) {
-    if (owner.inventory.items().some(predicate)) return;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  throw new Error(`Timed out waiting for ${label}`);
 }
