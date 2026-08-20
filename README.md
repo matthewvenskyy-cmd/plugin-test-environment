@@ -46,6 +46,12 @@ node src/harness.js scenarios --no-build --scenario=core-owner
 node src/harness.js scenarios --no-build --scenario=bct-corebreaker
 ```
 
+Run matching scenarios with a fresh disposable Paper server for each scenario. This is slower, but useful when an ordered scenario run exposes state leakage or when you want the cleanest possible plugin-interaction signal:
+
+```powershell
+node src/harness.js scenarios --no-build --fresh-scenarios --scenario=core-command
+```
+
 Build plugin jars first, then run gameplay scenarios in a separate Node process:
 
 ```powershell

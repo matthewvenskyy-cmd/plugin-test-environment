@@ -40,6 +40,11 @@ async function main() {
   if (command === "smoke" || command === "test" || command === "scenarios") {
     await setup(config);
     if (!flags["no-build"]) await buildProjects(config);
+    if (command === "scenarios" && flags["fresh-scenarios"]) {
+      await runFreshScenarios(config);
+      console.log("Scenario tests passed.");
+      return;
+    }
     await prepareServer(config);
     const server = await runServer(config, { interactive: false });
     try {
@@ -325,7 +330,27 @@ async function runBotSmoke(config, server) {
 async function runScenarios(config, server) {
   const scenarios = selectedScenarios(config);
   if (scenarios.length === 0) return;
+  await runScenarioBatch(config, server, scenarios);
+}
 
+async function runFreshScenarios(config) {
+  const scenarios = selectedScenarios(config);
+  if (scenarios.length === 0) return;
+
+  for (const scenarioSpec of scenarios) {
+    await prepareServer(config);
+    const server = await runServer(config, { interactive: false });
+    try {
+      await runConsoleSmoke(config, server);
+      await runScenarioBatch(config, server, [scenarioSpec]);
+      await assertCleanLog(config);
+    } finally {
+      await stopServer(server);
+    }
+  }
+}
+
+async function runScenarioBatch(config, server, scenarios) {
   const bot = await createScenarioBot(config, "ScenarioBot");
   try {
     send(server, "op ScenarioBot");
