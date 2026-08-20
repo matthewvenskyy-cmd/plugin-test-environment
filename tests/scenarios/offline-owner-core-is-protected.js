@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCorebreakerItem, isCoreItem, waitForInventoryItem } from "./helpers.js";
+import { isCorebreakerItem, placeCoreBlock, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Offline owner's core is protected from Corebreaker";
 
@@ -25,23 +25,7 @@ export async function run(ctx) {
   await command("gamemode survival OffCoreOwner", 250);
   await command("gamemode survival ScenarioBot", 250);
 
-  const coreItem = await waitForInventoryItem(owner, isCoreItem, "owner core item");
-  assert(coreItem, "owner did not receive a core item");
-  await owner.equip(coreItem, "hand");
-
-  const support = owner.blockAt(SUPPORT_BLOCK);
-  assert(support?.name === "stone", "support block was not prepared for core placement");
-  await owner.lookAt(CORE_BLOCK.offset(0.5, 0.5, 0.5), true);
-  try {
-    await owner.placeBlock(support, new Vec3(0, 1, 0));
-  } catch (error) {
-    await wait(750);
-    if (owner.blockAt(CORE_BLOCK)?.name !== "beacon") {
-      throw error;
-    }
-  }
-  await wait(1000);
-  assert(owner.blockAt(CORE_BLOCK)?.name === "beacon", "owner core was not placed");
+  await placeCoreBlock(ctx, owner, CORE_BLOCK, SUPPORT_BLOCK, { label: "owner" });
 
   owner.quit("testing offline protection");
   await wait(1000);

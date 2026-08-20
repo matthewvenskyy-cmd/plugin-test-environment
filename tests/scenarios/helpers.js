@@ -74,6 +74,32 @@ export async function placeBiggerCraftingTable(ctx, bot, bctPosition, supportPos
   return placed;
 }
 
+export async function placeCoreBlock(ctx, owner, corePosition, supportPosition, options = {}) {
+  const { assert, wait } = ctx;
+  const label = options.label ?? "owner";
+  const settleMs = options.settleMs ?? 1000;
+
+  const coreItem = await waitForInventoryItem(owner, isCoreItem, `${label} core item`);
+  await owner.equip(coreItem, "hand");
+
+  const support = owner.blockAt(supportPosition);
+  assert(support?.name === "stone", `${label} support block was not prepared for core placement`);
+  await owner.lookAt(corePosition.offset(0.5, 0.5, 0.5), true);
+  try {
+    await owner.placeBlock(support, new Vec3(0, 1, 0));
+  } catch (error) {
+    await wait(750);
+    if (owner.blockAt(corePosition)?.name !== "beacon") {
+      throw error;
+    }
+  }
+  await wait(settleMs);
+
+  const placed = owner.blockAt(corePosition);
+  assert(placed?.name === "beacon", `${label} core was not placed`);
+  return placed;
+}
+
 export function waitForChat(bot, action, pattern, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {

@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCorebreakerItem, isCoreItem, queryCorebreakerCharges, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { isCorebreakerItem, placeCoreBlock, queryCorebreakerCharges, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Corebreaker earned charge breaks player core";
 
@@ -38,8 +38,8 @@ export async function run(ctx) {
   await command("gamemode survival EarnOwnerTwo", 250);
   await wait(1000);
 
-  await placeCore(ctx, firstOwner, FIRST_SUPPORT, FIRST_CORE, "first owner");
-  await placeCore(ctx, secondOwner, SECOND_SUPPORT, SECOND_CORE, "second owner");
+  await placeCoreBlock(ctx, firstOwner, FIRST_CORE, FIRST_SUPPORT, { label: "first owner" });
+  await placeCoreBlock(ctx, secondOwner, SECOND_CORE, SECOND_SUPPORT, { label: "second owner" });
 
   const corebreaker = await waitForInventoryItem(breaker, isCorebreakerItem, "non-op breaker Corebreaker");
   await breaker.equip(corebreaker, "hand");
@@ -63,26 +63,6 @@ export async function run(ctx) {
   await command("clear EarnBreaker", 250);
   await command("clear EarnVictim", 250);
   await command("fill 77 79 -2 81 82 2 minecraft:air", 250);
-}
-
-async function placeCore(ctx, owner, supportPosition, corePosition, label) {
-  const { assert, wait } = ctx;
-  const coreItem = await waitForInventoryItem(owner, isCoreItem, `${label} core item`);
-  await owner.equip(coreItem, "hand");
-
-  const support = owner.blockAt(supportPosition);
-  assert(support?.name === "stone", `${label} support block was not prepared for core placement`);
-  await owner.lookAt(corePosition.offset(0.5, 0.5, 0.5), true);
-  try {
-    await owner.placeBlock(support, new Vec3(0, 1, 0));
-  } catch (error) {
-    await wait(750);
-    if (owner.blockAt(corePosition)?.name !== "beacon") {
-      throw error;
-    }
-  }
-  await wait(1000);
-  assert(owner.blockAt(corePosition)?.name === "beacon", `${label} core was not placed`);
 }
 
 async function breakCore(ctx, breaker, corePosition, label) {
