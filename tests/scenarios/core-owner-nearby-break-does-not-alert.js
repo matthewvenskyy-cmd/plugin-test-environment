@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCoreItem, serverBlockIs, waitForBlock, waitForInventoryItem } from "./helpers.js";
+import { placeCoreBlock, serverBlockIs, waitForBlock, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Core owner nearby break does not alert";
 
@@ -22,20 +22,8 @@ export async function run(ctx) {
     await command("gamemode survival OwnBreakOwner", 250);
     await wait(1000);
 
-    const coreItem = await waitForInventoryItem(owner, isCoreItem, "owner core item");
-    await owner.equip(coreItem, "hand");
-
-    const support = await waitForBlock(owner, SUPPORT_BLOCK, "stone", "core support block");
-    await owner.lookAt(CORE_BLOCK.offset(0.5, 0.5, 0.5), true);
-    try {
-      await owner.placeBlock(support, new Vec3(0, 1, 0));
-    } catch (error) {
-      await wait(750);
-      if (owner.blockAt(CORE_BLOCK)?.name !== "beacon") {
-        throw error;
-      }
-    }
-    await wait(1000);
+    await waitForBlock(owner, SUPPORT_BLOCK, "stone", "core support block");
+    await placeCoreBlock(ctx, owner, CORE_BLOCK, SUPPORT_BLOCK, { label: "owner" });
     assert(await serverBlockIs(ctx, CORE_BLOCK, "beacon"), "owner core should be placed before nearby owner break");
 
     await command("clear OwnBreakOwner minecraft:netherite_pickaxe", 250);

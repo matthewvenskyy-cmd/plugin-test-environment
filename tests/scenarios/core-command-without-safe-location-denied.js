@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCoreItem, serverBlockIs, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { placeCoreBlock, serverBlockIs, waitForChat } from "./helpers.js";
 
 export const name = "Core command without safe location is denied";
 
@@ -26,20 +26,7 @@ export async function run(ctx) {
     await owner.waitForChunksToLoad();
     await wait(1000);
 
-    const coreItem = await waitForInventoryItem(owner, isCoreItem, "owner core item");
-    await owner.equip(coreItem, "hand");
-    const support = owner.blockAt(SUPPORT_BLOCK);
-    assert(support?.name === "stone", "support block was not prepared for core placement");
-    await owner.lookAt(CORE_BLOCK.offset(0.5, 0.5, 0.5), true);
-    try {
-      await owner.placeBlock(support, new Vec3(0, 1, 0));
-    } catch (error) {
-      await wait(750);
-      if (owner.blockAt(CORE_BLOCK)?.name !== "beacon") {
-        throw error;
-      }
-    }
-    await wait(1000);
+    await placeCoreBlock(ctx, owner, CORE_BLOCK, SUPPORT_BLOCK, { label: "owner" });
     assert(await serverBlockIs(ctx, CORE_BLOCK, "beacon"), "owner core was not placed");
 
     await command("fill 211 77 -2 217 84 4 minecraft:stone", 250);
@@ -55,6 +42,8 @@ export async function run(ctx) {
 
     assert(owner.entity.position.distanceTo(awayPosition) < 2, "denied /core should leave the player away from the core");
     assert(await serverBlockIs(ctx, CORE_BLOCK, "beacon"), "denied /core should not modify the placed core");
+    await waitForChat(owner, () => owner.chat("/selfdestruct"), /core selfdestructed/i);
+    await wait(1000);
   } finally {
     await command("kill @e[type=item]", 250);
     await command("fill 211 77 -2 217 84 4 minecraft:air", 250);

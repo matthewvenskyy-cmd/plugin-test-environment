@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { countMatchingItems, isCorebreakerItem, isCoreItem, queryCorebreakerCharges } from "./helpers.js";
+import { countMatchingItems, isCorebreakerItem, placeCoreBlock, queryCorebreakerCharges } from "./helpers.js";
 
 export const name = "Core owner cannot Corebreak own core";
 
@@ -9,7 +9,7 @@ const OWNER_FLOOR = new Vec3(6, 79, 0);
 const BREAK_FLOOR = new Vec3(7, 79, 1);
 
 export async function run(ctx) {
-  const { bot, assert, command, wait, waitForInventory } = ctx;
+  const { bot, assert, command, wait } = ctx;
 
   await command("kill @e[type=item]", 250);
   await command(`setblock ${OWNER_FLOOR.x} ${OWNER_FLOOR.y} ${OWNER_FLOOR.z} minecraft:stone`, 250);
@@ -21,24 +21,7 @@ export async function run(ctx) {
   await command("tp ScenarioBot 6 80 0 0 0", 500);
   await command("gamemode survival ScenarioBot", 250);
 
-  await waitForInventory((items) => items.some(isCoreItem));
-  const coreItem = bot.inventory.items().find(isCoreItem);
-  assert(coreItem, "owner did not have a core item");
-  await bot.equip(coreItem, "hand");
-
-  const support = bot.blockAt(SUPPORT_BLOCK);
-  assert(support?.name === "stone", "support block was not prepared for own-core placement");
-  await bot.lookAt(CORE_BLOCK.offset(0.5, 0.5, 0.5), true);
-  try {
-    await bot.placeBlock(support, new Vec3(0, 1, 0));
-  } catch (error) {
-    await wait(750);
-    if (bot.blockAt(CORE_BLOCK)?.name !== "beacon") {
-      throw error;
-    }
-  }
-  await wait(1000);
-  assert(bot.blockAt(CORE_BLOCK)?.name === "beacon", "own core was not placed");
+  await placeCoreBlock(ctx, bot, CORE_BLOCK, SUPPORT_BLOCK, { label: "own" });
 
   const corebreaker = bot.inventory.items().find(isCorebreakerItem);
   assert(corebreaker, "owner did not have a Corebreaker");
