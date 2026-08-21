@@ -23,6 +23,10 @@ main().catch((error) => {
 
 async function main() {
   const config = await readConfig();
+  if (command === "selftest") {
+    await runSelfTest();
+    return;
+  }
   if (command === "setup") {
     await setup(config);
     return;
@@ -514,6 +518,7 @@ async function writeScenarioFailureArtifact(server, scenarioSpec, name, progress
   ].filter((line) => line !== null).join("\n");
   await fs.writeFile(artifactPath, body);
   console.error(`Scenario failure artifact written to ${artifactPath}`);
+  return artifactPath;
 }
 
 function safeArtifactName(value) {
@@ -553,6 +558,66 @@ function formatItem(item) {
   const display = item.displayName ?? item.customName;
   if (display) parts.push(`display=${JSON.stringify(display)}`);
   return parts.join(" ");
+}
+
+async function runSelfTest() {
+  await fs.mkdir(workDir, { recursive: true });
+  const expected = "&lt;scenario &amp; &quot;bot&quot;&gt;";
+  assertSelf(xmlEscape('<scenario & "bot">') === expected, "xmlEscape should escape XML-sensitive characters");
+
+  const xmlResults = [
+    scenarioResult({ path: "tests/scenarios/pass.js" }, "Pass <case>", "[1/2] pass", Date.now() - 250, "passed"),
+    scenarioResult(
+      { path: "tests/scenarios/expected.js", expectedFailure: true, reason: "known <bug>" },
+      "Expected Failure",
+      "[2/2] expected",
+      Date.now() - 500,
+      "expectedFailure",
+      new Error("expected stack")
+    )
+  ];
+  await writeScenarioJUnitReport(xmlResults);
+  const report = await fs.readFile(path.join(reportsDir, "scenarios.xml"), "utf8");
+  assertSelf(report.includes('tests="2"'), "JUnit report should include the testcase count");
+  assertSelf(report.includes('skipped="1"'), "JUnit report should include expected failures as skipped");
+  assertSelf(report.includes("known &lt;bug&gt;"), "JUnit report should XML-escape expected-failure reasons");
+
+  const artifact = await writeScenarioFailureArtifact(
+    { lines: ["[INFO] first\n", "[ERROR] tail\n"] },
+    { path: "tests/scenarios/failing-case.js" },
+    "Synthetic Failure",
+    "[1/1] failing-case",
+    new Error("synthetic failure"),
+    [fakeBot()]
+  );
+  const artifactText = await fs.readFile(artifact, "utf8");
+  assertSelf(artifactText.includes("Bot snapshots:"), "failure artifact should include bot snapshots");
+  assertSelf(artifactText.includes("ScenarioBot"), "failure artifact should include bot usernames");
+  assertSelf(artifactText.includes("diamond x2"), "failure artifact should include inventory items");
+  assertSelf(artifactText.includes("1.25, 80.00, -3.50"), "failure artifact should include formatted bot positions");
+  console.log("Harness selftest passed.");
+}
+
+function fakeBot() {
+  return {
+    username: "ScenarioBot",
+    player: {},
+    entity: { position: { x: 1.25, y: 80, z: -3.5 } },
+    health: 20,
+    food: 19,
+    game: { gameMode: "survival" },
+    heldItem: { name: "netherite_pickaxe", count: 1, slot: 36, displayName: "Corebreaker" },
+    inventory: {
+      items: () => [
+        { name: "diamond", count: 2, slot: 10 },
+        { name: "crafter", count: 1, slot: 11, displayName: "Bigger Crafting Table" }
+      ]
+    }
+  };
+}
+
+function assertSelf(condition, message) {
+  if (!condition) throw new Error(`Harness selftest failed: ${message}`);
 }
 
 async function createScenarioBot(config, username) {

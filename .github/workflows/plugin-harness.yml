@@ -44,6 +44,9 @@ jobs:
       - name: Install harness dependencies
         run: npm ci
 
+      - name: Run harness selftest
+        run: npm run selftest
+
       - name: Verify sibling plugin folders
         shell: pwsh
         run: |
