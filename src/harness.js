@@ -388,7 +388,7 @@ async function runScenarioBatch(config, server, scenarios) {
             await writeScenarioJUnitReport(results);
             console.log(`Scenario expected failure: ${name} (${scenarioSpec.reason ?? error.message})`);
           } else {
-            await writeScenarioFailureArtifact(server, scenarioSpec, name, progress, error);
+            await writeScenarioFailureArtifact(server, scenarioSpec, name, progress, error, [bot, ...extraBots]);
             results.push(scenarioResult(scenarioSpec, name, progress, started, "failed", error));
             await writeScenarioJUnitReport(results);
             throw error;
@@ -490,7 +490,7 @@ function scenarioProgress(scenario, scenarios) {
   return `[${index}/${scenarios.length}] ${spec.path}`;
 }
 
-async function writeScenarioFailureArtifact(server, scenarioSpec, name, progress, error) {
+async function writeScenarioFailureArtifact(server, scenarioSpec, name, progress, error, bots = []) {
   const failuresDir = path.join(workDir, "failures");
   await fs.mkdir(failuresDir, { recursive: true });
   const filename = `${new Date().toISOString().replace(/[:.]/g, "-")}-${safeArtifactName(scenarioSpec.path)}.txt`;
@@ -506,6 +506,9 @@ async function writeScenarioFailureArtifact(server, scenarioSpec, name, progress
     "Error:",
     error.stack ?? error.message ?? String(error),
     "",
+    "Bot snapshots:",
+    botSnapshots(bots),
+    "",
     "Server log tail:",
     logTail
   ].filter((line) => line !== null).join("\n");
@@ -515,6 +518,41 @@ async function writeScenarioFailureArtifact(server, scenarioSpec, name, progress
 
 function safeArtifactName(value) {
   return value.replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "");
+}
+
+function botSnapshots(bots) {
+  const snapshots = bots.filter(Boolean).map((bot) => {
+    const entity = bot.entity;
+    const position = entity?.position ? formatPosition(entity.position) : "unknown";
+    const held = formatItem(bot.heldItem);
+    const inventory = bot.inventory?.items?.().map(formatItem).join(", ") || "empty";
+    return [
+      `- ${bot.username ?? "unknown"}`,
+      `  connected: ${bot.player ? "yes" : "no"}`,
+      `  position: ${position}`,
+      `  health: ${bot.health ?? "unknown"}`,
+      `  food: ${bot.food ?? "unknown"}`,
+      `  gamemode: ${bot.game?.gameMode ?? "unknown"}`,
+      `  held: ${held}`,
+      `  inventory: ${inventory}`
+    ].join("\n");
+  });
+  return snapshots.length > 0 ? snapshots.join("\n") : "No bot snapshots available.";
+}
+
+function formatPosition(position) {
+  return [position.x, position.y, position.z]
+    .map((value) => Number.isFinite(value) ? value.toFixed(2) : String(value))
+    .join(", ");
+}
+
+function formatItem(item) {
+  if (!item) return "empty";
+  const parts = [`${item.name ?? "unknown"} x${item.count ?? 1}`];
+  if (Number.isInteger(item.slot)) parts.push(`slot=${item.slot}`);
+  const display = item.displayName ?? item.customName;
+  if (display) parts.push(`display=${JSON.stringify(display)}`);
+  return parts.join(" ");
 }
 
 async function createScenarioBot(config, username) {
