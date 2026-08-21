@@ -54,6 +54,8 @@ node src/harness.js scenarios --no-build --fresh-scenarios --scenario=core-comma
 
 Each scenario run also writes a JUnit-compatible report to `.work/reports/scenarios.xml`, so CI systems and IDEs can show the Paper/Mineflayer gameplay checks as normal test results. When a scenario fails, the harness writes a text artifact under `.work/failures/` with the scenario path, error stack, and recent server log tail. Expected-failure scenarios are marked as skipped in the JUnit report, but still fail the suite if they unexpectedly start passing.
 
+The repository includes a manual GitHub Actions workflow in `.github/workflows/plugin-harness.yml`. It targets a self-hosted Windows runner because the harness expects this repo and the plugin projects to exist as sibling folders, matching the local `mine-plugins` workspace. The workflow runs smoke checks, optional selected scenarios, and uploads the JUnit report plus failure/server-log artifacts.
+
 Build plugin jars first, then run gameplay scenarios in a separate Node process:
 
 ```powershell

@@ -5,6 +5,7 @@ import {
   placeBiggerCraftingTable,
   queryDroppedItemEntityCount,
   queryEntityCount,
+  waitForBlock,
   waitForInventoryItem
 } from "./helpers.js";
 
@@ -28,6 +29,7 @@ export async function run(ctx) {
     await command("gamemode creative ScenarioBot", 250);
     await command(`tp ScenarioBot ${FLOOR_BLOCK.x} 80 ${FLOOR_BLOCK.z} 0 0`, 500);
     await command("gamemode survival ScenarioBot", 250);
+    await waitForBlock(bot, SUPPORT_BLOCK, "stone", "BCT support block");
 
     await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK);
     assert(await queryBctDisplays(ctx) === 1, "placing a BCT should create exactly one display entity");

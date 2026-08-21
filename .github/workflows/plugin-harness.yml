@@ -1,0 +1,94 @@
+name: Plugin Harness
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: Optional comma-separated scenario filename fragments.
+        required: false
+        default: ""
+      fresh_scenarios:
+        description: Run each selected scenario on a fresh Paper server.
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+jobs:
+  smoke-and-scenarios:
+    name: Smoke and Paper scenarios
+    runs-on:
+      - self-hosted
+      - windows
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out harness
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Install harness dependencies
+        run: npm ci
+
+      - name: Verify sibling plugin folders
+        shell: pwsh
+        run: |
+          $config = Get-Content test-env.config.json | ConvertFrom-Json
+          $missing = @()
+          foreach ($project in $config.projects) {
+            $path = Resolve-Path -Path $project.path -ErrorAction SilentlyContinue
+            if (-not $path) {
+              $missing += "$($project.name): $($project.path)"
+            }
+          }
+          if ($missing.Count -gt 0) {
+            Write-Error "Missing sibling plugin folders:`n$($missing -join "`n")"
+          }
+
+      - name: Run smoke checks
+        run: npm run smoke
+
+      - name: Run scenario checks
+        shell: pwsh
+        run: |
+          $args = @("src/harness.js", "scenarios", "--no-build")
+          if ("${{ github.event.inputs.fresh_scenarios }}" -eq "true") {
+            $args += "--fresh-scenarios"
+          }
+          if ("${{ github.event.inputs.scenario }}" -ne "") {
+            $args += "--scenario=${{ github.event.inputs.scenario }}"
+          }
+          node @args
+
+      - name: Upload scenario report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-report
+          path: .work/reports/scenarios.xml
+          if-no-files-found: ignore
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-failures
+          path: |
+            .work/failures/**
+            .work/server.log
+            .work/server/logs/**
+          if-no-files-found: ignore
