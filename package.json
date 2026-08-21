@@ -10,6 +10,7 @@
     "server": "node src/harness.js server",
     "test": "npm run selftest && npm run smoke && npm run scenarios",
     "selftest": "node src/harness.js selftest",
+    "list:scenarios": "node src/harness.js list-scenarios",
     "scenarios": "node src/harness.js scenarios --no-build",
     "scenarios:build": "npm run build && npm run scenarios",
     "smoke": "node src/harness.js smoke",

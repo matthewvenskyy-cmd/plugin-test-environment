@@ -45,6 +45,13 @@ Run only gameplay scenario tests:
 npm.cmd run scenarios
 ```
 
+List scenarios without starting Paper:
+
+```powershell
+npm.cmd run list:scenarios
+node src/harness.js list-scenarios --scenario="preserves contents"
+```
+
 Run matching scenarios by filename fragment, exported scenario name, or expected-failure reason text:
 
 ```powershell

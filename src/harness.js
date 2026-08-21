@@ -27,6 +27,10 @@ async function main() {
     await runSelfTest();
     return;
   }
+  if (command === "list-scenarios") {
+    await listScenarios(config);
+    return;
+  }
   if (command === "setup") {
     await setup(config);
     return;
@@ -355,6 +359,27 @@ async function runFreshScenarios(config) {
       await stopServer(server);
     }
   }
+}
+
+async function listScenarios(config) {
+  const scenarios = await selectedScenarios(config);
+  if (scenarios.length === 0) {
+    console.log("No scenarios matched.");
+    return;
+  }
+  for (const scenario of scenarios) {
+    const spec = normalizeScenarioSpec(scenario);
+    const name = await readScenarioName(spec.path);
+    const markers = [
+      spec.manual ? "manual" : null,
+      spec.expectedFailure ? "expected-failure" : null
+    ].filter(Boolean);
+    console.log(`${spec.path}`);
+    console.log(`  name: ${name || path.basename(spec.path)}`);
+    console.log(`  flags: ${markers.length > 0 ? markers.join(", ") : "normal"}`);
+    if (spec.reason) console.log(`  reason: ${spec.reason}`);
+  }
+  console.log(`Matched ${scenarios.length} scenario(s).`);
 }
 
 async function runScenarioBatch(config, server, scenarios) {
