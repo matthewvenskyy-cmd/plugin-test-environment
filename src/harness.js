@@ -333,13 +333,13 @@ async function runBotSmoke(config, server) {
 }
 
 async function runScenarios(config, server) {
-  const scenarios = selectedScenarios(config);
+  const scenarios = await selectedScenarios(config);
   if (scenarios.length === 0) return;
   await runScenarioBatch(config, server, scenarios);
 }
 
 async function runFreshScenarios(config) {
-  const scenarios = selectedScenarios(config);
+  const scenarios = await selectedScenarios(config);
   if (scenarios.length === 0) return;
 
   for (const scenarioSpec of scenarios) {
@@ -469,23 +469,52 @@ function xmlEscape(value) {
     .replace(/'/g, "&apos;");
 }
 
-function selectedScenarios(config) {
+async function selectedScenarios(config) {
   const scenarios = config.scenarios ?? [];
   const selected = flags.scenario;
   if (!selected) {
     return scenarios.filter((scenario) => !normalizeScenarioSpec(scenario).manual);
   }
-  const needles = String(selected).split(",").map((value) => value.trim().toLowerCase());
-  return scenarios.filter((scenario) => {
+  const needles = String(selected).split(",").map((value) => value.trim().toLowerCase()).filter(Boolean);
+  const searchable = await Promise.all(scenarios.map(async (scenario) => {
     const scenarioPath = normalizeScenarioSpec(scenario).path;
-    const normalized = scenarioPath.toLowerCase();
-    const base = path.basename(scenarioPath).toLowerCase();
-    return needles.some((needle) => normalized.includes(needle) || base.includes(needle));
-  });
+    return {
+      scenario,
+      text: await scenarioSearchText(normalizeScenarioSpec(scenario))
+    };
+  }));
+  return searchable
+    .filter(({ text }) => needles.some((needle) => text.includes(needle)))
+    .map(({ scenario }) => scenario);
 }
 
 function normalizeScenarioSpec(scenario) {
   return typeof scenario === "string" ? { path: scenario } : scenario;
+}
+
+async function scenarioSearchText(scenarioSpec) {
+  const scenarioPath = scenarioSpec.path ?? "";
+  const scenarioName = await readScenarioName(scenarioPath);
+  return [
+    scenarioPath,
+    path.basename(scenarioPath),
+    scenarioName,
+    scenarioSpec.reason ?? ""
+  ].join("\n").toLowerCase();
+}
+
+async function readScenarioName(scenarioPath) {
+  try {
+    const source = await fs.readFile(path.resolve(root, scenarioPath), "utf8");
+    return extractScenarioName(source);
+  } catch {
+    return "";
+  }
+}
+
+function extractScenarioName(source) {
+  const match = source.match(/export\s+const\s+name\s*=\s*(['"`])([\s\S]*?)\1\s*;/);
+  return match?.[2] ?? "";
 }
 
 function scenarioProgress(scenario, scenarios) {
@@ -564,6 +593,10 @@ async function runSelfTest() {
   await fs.mkdir(workDir, { recursive: true });
   const expected = "&lt;scenario &amp; &quot;bot&quot;&gt;";
   assertSelf(xmlEscape('<scenario & "bot">') === expected, "xmlEscape should escape XML-sensitive characters");
+  assertSelf(
+    extractScenarioName('export const name = "BCT Corebreaker attempt preserves contents";') === "BCT Corebreaker attempt preserves contents",
+    "extractScenarioName should read exported scenario names"
+  );
 
   const xmlResults = [
     scenarioResult({ path: "tests/scenarios/pass.js" }, "Pass <case>", "[1/2] pass", Date.now() - 250, "passed"),

@@ -45,11 +45,12 @@ Run only gameplay scenario tests:
 npm.cmd run scenarios
 ```
 
-Run one scenario by filename fragment:
+Run matching scenarios by filename fragment, exported scenario name, or expected-failure reason text:
 
 ```powershell
 node src/harness.js scenarios --no-build --scenario=core-owner
 node src/harness.js scenarios --no-build --scenario=bct-corebreaker
+node src/harness.js scenarios --no-build --scenario="preserves contents"
 ```
 
 Run matching scenarios with a fresh disposable Paper server for each scenario. This is slower, but useful when an ordered scenario run exposes state leakage or when you want the cleanest possible plugin-interaction signal:
