@@ -379,7 +379,24 @@ async function listScenarios(config) {
     console.log(`  flags: ${markers.length > 0 ? markers.join(", ") : "normal"}`);
     if (spec.reason) console.log(`  reason: ${spec.reason}`);
   }
-  console.log(`Matched ${scenarios.length} scenario(s).`);
+  console.log(scenarioListSummary(scenarios));
+}
+
+function scenarioListSummary(scenarios) {
+  const counts = scenarios.reduce((totals, scenario) => {
+    const spec = normalizeScenarioSpec(scenario);
+    totals.total += 1;
+    if (spec.manual) totals.manual += 1;
+    if (spec.expectedFailure) totals.expectedFailure += 1;
+    if (!spec.manual && !spec.expectedFailure) totals.normal += 1;
+    return totals;
+  }, { total: 0, normal: 0, manual: 0, expectedFailure: 0 });
+  return [
+    `Matched ${counts.total} scenario(s).`,
+    `normal=${counts.normal}`,
+    `manual=${counts.manual}`,
+    `expected-failure=${counts.expectedFailure}`
+  ].join(" ");
 }
 
 async function runScenarioBatch(config, server, scenarios) {
@@ -621,6 +638,14 @@ async function runSelfTest() {
   assertSelf(
     extractScenarioName('export const name = "BCT Corebreaker attempt preserves contents";') === "BCT Corebreaker attempt preserves contents",
     "extractScenarioName should read exported scenario names"
+  );
+  assertSelf(
+    scenarioListSummary([
+      "tests/scenarios/normal.js",
+      { path: "tests/scenarios/manual.js", manual: true },
+      { path: "tests/scenarios/expected.js", expectedFailure: true }
+    ]) === "Matched 3 scenario(s). normal=1 manual=1 expected-failure=1",
+    "scenarioListSummary should count normal, manual, and expected-failure scenarios"
   );
 
   const xmlResults = [
