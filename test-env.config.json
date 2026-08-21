@@ -126,6 +126,7 @@
     "tests/scenarios/mount-target-kicks-rider.js",
     "tests/scenarios/mount-command-denials.js",
     "tests/scenarios/mount-rider-cannot-bypass-core-protection.js",
+    "tests/scenarios/mount-rider-corebreaker-cannot-break-normal-block.js",
     "tests/scenarios/corebreaker-destroys-player-core.js"
   ],
   "scenarioTimeoutMs": 60000,
