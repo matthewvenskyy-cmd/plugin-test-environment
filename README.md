@@ -50,6 +50,7 @@ List scenarios without starting Paper:
 ```powershell
 npm.cmd run list:scenarios
 node src/harness.js list-scenarios --scenario="preserves contents"
+node src/harness.js list-scenarios --scenario=bct-corebreaker --json
 ```
 
 Run matching scenarios by filename fragment, exported scenario name, or expected-failure reason text:

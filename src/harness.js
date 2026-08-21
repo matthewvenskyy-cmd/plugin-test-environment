@@ -363,26 +363,55 @@ async function runFreshScenarios(config) {
 
 async function listScenarios(config) {
   const scenarios = await selectedScenarios(config);
+  const details = await scenarioListDetails(scenarios);
+  if (flags.json) {
+    console.log(JSON.stringify({
+      summary: scenarioCounts(scenarios),
+      scenarios: details
+    }, null, 2));
+    return;
+  }
   if (scenarios.length === 0) {
     console.log("No scenarios matched.");
     return;
   }
-  for (const scenario of scenarios) {
-    const spec = normalizeScenarioSpec(scenario);
-    const name = await readScenarioName(spec.path);
+  for (const detail of details) {
     const markers = [
-      spec.manual ? "manual" : null,
-      spec.expectedFailure ? "expected-failure" : null
+      detail.manual ? "manual" : null,
+      detail.expectedFailure ? "expected-failure" : null
     ].filter(Boolean);
-    console.log(`${spec.path}`);
-    console.log(`  name: ${name || path.basename(spec.path)}`);
+    console.log(`${detail.path}`);
+    console.log(`  name: ${detail.name || path.basename(detail.path)}`);
     console.log(`  flags: ${markers.length > 0 ? markers.join(", ") : "normal"}`);
-    if (spec.reason) console.log(`  reason: ${spec.reason}`);
+    if (detail.reason) console.log(`  reason: ${detail.reason}`);
   }
   console.log(scenarioListSummary(scenarios));
 }
 
+async function scenarioListDetails(scenarios) {
+  return Promise.all(scenarios.map(async (scenario) => {
+    const spec = normalizeScenarioSpec(scenario);
+    return {
+      path: spec.path,
+      name: await readScenarioName(spec.path),
+      manual: Boolean(spec.manual),
+      expectedFailure: Boolean(spec.expectedFailure),
+      reason: spec.reason ?? ""
+    };
+  }));
+}
+
 function scenarioListSummary(scenarios) {
+  const counts = scenarioCounts(scenarios);
+  return [
+    `Matched ${counts.total} scenario(s).`,
+    `normal=${counts.normal}`,
+    `manual=${counts.manual}`,
+    `expected-failure=${counts.expectedFailure}`
+  ].join(" ");
+}
+
+function scenarioCounts(scenarios) {
   const counts = scenarios.reduce((totals, scenario) => {
     const spec = normalizeScenarioSpec(scenario);
     totals.total += 1;
@@ -391,12 +420,7 @@ function scenarioListSummary(scenarios) {
     if (!spec.manual && !spec.expectedFailure) totals.normal += 1;
     return totals;
   }, { total: 0, normal: 0, manual: 0, expectedFailure: 0 });
-  return [
-    `Matched ${counts.total} scenario(s).`,
-    `normal=${counts.normal}`,
-    `manual=${counts.manual}`,
-    `expected-failure=${counts.expectedFailure}`
-  ].join(" ");
+  return counts;
 }
 
 async function runScenarioBatch(config, server, scenarios) {
@@ -646,6 +670,10 @@ async function runSelfTest() {
       { path: "tests/scenarios/expected.js", expectedFailure: true }
     ]) === "Matched 3 scenario(s). normal=1 manual=1 expected-failure=1",
     "scenarioListSummary should count normal, manual, and expected-failure scenarios"
+  );
+  assertSelf(
+    scenarioCounts([{ path: "a.js" }, { path: "b.js", expectedFailure: true }]).expectedFailure === 1,
+    "scenarioCounts should expose machine-readable expected-failure counts"
   );
 
   const xmlResults = [
