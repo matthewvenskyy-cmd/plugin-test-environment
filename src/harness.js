@@ -9,6 +9,7 @@ const root = path.resolve(".");
 const workDir = path.join(root, ".work");
 const cacheDir = path.join(workDir, "cache");
 const serverDir = path.join(workDir, "server");
+const reportsDir = path.join(workDir, "reports");
 const logFile = path.join(workDir, "server.log");
 const configPath = path.join(root, "test-env.config.json");
 
@@ -354,6 +355,7 @@ async function runFreshScenarios(config) {
 
 async function runScenarioBatch(config, server, scenarios) {
   const bot = await createScenarioBot(config, "ScenarioBot");
+  const results = [];
   try {
     send(server, "op ScenarioBot");
     await delay(1000);
@@ -365,6 +367,7 @@ async function runScenarioBatch(config, server, scenarios) {
       const name = scenario.name ?? path.basename(scenarioSpec.path);
       const progress = scenarioProgress(scenarioPath, scenarios);
       console.log(`Scenario ${progress}: ${name}`);
+      const started = Date.now();
       try {
         try {
           await withTimeout(
@@ -374,15 +377,20 @@ async function runScenarioBatch(config, server, scenarios) {
           );
           if (scenarioSpec.expectedFailure) {
             const error = new Error(`Scenario unexpectedly passed: ${name}. Expected failure: ${scenarioSpec.reason ?? "no reason provided"}`);
-            await writeScenarioFailureArtifact(server, scenarioSpec, name, progress, error);
             throw error;
           }
+          results.push(scenarioResult(scenarioSpec, name, progress, started, "passed"));
+          await writeScenarioJUnitReport(results);
           console.log(`Scenario passed: ${name}`);
         } catch (error) {
           if (scenarioSpec.expectedFailure && !error.message.startsWith("Scenario unexpectedly passed:")) {
+            results.push(scenarioResult(scenarioSpec, name, progress, started, "expectedFailure", error));
+            await writeScenarioJUnitReport(results);
             console.log(`Scenario expected failure: ${name} (${scenarioSpec.reason ?? error.message})`);
           } else {
             await writeScenarioFailureArtifact(server, scenarioSpec, name, progress, error);
+            results.push(scenarioResult(scenarioSpec, name, progress, started, "failed", error));
+            await writeScenarioJUnitReport(results);
             throw error;
           }
         }
@@ -397,6 +405,64 @@ async function runScenarioBatch(config, server, scenarios) {
     bot.quit("scenario tests complete");
     await delay(1000);
   }
+}
+
+function scenarioResult(scenarioSpec, name, progress, started, status, error = null) {
+  return {
+    name,
+    progress,
+    path: scenarioSpec.path,
+    expectedFailure: Boolean(scenarioSpec.expectedFailure),
+    reason: scenarioSpec.reason ?? "",
+    status,
+    timeMs: Date.now() - started,
+    error
+  };
+}
+
+async function writeScenarioJUnitReport(results) {
+  await fs.mkdir(reportsDir, { recursive: true });
+  const failures = results.filter((result) => result.status === "failed").length;
+  const skipped = results.filter((result) => result.status === "expectedFailure").length;
+  const testcases = results.map((result) => {
+    const attributes = [
+      `classname="minecraft.scenarios"`,
+      `name="${xmlEscape(result.name)}"`,
+      `time="${(result.timeMs / 1000).toFixed(3)}"`
+    ].join(" ");
+    const properties = [
+      `      <property name="path" value="${xmlEscape(result.path)}"/>`,
+      `      <property name="progress" value="${xmlEscape(result.progress)}"/>`,
+      `      <property name="expectedFailure" value="${result.expectedFailure ? "true" : "false"}"/>`,
+      result.reason ? `      <property name="reason" value="${xmlEscape(result.reason)}"/>` : null
+    ].filter(Boolean).join("\n");
+    if (result.status === "passed") {
+      return `    <testcase ${attributes}>\n      <properties>\n${properties}\n      </properties>\n    </testcase>`;
+    }
+    if (result.status === "expectedFailure") {
+      const message = result.reason || result.error?.message || "expected failure";
+      return `    <testcase ${attributes}>\n      <properties>\n${properties}\n      </properties>\n      <skipped message="${xmlEscape(message)}">${xmlEscape(result.error?.stack ?? result.error?.message ?? message)}</skipped>\n    </testcase>`;
+    }
+    const message = result.error?.message ?? "scenario failed";
+    return `    <testcase ${attributes}>\n      <properties>\n${properties}\n      </properties>\n      <failure message="${xmlEscape(message)}">${xmlEscape(result.error?.stack ?? message)}</failure>\n    </testcase>`;
+  }).join("\n");
+  const xml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    `<testsuite name="minecraft-plugin-scenarios" tests="${results.length}" failures="${failures}" errors="0" skipped="${skipped}">`,
+    testcases,
+    "</testsuite>",
+    ""
+  ].join("\n");
+  await fs.writeFile(path.join(reportsDir, "scenarios.xml"), xml);
+}
+
+function xmlEscape(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
 function selectedScenarios(config) {

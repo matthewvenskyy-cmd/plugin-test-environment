@@ -52,7 +52,7 @@ Run matching scenarios with a fresh disposable Paper server for each scenario. T
 node src/harness.js scenarios --no-build --fresh-scenarios --scenario=core-command
 ```
 
-When a scenario fails, the harness writes a text artifact under `.work/failures/` with the scenario path, error stack, and recent server log tail. Expected-failure scenarios still fail the suite if they unexpectedly start passing.
+Each scenario run also writes a JUnit-compatible report to `.work/reports/scenarios.xml`, so CI systems and IDEs can show the Paper/Mineflayer gameplay checks as normal test results. When a scenario fails, the harness writes a text artifact under `.work/failures/` with the scenario path, error stack, and recent server log tail. Expected-failure scenarios are marked as skipped in the JUnit report, but still fail the suite if they unexpectedly start passing.
 
 Build plugin jars first, then run gameplay scenarios in a separate Node process:
 
