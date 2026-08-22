@@ -123,6 +123,7 @@
     "tests/scenarios/mount-target-already-ridden-denied.js",
     "tests/scenarios/mount-rider-logout-releases-target.js",
     "tests/scenarios/mount-target-logout-releases-rider.js",
+    "tests/scenarios/mount-target-death-releases-rider.js",
     "tests/scenarios/mount-target-kicks-rider.js",
     "tests/scenarios/mount-command-denials.js",
     "tests/scenarios/mount-rider-breakcore-denies-non-op.js",
