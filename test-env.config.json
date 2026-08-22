@@ -130,6 +130,7 @@
     "tests/scenarios/mount-rider-breakcore-denies-non-op.js",
     "tests/scenarios/mount-rider-bound-items-cannot-drop.js",
     "tests/scenarios/mount-rider-bound-items-do-not-drop-on-death.js",
+    "tests/scenarios/mount-target-bound-items-do-not-drop-on-death.js",
     "tests/scenarios/mount-rider-cannot-bypass-core-protection.js",
     "tests/scenarios/mount-rider-cannot-place-another-players-core.js",
     "tests/scenarios/mount-rider-corebreaker-cannot-break-normal-block.js",
