@@ -129,6 +129,7 @@
     "tests/scenarios/mount-command-denials.js",
     "tests/scenarios/mount-rider-breakcore-denies-non-op.js",
     "tests/scenarios/mount-rider-bound-items-cannot-drop.js",
+    "tests/scenarios/mount-target-bound-items-cannot-drop.js",
     "tests/scenarios/mount-rider-bound-items-do-not-drop-on-death.js",
     "tests/scenarios/mount-target-bound-items-do-not-drop-on-death.js",
     "tests/scenarios/mount-rider-cannot-bypass-core-protection.js",
