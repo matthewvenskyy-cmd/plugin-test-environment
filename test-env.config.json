@@ -134,6 +134,7 @@
     "tests/scenarios/mount-target-bound-items-do-not-drop-on-death.js",
     "tests/scenarios/mount-rider-cannot-bypass-core-protection.js",
     "tests/scenarios/mount-rider-cannot-place-another-players-core.js",
+    "tests/scenarios/mount-target-cannot-place-another-players-core.js",
     "tests/scenarios/mount-rider-corebreaker-cannot-break-normal-block.js",
     "tests/scenarios/mount-target-corebreaker-cannot-break-normal-block.js",
     "tests/scenarios/mount-rider-corebreaker-cannot-duplicate-bct.js",
