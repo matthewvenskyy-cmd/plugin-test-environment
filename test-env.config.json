@@ -137,6 +137,7 @@
       "reason": "CorePlugin currently allows a mounted rider to hotbar-swap a Corebreaker into a chest."
     },
     "tests/scenarios/mount-rider-bound-items-cannot-store-in-bct.js",
+    "tests/scenarios/mount-rider-bound-items-cannot-hotbar-swap-into-bct.js",
     "tests/scenarios/mount-target-bound-items-cannot-drop.js",
     "tests/scenarios/mount-target-bound-items-cannot-store-in-chest.js",
     "tests/scenarios/mount-target-bound-items-cannot-hotbar-swap-into-chest.js",
