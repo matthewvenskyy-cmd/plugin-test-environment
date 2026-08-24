@@ -131,6 +131,11 @@
     "tests/scenarios/mount-target-breakcore-denies-non-op.js",
     "tests/scenarios/mount-rider-bound-items-cannot-drop.js",
     "tests/scenarios/mount-rider-bound-items-cannot-store-in-chest.js",
+    {
+      "path": "tests/scenarios/mount-rider-bound-items-cannot-hotbar-swap-into-chest.js",
+      "expectedFailure": true,
+      "reason": "CorePlugin currently allows a mounted rider to hotbar-swap a Corebreaker into a chest."
+    },
     "tests/scenarios/mount-rider-bound-items-cannot-store-in-bct.js",
     "tests/scenarios/mount-target-bound-items-cannot-drop.js",
     "tests/scenarios/mount-target-bound-items-cannot-store-in-chest.js",
