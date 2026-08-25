@@ -127,6 +127,7 @@
     "tests/scenarios/mount-target-death-releases-rider.js",
     "tests/scenarios/mount-target-kicks-rider.js",
     "tests/scenarios/mount-command-denials.js",
+    "tests/scenarios/mount-rider-class-item-selects-class.js",
     "tests/scenarios/mount-rider-breakcore-denies-non-op.js",
     "tests/scenarios/mount-target-breakcore-denies-non-op.js",
     "tests/scenarios/mount-rider-bound-items-cannot-drop.js",
