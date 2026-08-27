@@ -136,6 +136,7 @@
     "tests/scenarios/mount-rider-necromancer-night-speed.js",
     "tests/scenarios/mount-target-necromancer-night-speed.js",
     "tests/scenarios/mount-rider-dark-mage-death-affects-nearby.js",
+    "tests/scenarios/mount-target-dark-mage-death-affects-nearby.js",
     "tests/scenarios/mount-rider-breakcore-denies-non-op.js",
     "tests/scenarios/mount-target-breakcore-denies-non-op.js",
     "tests/scenarios/mount-rider-bound-items-cannot-drop.js",
