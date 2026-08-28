@@ -135,6 +135,7 @@
     "tests/scenarios/mount-target-light-knight-speed-boost.js",
     "tests/scenarios/mount-rider-necromancer-night-speed.js",
     "tests/scenarios/mount-target-necromancer-night-speed.js",
+    "tests/scenarios/mount-rider-necromancer-reduces-melee-damage.js",
     "tests/scenarios/mount-target-necromancer-reduces-melee-damage.js",
     "tests/scenarios/mount-rider-knight-sword-reduces-incoming-damage.js",
     "tests/scenarios/mount-target-knight-sword-reduces-incoming-damage.js",
