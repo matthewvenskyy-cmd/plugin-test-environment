@@ -129,6 +129,7 @@
     "tests/scenarios/mount-command-denials.js",
     "tests/scenarios/mount-rider-class-item-selects-class.js",
     "tests/scenarios/mount-target-class-item-selects-class.js",
+    "tests/scenarios/mount-rider-basic-mage-melee-reduces-damage.js",
     "tests/scenarios/mount-rider-heavy-knight-speed-penalty.js",
     "tests/scenarios/mount-target-heavy-knight-speed-penalty.js",
     "tests/scenarios/mount-rider-light-knight-speed-boost.js",
