@@ -135,6 +135,7 @@
     "tests/scenarios/mount-target-light-knight-speed-boost.js",
     "tests/scenarios/mount-rider-necromancer-night-speed.js",
     "tests/scenarios/mount-target-necromancer-night-speed.js",
+    "tests/scenarios/mount-target-necromancer-reduces-melee-damage.js",
     "tests/scenarios/mount-rider-dark-mage-death-affects-nearby.js",
     "tests/scenarios/mount-target-dark-mage-death-affects-nearby.js",
     "tests/scenarios/mount-rider-divine-mage-death-affects-nearby.js",
