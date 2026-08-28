@@ -45,6 +45,7 @@ async function measureIncomingDamage(ctx, label) {
   const { assert, command, wait } = ctx;
   await command("effect clear SwordDefender", 250);
   await command("attribute SwordDefender minecraft:max_health base set 40", 250);
+  await command("effect give SwordDefender minecraft:instant_health 1 10 true", 250);
   await command("tp SwordDefender 62 80 1 180 0", 250);
   await command("tp SwordAttacker 62 80 0 0 0", 250);
   await wait(750);
@@ -64,9 +65,14 @@ async function measureIncomingDamage(ctx, label) {
 
 async function health(ctx, playerName) {
   const output = await ctx.command(`data get entity ${playerName} Health`, 500);
-  const match = output.match(/Health:?\s*([\d.]+)f?/i) || output.match(/entity data:\s*([\d.]+)f?/i);
+  const cleanOutput = stripAnsi(output);
+  const match = cleanOutput.match(/Health:?\s*([\d.]+)f?/i) || cleanOutput.match(/entity data:\s*([\d.]+)f?/i);
   if (!match) {
     throw new Error(`Could not parse ${playerName} health from command output: ${output}`);
   }
   return Number(match[1]);
+}
+
+function stripAnsi(value) {
+  return value.replace(/\u001b\[[0-9;]*m/g, "");
 }
