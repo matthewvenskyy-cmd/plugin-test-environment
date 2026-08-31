@@ -129,6 +129,7 @@
     "tests/scenarios/mount-command-denials.js",
     "tests/scenarios/mount-rider-class-item-selects-class.js",
     "tests/scenarios/mount-target-class-item-selects-class.js",
+    "tests/scenarios/mount-rider-archer-stillness-grants-invisibility.js",
     "tests/scenarios/mount-rider-basic-mage-melee-reduces-damage.js",
     "tests/scenarios/mount-target-basic-mage-melee-reduces-damage.js",
     "tests/scenarios/mount-rider-viking-axe-increases-damage.js",
