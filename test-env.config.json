@@ -133,6 +133,7 @@
     "tests/scenarios/mount-target-basic-mage-melee-reduces-damage.js",
     "tests/scenarios/mount-rider-viking-axe-increases-damage.js",
     "tests/scenarios/mount-target-viking-axe-increases-damage.js",
+    "tests/scenarios/mount-rider-viking-kill-grants-corebreaker-charge.js",
     "tests/scenarios/mount-rider-heavy-knight-speed-penalty.js",
     "tests/scenarios/mount-target-heavy-knight-speed-penalty.js",
     "tests/scenarios/mount-rider-light-knight-speed-boost.js",
