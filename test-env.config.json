@@ -131,6 +131,11 @@
     "tests/scenarios/mount-target-class-item-selects-class.js",
     "tests/scenarios/mount-rider-archer-stillness-grants-invisibility.js",
     "tests/scenarios/mount-target-archer-stillness-grants-invisibility.js",
+    {
+      "path": "tests/scenarios/mount-rider-archer-movement-clears-invisibility.js",
+      "expectedFailure": true,
+      "reason": "ClassesPlugin currently leaves Archer Invisibility active after teleport-style movement while mounted."
+    },
     "tests/scenarios/mount-rider-basic-mage-melee-reduces-damage.js",
     "tests/scenarios/mount-target-basic-mage-melee-reduces-damage.js",
     "tests/scenarios/mount-rider-viking-axe-increases-damage.js",
