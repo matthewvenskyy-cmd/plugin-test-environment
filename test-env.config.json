@@ -152,6 +152,11 @@
       "expectedFailure": true,
       "reason": "ClassesPlugin currently does not apply Viking Shield bash damage from a real shield right-click while mounted."
     },
+    {
+      "path": "tests/scenarios/mount-target-viking-shield-bashes-target.js",
+      "expectedFailure": true,
+      "reason": "ClassesPlugin currently does not apply Viking Shield bash damage from a real shield right-click while ridden."
+    },
     "tests/scenarios/mount-rider-heavy-knight-speed-penalty.js",
     "tests/scenarios/mount-target-heavy-knight-speed-penalty.js",
     "tests/scenarios/mount-rider-light-knight-speed-boost.js",
