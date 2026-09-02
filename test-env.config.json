@@ -147,6 +147,11 @@
     "tests/scenarios/mount-target-viking-axe-increases-damage.js",
     "tests/scenarios/mount-rider-viking-kill-grants-corebreaker-charge.js",
     "tests/scenarios/mount-target-viking-kill-grants-corebreaker-charge.js",
+    {
+      "path": "tests/scenarios/mount-rider-viking-shield-bashes-target.js",
+      "expectedFailure": true,
+      "reason": "ClassesPlugin currently does not apply Viking Shield bash damage from a real shield right-click while mounted."
+    },
     "tests/scenarios/mount-rider-heavy-knight-speed-penalty.js",
     "tests/scenarios/mount-target-heavy-knight-speed-penalty.js",
     "tests/scenarios/mount-rider-light-knight-speed-boost.js",

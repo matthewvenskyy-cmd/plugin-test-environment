@@ -55,9 +55,14 @@ export async function run(ctx) {
 
 async function health(ctx, playerName) {
   const output = await ctx.command(`data get entity ${playerName} Health`, 500);
-  const match = output.match(/Health:?\s*([\d.]+)f?/i) || output.match(/entity data:\s*([\d.]+)f?/i);
+  const cleanOutput = stripAnsi(output);
+  const match = cleanOutput.match(/Health:?\s*([\d.]+)f?/i) || cleanOutput.match(/entity data:\s*([\d.]+)f?/i);
   if (!match) {
     throw new Error(`Could not parse ${playerName} health from command output: ${output}`);
   }
   return Number(match[1]);
+}
+
+function stripAnsi(value) {
+  return value.replace(/\u001b\[[0-9;]*m/g, "");
 }
