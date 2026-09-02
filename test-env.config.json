@@ -166,6 +166,11 @@
       "expectedFailure": true,
       "reason": "ClassesPlugin currently does not apply Necromancer darkness from a real staff right-click while mounted."
     },
+    {
+      "path": "tests/scenarios/mount-target-necromancer-darkness-blinds-target.js",
+      "expectedFailure": true,
+      "reason": "ClassesPlugin currently does not apply Necromancer darkness from a real staff right-click while ridden."
+    },
     "tests/scenarios/mount-rider-necromancer-night-speed.js",
     "tests/scenarios/mount-target-necromancer-night-speed.js",
     "tests/scenarios/mount-rider-necromancer-reduces-melee-damage.js",
