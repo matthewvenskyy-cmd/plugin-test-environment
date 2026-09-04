@@ -210,6 +210,7 @@
     "tests/scenarios/mount-rider-corebreaker-cannot-break-normal-block.js",
     "tests/scenarios/mount-target-corebreaker-cannot-break-normal-block.js",
     "tests/scenarios/mount-rider-corebreaker-without-charges-cannot-break-core.js",
+    "tests/scenarios/mount-target-corebreaker-without-charges-cannot-break-core.js",
     "tests/scenarios/mount-rider-corebreaker-cannot-duplicate-bct.js",
     "tests/scenarios/mount-target-corebreaker-cannot-duplicate-bct.js",
     "tests/scenarios/corebreaker-destroys-player-core.js"
