@@ -212,6 +212,7 @@
     "tests/scenarios/mount-rider-corebreaker-without-charges-cannot-break-core.js",
     "tests/scenarios/mount-target-corebreaker-without-charges-cannot-break-core.js",
     "tests/scenarios/mount-rider-corebreaker-earned-charge-breaks-core.js",
+    "tests/scenarios/mount-target-corebreaker-earned-charge-breaks-core.js",
     "tests/scenarios/mount-rider-corebreaker-cannot-duplicate-bct.js",
     "tests/scenarios/mount-target-corebreaker-cannot-duplicate-bct.js",
     "tests/scenarios/corebreaker-destroys-player-core.js"
