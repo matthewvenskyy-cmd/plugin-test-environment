@@ -397,7 +397,7 @@ async function listExpectedFailures(config) {
   const details = await scenarioListDetails(scenarios);
   if (flags.json) {
     console.log(JSON.stringify({
-      summary: scenarioCounts(scenarios),
+      summary: expectedFailureSummary(details),
       expectedFailures: details
     }, null, 2));
     return;
@@ -406,10 +406,14 @@ async function listExpectedFailures(config) {
     console.log("No expected-failure scenarios matched.");
     return;
   }
-  for (const detail of details) {
-    console.log(`${detail.name || path.basename(detail.path)}`);
-    console.log(`  path: ${detail.path}`);
-    if (detail.reason) console.log(`  reason: ${detail.reason}`);
+  const grouped = groupExpectedFailuresByArea(details);
+  for (const [area, areaDetails] of Object.entries(grouped)) {
+    console.log(`${area} (${areaDetails.length})`);
+    for (const detail of areaDetails) {
+      console.log(`  ${detail.name || path.basename(detail.path)}`);
+      console.log(`    path: ${detail.path}`);
+      if (detail.reason) console.log(`    reason: ${detail.reason}`);
+    }
   }
   console.log(scenarioListSummary(scenarios));
 }
@@ -422,7 +426,8 @@ async function scenarioListDetails(scenarios) {
       name: await readScenarioName(spec.path),
       manual: Boolean(spec.manual),
       expectedFailure: Boolean(spec.expectedFailure),
-      reason: spec.reason ?? ""
+      reason: spec.reason ?? "",
+      area: spec.area ?? inferScenarioArea(spec)
     };
   }));
 }
@@ -451,6 +456,39 @@ function scenarioCounts(scenarios) {
 
 function expectedFailureScenarios(scenarios) {
   return scenarios.filter((scenario) => normalizeScenarioSpec(scenario).expectedFailure);
+}
+
+function expectedFailureSummary(details) {
+  return {
+    ...scenarioCounts(details),
+    byArea: Object.fromEntries(
+      Object.entries(groupExpectedFailuresByArea(details)).map(([area, areaDetails]) => [area, areaDetails.length])
+    )
+  };
+}
+
+function groupExpectedFailuresByArea(details) {
+  return details.reduce((groups, detail) => {
+    const area = detail.area ?? inferScenarioArea(detail);
+    groups[area] ??= [];
+    groups[area].push(detail);
+    return groups;
+  }, {});
+}
+
+function inferScenarioArea(scenarioSpec) {
+  const text = [
+    scenarioSpec.reason ?? "",
+    scenarioSpec.path ?? ""
+  ].join("\n").toLowerCase();
+  const knownAreas = [
+    ["BiggerCraftingTable", ["bigger crafting table", "biggercraftingtable", "bct"]],
+    ["CorePlugin", ["coreplugin", "corebreaker", "core"]],
+    ["ClassesPlugin", ["classesplugin", "archer", "viking", "necromancer"]],
+    ["FireworksElytraPlugin", ["firework", "rocketlytra", "elytra"]],
+    ["MountPlugin", ["mount", "mounted", "rider", "ridden"]]
+  ];
+  return knownAreas.find(([, tokens]) => tokens.some((token) => text.includes(token)))?.[0] ?? "Other";
 }
 
 async function runScenarioBatch(config, server, scenarios) {
@@ -722,6 +760,20 @@ async function runSelfTest() {
       { path: "tests/scenarios/expected.js", expectedFailure: true }
     ]).length === 1,
     "expectedFailureScenarios should filter expected-failure scenarios"
+  );
+  assertSelf(
+    inferScenarioArea({
+      path: "tests/scenarios/mount-rider-bct-corebreaker-preserves-contents.js",
+      reason: "Bigger Crafting Table currently loses stored contents."
+    }) === "BiggerCraftingTable",
+    "inferScenarioArea should prefer the failure owner over mounted context"
+  );
+  assertSelf(
+    expectedFailureSummary([
+      { path: "tests/scenarios/a.js", expectedFailure: true, area: "CorePlugin" },
+      { path: "tests/scenarios/b.js", expectedFailure: true, area: "CorePlugin" }
+    ]).byArea.CorePlugin === 2,
+    "expectedFailureSummary should count failures by area"
   );
 
   const xmlResults = [

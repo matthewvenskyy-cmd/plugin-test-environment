@@ -53,7 +53,7 @@ node src/harness.js list-scenarios --scenario="preserves contents"
 node src/harness.js list-scenarios --scenario=bct-corebreaker --json
 ```
 
-List only tracked expected-failure gameplay regressions without starting Paper:
+List tracked expected-failure gameplay regressions, grouped by plugin area, without starting Paper:
 
 ```powershell
 npm.cmd run list:expected-failures
