@@ -72,6 +72,7 @@
     "tests/scenarios/mount-target-duplicate-kill-does-not-add-corebreaker-charge.js",
     "tests/scenarios/corebreaker-item-updates-after-kill.js",
     "tests/scenarios/mount-rider-corebreaker-item-updates-after-kill.js",
+    "tests/scenarios/mount-target-corebreaker-item-updates-after-kill.js",
     "tests/scenarios/classes-viking-kill-grants-corebreaker-charge.js",
     "tests/scenarios/corebreaker-earned-charge-breaks-core.js",
     "tests/scenarios/corebreaker-op-unlimited-breaks-two-cores.js",
