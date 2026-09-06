@@ -11,6 +11,7 @@
     "test": "npm run selftest && npm run smoke && npm run scenarios",
     "selftest": "node src/harness.js selftest",
     "list:scenarios": "node src/harness.js list-scenarios",
+    "list:expected-failures": "node src/harness.js list-expected-failures",
     "scenarios": "node src/harness.js scenarios --no-build",
     "scenarios:build": "npm run build && npm run scenarios",
     "smoke": "node src/harness.js smoke",

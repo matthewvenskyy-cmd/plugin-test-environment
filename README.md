@@ -53,6 +53,13 @@ node src/harness.js list-scenarios --scenario="preserves contents"
 node src/harness.js list-scenarios --scenario=bct-corebreaker --json
 ```
 
+List only tracked expected-failure gameplay regressions without starting Paper:
+
+```powershell
+npm.cmd run list:expected-failures
+node src/harness.js list-expected-failures --scenario=mounted --json
+```
+
 Run matching scenarios by filename fragment, exported scenario name, or expected-failure reason text:
 
 ```powershell

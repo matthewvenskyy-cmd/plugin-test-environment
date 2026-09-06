@@ -31,6 +31,10 @@ async function main() {
     await listScenarios(config);
     return;
   }
+  if (command === "list-expected-failures") {
+    await listExpectedFailures(config);
+    return;
+  }
   if (command === "setup") {
     await setup(config);
     return;
@@ -388,6 +392,28 @@ async function listScenarios(config) {
   console.log(scenarioListSummary(scenarios));
 }
 
+async function listExpectedFailures(config) {
+  const scenarios = expectedFailureScenarios(await selectedScenarios(config));
+  const details = await scenarioListDetails(scenarios);
+  if (flags.json) {
+    console.log(JSON.stringify({
+      summary: scenarioCounts(scenarios),
+      expectedFailures: details
+    }, null, 2));
+    return;
+  }
+  if (details.length === 0) {
+    console.log("No expected-failure scenarios matched.");
+    return;
+  }
+  for (const detail of details) {
+    console.log(`${detail.name || path.basename(detail.path)}`);
+    console.log(`  path: ${detail.path}`);
+    if (detail.reason) console.log(`  reason: ${detail.reason}`);
+  }
+  console.log(scenarioListSummary(scenarios));
+}
+
 async function scenarioListDetails(scenarios) {
   return Promise.all(scenarios.map(async (scenario) => {
     const spec = normalizeScenarioSpec(scenario);
@@ -421,6 +447,10 @@ function scenarioCounts(scenarios) {
     return totals;
   }, { total: 0, normal: 0, manual: 0, expectedFailure: 0 });
   return counts;
+}
+
+function expectedFailureScenarios(scenarios) {
+  return scenarios.filter((scenario) => normalizeScenarioSpec(scenario).expectedFailure);
 }
 
 async function runScenarioBatch(config, server, scenarios) {
@@ -685,6 +715,13 @@ async function runSelfTest() {
   assertSelf(
     scenarioCounts([{ path: "a.js" }, { path: "b.js", expectedFailure: true }]).expectedFailure === 1,
     "scenarioCounts should expose machine-readable expected-failure counts"
+  );
+  assertSelf(
+    expectedFailureScenarios([
+      "tests/scenarios/normal.js",
+      { path: "tests/scenarios/expected.js", expectedFailure: true }
+    ]).length === 1,
+    "expectedFailureScenarios should filter expected-failure scenarios"
   );
 
   const xmlResults = [
