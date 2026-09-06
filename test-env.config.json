@@ -36,6 +36,11 @@
       "expectedFailure": true,
       "reason": "Bigger Crafting Table currently loses stored contents after a cancelled Corebreaker break attempt."
     },
+    {
+      "path": "tests/scenarios/mount-rider-bct-corebreaker-preserves-contents.js",
+      "expectedFailure": true,
+      "reason": "Bigger Crafting Table currently loses stored contents after a mounted rider's cancelled Corebreaker break attempt."
+    },
     "tests/scenarios/bct-display-lifecycle.js",
     "tests/scenarios/core-cannot-place-another-player-core.js",
     "tests/scenarios/core-cannot-place-on-beacon-base.js",

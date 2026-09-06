@@ -453,10 +453,11 @@ async function runScenarioBatch(config, server, scenarios) {
           await writeScenarioJUnitReport(results);
           console.log(`Scenario passed: ${name}`);
         } catch (error) {
-          if (scenarioSpec.expectedFailure && !error.message.startsWith("Scenario unexpectedly passed:")) {
+          const message = errorMessage(error);
+          if (scenarioSpec.expectedFailure && !message.startsWith("Scenario unexpectedly passed:")) {
             results.push(scenarioResult(scenarioSpec, name, progress, started, "expectedFailure", error));
             await writeScenarioJUnitReport(results);
-            console.log(`Scenario expected failure: ${name} (${scenarioSpec.reason ?? error.message})`);
+            console.log(`Scenario expected failure: ${name} (${scenarioSpec.reason ?? message})`);
           } else {
             await writeScenarioFailureArtifact(server, scenarioSpec, name, progress, error, [bot, ...extraBots]);
             results.push(scenarioResult(scenarioSpec, name, progress, started, "failed", error));
@@ -510,11 +511,11 @@ async function writeScenarioJUnitReport(results) {
       return `    <testcase ${attributes}>\n      <properties>\n${properties}\n      </properties>\n    </testcase>`;
     }
     if (result.status === "expectedFailure") {
-      const message = result.reason || result.error?.message || "expected failure";
-      return `    <testcase ${attributes}>\n      <properties>\n${properties}\n      </properties>\n      <skipped message="${xmlEscape(message)}">${xmlEscape(result.error?.stack ?? result.error?.message ?? message)}</skipped>\n    </testcase>`;
+      const message = result.reason || errorMessage(result.error) || "expected failure";
+      return `    <testcase ${attributes}>\n      <properties>\n${properties}\n      </properties>\n      <skipped message="${xmlEscape(message)}">${xmlEscape(errorStack(result.error) ?? message)}</skipped>\n    </testcase>`;
     }
-    const message = result.error?.message ?? "scenario failed";
-    return `    <testcase ${attributes}>\n      <properties>\n${properties}\n      </properties>\n      <failure message="${xmlEscape(message)}">${xmlEscape(result.error?.stack ?? message)}</failure>\n    </testcase>`;
+    const message = errorMessage(result.error) || "scenario failed";
+    return `    <testcase ${attributes}>\n      <properties>\n${properties}\n      </properties>\n      <failure message="${xmlEscape(message)}">${xmlEscape(errorStack(result.error) ?? message)}</failure>\n    </testcase>`;
   }).join("\n");
   const xml = [
     '<?xml version="1.0" encoding="UTF-8"?>',
@@ -533,6 +534,16 @@ function xmlEscape(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
+}
+
+function errorMessage(error) {
+  return typeof error?.message === "string" ? error.message : String(error ?? "");
+}
+
+function errorStack(error) {
+  if (typeof error?.stack === "string") return error.stack;
+  const message = errorMessage(error);
+  return message || null;
 }
 
 async function selectedScenarios(config) {
