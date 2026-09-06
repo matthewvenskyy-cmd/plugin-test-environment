@@ -77,11 +77,8 @@
     "tests/scenarios/corebreaker-earned-charge-breaks-core.js",
     "tests/scenarios/corebreaker-op-unlimited-breaks-two-cores.js",
     "tests/scenarios/corebreaker-drops-owner-inventory-at-core.js",
-    {
-      "path": "tests/scenarios/mount-rider-corebreaker-drops-owner-inventory-at-core.js",
-      "expectedFailure": true,
-      "reason": "CorePlugin currently lets a mounted rider Corebreaker death drop owner inventory away from the broken core location."
-    },
+    "tests/scenarios/mount-rider-corebreaker-drops-owner-inventory-at-core.js",
+    "tests/scenarios/mount-target-corebreaker-drops-owner-inventory-at-core.js",
     "tests/scenarios/admin-triple-shift-toggles-gamemode.js",
     "tests/scenarios/admin-non-op-triple-shift-no-toggle.js",
     "tests/scenarios/admin-slow-shift-chain-no-toggle.js",

@@ -16,6 +16,8 @@ const SUPPORT_BLOCK = new Vec3(436, 79, 1);
 const OWNER_FLOOR = new Vec3(436, 79, 0);
 const RIDER_FLOOR = new Vec3(437, 79, -1);
 const TARGET_FLOOR = new Vec3(437, 79, 1);
+const SAFE_RIDER_FLOOR = new Vec3(443, 79, -1);
+const SAFE_TARGET_FLOOR = new Vec3(443, 79, 1);
 const DROP_CENTER = CORE_BLOCK.offset(0.5, 0.5, 0.5);
 
 export async function run(ctx) {
@@ -34,8 +36,8 @@ export async function run(ctx) {
     await command("effect clear MRDropOwner", 250);
     await command("effect clear MRDropBreaker", 250);
     await command("effect clear MRDropSeat", 250);
-    await command("forceload add 435 -1 438 1", 250);
-    await command("fill 435 79 -1 438 79 1 minecraft:stone", 500);
+    await command("forceload add 435 -1 443 1", 250);
+    await command("fill 435 79 -1 443 79 1 minecraft:stone", 500);
     await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
     await command("gamemode creative MRDropOwner", 250);
     await command("gamemode creative MRDropBreaker", 250);
@@ -49,6 +51,8 @@ export async function run(ctx) {
     await waitForBlock(owner, OWNER_FLOOR, "stone", "mounted rider inventory-drop owner floor block");
     await waitForBlock(rider, RIDER_FLOOR, "stone", "mounted rider inventory-drop rider floor block");
     await waitForBlock(target, TARGET_FLOOR, "stone", "mounted rider inventory-drop target floor block");
+    await waitForBlock(rider, SAFE_RIDER_FLOOR, "stone", "mounted rider inventory-drop safe rider floor block");
+    await waitForBlock(target, SAFE_TARGET_FLOOR, "stone", "mounted rider inventory-drop safe target floor block");
     await command("gamemode survival MRDropOwner", 250);
     await command("gamemode survival MRDropBreaker", 250);
     await command("gamemode survival MRDropSeat", 250);
@@ -73,8 +77,8 @@ export async function run(ctx) {
     } catch {
       // CorePlugin cancels vanilla breaking and handles valid core destruction itself.
     }
-    await command("tp MRDropBreaker 437 80 -1 0 0", 250);
-    await command("tp MRDropSeat 437 80 1 180 0", 250);
+    await command("tp MRDropBreaker 443 80 -1 0 0", 250);
+    await command("tp MRDropSeat 443 80 1 180 0", 250);
     await wait(2000);
 
     assert(await serverBlockIs(ctx, CORE_BLOCK, "air"), "mounted rider Corebreaker should remove the owner's core");
@@ -93,7 +97,7 @@ export async function run(ctx) {
     await command("effect clear MRDropBreaker", 250);
     await command("effect clear MRDropSeat", 250);
     await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
-    await command("fill 435 79 -1 438 82 1 minecraft:air", 500);
-    await command("forceload remove 435 -1 438 1", 250);
+    await command("fill 435 79 -1 443 82 1 minecraft:air", 500);
+    await command("forceload remove 435 -1 443 1", 250);
   }
 }
