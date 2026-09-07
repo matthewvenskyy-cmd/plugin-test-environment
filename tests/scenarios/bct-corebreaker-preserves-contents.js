@@ -5,6 +5,7 @@ import {
   placeBiggerCraftingTable,
   queryDroppedItemEntityCount,
   queryEntityCount,
+  selectedItemHasNoDamage,
   waitForBlock,
   waitForInventoryItem
 } from "./helpers.js";
@@ -56,6 +57,7 @@ export async function run(ctx) {
     assert(await queryBctDisplays(ctx) === 1, "Corebreaker attempt should leave the BCT display entity intact");
     const producedBctCount = countBctItems(bot) + await queryDroppedItemEntityCount(ctx, BCT_BLOCK.offset(0.5, 0.5, 0.5));
     assert(producedBctCount === 0, `Corebreaker attempt produced ${producedBctCount} BCT item(s)`);
+    assert(await selectedItemHasNoDamage(ctx, "ScenarioBot"), "Corebreaker attempt should not damage the Corebreaker");
 
     const secondWindow = await bot.openBlock(bot.blockAt(BCT_BLOCK));
     assert(secondWindow.containerItems().some((item) => item?.name === "diamond"), "Corebreaker attempt should preserve BCT inventory contents");

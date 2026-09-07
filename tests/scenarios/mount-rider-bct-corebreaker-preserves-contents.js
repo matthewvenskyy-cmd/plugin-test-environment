@@ -5,6 +5,7 @@ import {
   placeBiggerCraftingTable,
   queryDroppedItemEntityCount,
   queryEntityCount,
+  selectedItemHasNoDamage,
   waitForBlock,
   waitForChat,
   waitForInventoryItem
@@ -93,6 +94,7 @@ export async function run(ctx) {
       + countBctItems(seat)
       + await queryDroppedItemEntityCount(ctx, BCT_BLOCK.offset(0.5, 0.5, 0.5));
     assert(producedBctCount === 0, `mounted rider Corebreaker contents attempt produced ${producedBctCount} BCT item(s)`);
+    assert(await selectedItemHasNoDamage(ctx, "MRBctContents"), "mounted rider Corebreaker contents attempt should not damage the Corebreaker");
 
     const secondWindow = await bot.openBlock(bot.blockAt(BCT_BLOCK));
     assert(secondWindow.containerItems().some((item) => item?.name === "diamond"), "mounted rider Corebreaker attempt should preserve BCT inventory contents");
