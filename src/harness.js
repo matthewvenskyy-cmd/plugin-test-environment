@@ -460,6 +460,13 @@ async function validateConfig(config) {
     }
     const source = await fs.readFile(absolutePath, "utf8");
     const spawnedUsernames = scenarioSpawnBotUsernames(source);
+    for (const username of duplicateValues(spawnedUsernames)) {
+      issues.push({
+        severity: "error",
+        path: scenarioPath,
+        message: `spawnBot username "${username}" is used more than once in this scenario.`
+      });
+    }
     for (const username of spawnedUsernames) {
       if (username.length > 16) {
         issues.push({
@@ -754,6 +761,19 @@ function scenarioSpawnBotUsernames(source) {
   return Array.from(source.matchAll(/spawnBot\("([^"]+)"/g), (match) => match[1]);
 }
 
+function duplicateValues(values) {
+  const seen = new Set();
+  const duplicates = new Set();
+  for (const value of values) {
+    if (seen.has(value)) {
+      duplicates.add(value);
+    } else {
+      seen.add(value);
+    }
+  }
+  return [...duplicates];
+}
+
 function scenarioCommandUsernames(source) {
   const commandUsernames = new Set();
   for (const commandText of literalScenarioCommands(source)) {
@@ -997,6 +1017,10 @@ async function runSelfTest() {
   assertSelf(
     scenarioSpawnBotUsernames('await spawnBot("SixteenCharName1"); await spawnBot("ShortName");').join(",") === "SixteenCharName1,ShortName",
     "scenarioSpawnBotUsernames should read literal spawnBot usernames"
+  );
+  assertSelf(
+    duplicateValues(["SameBot", "OtherBot", "SameBot"]).join(",") === "SameBot",
+    "duplicateValues should report repeated scenario usernames once"
   );
   assertSelf(
     scenarioCommandUsernames('await command("clear ScenarioBot", 250); await command("effect give HelperBot minecraft:slow_falling 30 1 true", 250);').join(",") === "ScenarioBot,HelperBot",
