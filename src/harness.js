@@ -459,6 +459,20 @@ async function validateConfig(config) {
       continue;
     }
     const source = await fs.readFile(absolutePath, "utf8");
+    if (!extractScenarioName(source)) {
+      issues.push({
+        severity: "warning",
+        path: scenarioPath,
+        message: "Scenario does not export a readable name."
+      });
+    }
+    if (!hasScenarioRunExport(source)) {
+      issues.push({
+        severity: "error",
+        path: scenarioPath,
+        message: "Scenario must export a run function."
+      });
+    }
     const spawnedUsernames = scenarioSpawnBotUsernames(source);
     for (const username of duplicateValues(spawnedUsernames)) {
       issues.push({
@@ -877,6 +891,11 @@ function extractScenarioName(source) {
   return match?.[2] ?? "";
 }
 
+function hasScenarioRunExport(source) {
+  return /\bexport\s+(?:async\s+)?function\s+run\s*\(/.test(source)
+    || /\bexport\s+const\s+run\s*=/.test(source);
+}
+
 function scenarioProgress(scenario, scenarios) {
   const index = scenarios.indexOf(scenario) + 1;
   const spec = normalizeScenarioSpec(scenario);
@@ -956,6 +975,22 @@ async function runSelfTest() {
   assertSelf(
     extractScenarioName('export const name = "BCT Corebreaker attempt preserves contents";') === "BCT Corebreaker attempt preserves contents",
     "extractScenarioName should read exported scenario names"
+  );
+  assertSelf(
+    hasScenarioRunExport("export async function run(ctx) {}"),
+    "hasScenarioRunExport should accept async exported run functions"
+  );
+  assertSelf(
+    hasScenarioRunExport("export function run(ctx) {}"),
+    "hasScenarioRunExport should accept exported run functions"
+  );
+  assertSelf(
+    hasScenarioRunExport("export const run = async (ctx) => {};"),
+    "hasScenarioRunExport should accept exported run constants"
+  );
+  assertSelf(
+    !hasScenarioRunExport("async function run(ctx) {}"),
+    "hasScenarioRunExport should reject private run functions"
   );
   assertSelf(
     scenarioListSummary([
