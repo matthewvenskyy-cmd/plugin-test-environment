@@ -1,5 +1,12 @@
 import { Vec3 } from "vec3";
-import { countBctItems, isCorebreakerItem, placeBiggerCraftingTable, queryDroppedItemEntityCount, queryEntityCount } from "./helpers.js";
+import {
+  countBctItems,
+  isCorebreakerItem,
+  placeBiggerCraftingTable,
+  queryDroppedItemEntityCount,
+  queryEntityCount,
+  selectedItemHasNoDamage
+} from "./helpers.js";
 
 export const name = "BCT cannot be duplicated by Corebreaker";
 
@@ -42,6 +49,7 @@ export async function run(ctx) {
   assert(await queryBctDisplays(ctx) === 1, "Corebreaker attempt should not remove or duplicate the BCT display entity");
   const producedBctCount = countBctItems(bot) + await queryDroppedItemEntityCount(ctx, BCT_BLOCK.offset(0.5, 0.5, 0.5));
   assert(producedBctCount === 0, `Corebreaker break attempt produced ${producedBctCount} BCT item(s)`);
+  assert(await selectedItemHasNoDamage(ctx, "ScenarioBot"), "Corebreaker attempt should not damage the Corebreaker");
 
   await command("kill @e[type=item]", 250);
   await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);

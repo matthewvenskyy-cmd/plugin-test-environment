@@ -7,6 +7,7 @@ import {
   queryCorebreakerCharges,
   queryDroppedItemEntityCount,
   queryEntityCount,
+  selectedItemHasNoDamage,
   waitForChat,
   waitForInventoryItem
 } from "./helpers.js";
@@ -65,6 +66,7 @@ export async function run(ctx) {
     assert(producedBctCount === 0, `non-op Corebreaker attempt produced ${producedBctCount} BCT item(s)`);
     assert(countMatchingItems(breaker, isCorebreakerItem) === startingCorebreakers, "denied BCT break should keep the non-op Corebreaker item");
     assert(await queryCorebreakerCharges(breaker) === startingCharges, "denied BCT break should not consume a Corebreaker charge");
+    assert(await selectedItemHasNoDamage(ctx, "BctNonOpBreak"), "denied BCT break should not damage the non-op Corebreaker");
   } finally {
     await command("kill @e[type=item]", 250);
     await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
