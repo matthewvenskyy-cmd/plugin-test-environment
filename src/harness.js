@@ -551,6 +551,7 @@ function scenarioResult(scenarioSpec, name, progress, started, status, error = n
     name,
     progress,
     path: scenarioSpec.path,
+    area: scenarioSpec.area ?? inferScenarioArea(scenarioSpec),
     expectedFailure: Boolean(scenarioSpec.expectedFailure),
     reason: scenarioSpec.reason ?? "",
     status,
@@ -571,6 +572,7 @@ async function writeScenarioJUnitReport(results) {
     ].join(" ");
     const properties = [
       `      <property name="path" value="${xmlEscape(result.path)}"/>`,
+      `      <property name="area" value="${xmlEscape(result.area)}"/>`,
       `      <property name="progress" value="${xmlEscape(result.progress)}"/>`,
       `      <property name="expectedFailure" value="${result.expectedFailure ? "true" : "false"}"/>`,
       result.reason ? `      <property name="reason" value="${xmlEscape(result.reason)}"/>` : null
@@ -804,7 +806,7 @@ async function runSelfTest() {
   );
 
   const xmlResults = [
-    scenarioResult({ path: "tests/scenarios/pass.js" }, "Pass <case>", "[1/2] pass", Date.now() - 250, "passed"),
+    scenarioResult({ path: "tests/scenarios/pass.js", area: "CorePlugin" }, "Pass <case>", "[1/2] pass", Date.now() - 250, "passed"),
     scenarioResult(
       { path: "tests/scenarios/expected.js", expectedFailure: true, reason: "known <bug>" },
       "Expected Failure",
@@ -818,6 +820,7 @@ async function runSelfTest() {
   const report = await fs.readFile(path.join(reportsDir, "scenarios.xml"), "utf8");
   assertSelf(report.includes('tests="2"'), "JUnit report should include the testcase count");
   assertSelf(report.includes('skipped="1"'), "JUnit report should include expected failures as skipped");
+  assertSelf(report.includes('property name="area" value="CorePlugin"'), "JUnit report should include scenario areas");
   assertSelf(report.includes("known &lt;bug&gt;"), "JUnit report should XML-escape expected-failure reasons");
 
   const artifact = await writeScenarioFailureArtifact(
