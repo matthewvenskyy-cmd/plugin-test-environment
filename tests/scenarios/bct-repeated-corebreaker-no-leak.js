@@ -7,6 +7,7 @@ import {
   queryCorebreakerCharges,
   queryDroppedItemEntityCount,
   queryEntityCount,
+  selectedItemHasNoDamage,
   waitForChat,
   waitForInventoryItem
 } from "./helpers.js";
@@ -67,6 +68,7 @@ export async function run(ctx) {
       assert(producedBctCount === 0, `attempt ${attempt} produced ${producedBctCount} BCT item(s)`);
       assert(countMatchingItems(breaker, isCorebreakerItem) === startingCorebreakers, `attempt ${attempt} should keep the Corebreaker item`);
       assert(await queryCorebreakerCharges(breaker) === startingCharges, `attempt ${attempt} should not consume a Corebreaker charge`);
+      assert(await selectedItemHasNoDamage(ctx, "BctRepeatBreak"), `attempt ${attempt} should not damage the Corebreaker`);
     }
   } finally {
     await command("kill @e[type=item]", 250);
