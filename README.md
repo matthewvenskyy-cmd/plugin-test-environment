@@ -79,7 +79,7 @@ Run matching scenarios with a fresh disposable Paper server for each scenario. T
 node src/harness.js scenarios --no-build --fresh-scenarios --scenario=core-command
 ```
 
-Each scenario run also writes a JUnit-compatible report to `.work/reports/scenarios.xml`, so CI systems and IDEs can show the Paper/Mineflayer gameplay checks as normal test results. Testcase properties include the scenario path, plugin area, expected-failure marker, and reason. When a scenario fails, the harness writes a text artifact under `.work/failures/` with the scenario path, error stack, bot snapshots, inventories, positions, and recent server log tail. Expected-failure scenarios are marked as skipped in the JUnit report, but still fail the suite if they unexpectedly start passing.
+Each scenario run also writes a JUnit-compatible report to `.work/reports/scenarios.xml`, so CI systems and IDEs can show the Paper/Mineflayer gameplay checks as normal test results. Testcase properties include the scenario path, plugin area, expected-failure marker, optional failure pattern, and reason. When a scenario fails, the harness writes a text artifact under `.work/failures/` with the scenario path, error stack, bot snapshots, inventories, positions, and recent server log tail. Expected-failure scenarios are marked as skipped in the JUnit report, but still fail the suite if they unexpectedly start passing or fail for a different assertion than `failurePattern`.
 
 The repository includes a manual GitHub Actions workflow in `.github/workflows/plugin-harness.yml`. It targets a self-hosted Windows runner because the harness expects this repo and the plugin projects to exist as sibling folders, matching the local `mine-plugins` workspace. The workflow runs the fast harness selftest, smoke checks, optional selected scenarios, and uploads the JUnit report plus failure/server-log artifacts.
 
@@ -136,10 +136,10 @@ Useful fields:
 - `projects`: plugin folder, build type, jar glob, expected plugin name, smoke commands.
 - `consoleCommands`: commands sent from the server console after startup.
 - `botCommands`: commands sent by the `TestBot` Mineflayer client after it is op'd.
-- `scenarios`: Mineflayer scenario modules, or objects with `path`, `manual`, `expectedFailure`, and `reason`.
+- `scenarios`: Mineflayer scenario modules, or objects with `path`, `manual`, `expectedFailure`, `failurePattern`, and `reason`.
 - `serverProperties`: generated fresh for every run.
 
-Manual scenarios are skipped by default and can be run with `--scenario=<name>`. Expected-failure scenarios are useful for regressions the environment can already detect but the plugin has not fixed yet. The suite fails if an expected-failure scenario unexpectedly starts passing, which is the cue to remove the `expectedFailure` marker.
+Manual scenarios are skipped by default and can be run with `--scenario=<name>`. Expected-failure scenarios are useful for regressions the environment can already detect but the plugin has not fixed yet. Add `failurePattern` when a known-bad scenario has earlier assertions that should still catch new regressions. The suite fails if an expected-failure scenario unexpectedly starts passing, which is the cue to remove the `expectedFailure` marker.
 
 ## Suggested Testing Strategy
 

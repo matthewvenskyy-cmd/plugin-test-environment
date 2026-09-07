@@ -21,34 +21,34 @@ const SEAT_FLOOR = new Vec3(458, 79, 2);
 export async function run(ctx) {
   const { bot, assert, command, wait, spawnBot } = ctx;
   const rider = await spawnBot("MRBctContents", { op: false });
-  const seat = await spawnBot("MRBctContentsSeat", { op: false });
+  const seat = await spawnBot("MRBctSeat", { op: false });
 
   try {
     await command("kill @e[type=item]", 250);
     await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
     await command("forceload add 457 -2 458 2", 250);
     await command("deop MRBctContents", 250);
-    await command("deop MRBctContentsSeat", 250);
-    await command("clear MRBctContentsSeat", 250);
+    await command("deop MRBctSeat", 250);
+    await command("clear MRBctSeat", 250);
     await command("fill 457 79 -2 458 79 2 minecraft:stone", 500);
     await command(`setblock ${BCT_BLOCK.x} ${BCT_BLOCK.y} ${BCT_BLOCK.z} minecraft:air`, 250);
     await command("clear ScenarioBot minecraft:crafter", 250);
     await command("clear ScenarioBot minecraft:diamond", 250);
     await command("gamemode creative ScenarioBot", 250);
     await command("gamemode creative MRBctContents", 250);
-    await command("gamemode creative MRBctContentsSeat", 250);
+    await command("gamemode creative MRBctSeat", 250);
     await command("tp ScenarioBot 457 80 0 0 0", 500);
     await command("tp MRBctContents 458 80 -2 0 0", 500);
-    await command("tp MRBctContentsSeat 458 80 2 180 0", 500);
+    await command("tp MRBctSeat 458 80 2 180 0", 500);
     await waitForBlock(bot, PLACER_FLOOR, "stone", "mounted rider BCT contents placer floor block");
     await waitForBlock(bot, SUPPORT_BLOCK, "stone", "mounted rider BCT contents support block");
     await waitForBlock(rider, RIDER_FLOOR, "stone", "mounted rider BCT contents rider floor block");
     await waitForBlock(seat, SEAT_FLOOR, "stone", "mounted rider BCT contents seat floor block");
     await command("gamemode survival ScenarioBot", 250);
     await command("gamemode survival MRBctContents", 250);
-    await command("gamemode survival MRBctContentsSeat", 250);
+    await command("gamemode survival MRBctSeat", 250);
     await command("effect give MRBctContents minecraft:slow_falling 30 1 true", 250);
-    await command("effect give MRBctContentsSeat minecraft:slow_falling 30 1 true", 250);
+    await command("effect give MRBctSeat minecraft:slow_falling 30 1 true", 250);
     await rider.waitForChunksToLoad();
     await seat.waitForChunksToLoad();
     await wait(500);
@@ -68,7 +68,7 @@ export async function run(ctx) {
     const corebreaker = await waitForInventoryItem(rider, isCorebreakerItem, "mounted rider Corebreaker for BCT contents check");
     await rider.equip(corebreaker, "hand");
     await rider.lookAt(seat.entity.position.offset(0, 1.2, 0), true);
-    const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MRBctContentsSeat/i);
+    const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MRBctSeat/i);
     assert(mounted, "rider should mount the target before BCT contents Corebreaker attempt");
     await wait(500);
 
@@ -105,7 +105,7 @@ export async function run(ctx) {
     await command("clear ScenarioBot minecraft:crafter", 250);
     await command("clear ScenarioBot minecraft:diamond", 250);
     await command("clear MRBctContents", 250);
-    await command("clear MRBctContentsSeat", 250);
+    await command("clear MRBctSeat", 250);
     await command(`setblock ${BCT_BLOCK.x} ${BCT_BLOCK.y} ${BCT_BLOCK.z} minecraft:air`, 250);
     await command("fill 457 79 -2 458 79 2 minecraft:air", 500);
     await command("forceload remove 457 -2 458 2", 250);

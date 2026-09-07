@@ -34,16 +34,19 @@
     {
       "path": "tests/scenarios/bct-corebreaker-preserves-contents.js",
       "expectedFailure": true,
+      "failurePattern": "Corebreaker attempt should preserve BCT inventory contents",
       "reason": "Bigger Crafting Table currently loses stored contents after a cancelled Corebreaker break attempt."
     },
     {
       "path": "tests/scenarios/mount-rider-bct-corebreaker-preserves-contents.js",
       "expectedFailure": true,
+      "failurePattern": "mounted rider Corebreaker attempt should preserve BCT inventory contents",
       "reason": "Bigger Crafting Table currently loses stored contents after a mounted rider's cancelled Corebreaker break attempt."
     },
     {
       "path": "tests/scenarios/mount-target-bct-corebreaker-preserves-contents.js",
       "expectedFailure": true,
+      "failurePattern": "ridden target Corebreaker attempt should preserve BCT inventory contents",
       "reason": "Bigger Crafting Table currently loses stored contents after a mounted target's cancelled Corebreaker break attempt."
     },
     "tests/scenarios/bct-display-lifecycle.js",

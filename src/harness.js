@@ -452,6 +452,7 @@ async function scenarioListDetails(scenarios) {
       name: await readScenarioName(spec.path),
       manual: Boolean(spec.manual),
       expectedFailure: Boolean(spec.expectedFailure),
+      failurePattern: spec.failurePattern ?? "",
       reason: spec.reason ?? "",
       area: spec.area ?? inferScenarioArea(spec)
     };
@@ -561,7 +562,7 @@ async function runScenarioBatch(config, server, scenarios) {
           console.log(`Scenario passed: ${name}`);
         } catch (error) {
           const message = errorMessage(error);
-          if (scenarioSpec.expectedFailure && !message.startsWith("Scenario unexpectedly passed:")) {
+          if (scenarioSpec.expectedFailure && !message.startsWith("Scenario unexpectedly passed:") && expectedFailureMatches(scenarioSpec, error)) {
             results.push(scenarioResult(scenarioSpec, name, progress, started, "expectedFailure", error));
             await writeScenarioJUnitReport(results);
             console.log(`Scenario expected failure: ${name} (${scenarioSpec.reason ?? message})`);
@@ -592,6 +593,7 @@ function scenarioResult(scenarioSpec, name, progress, started, status, error = n
     path: scenarioSpec.path,
     area: scenarioSpec.area ?? inferScenarioArea(scenarioSpec),
     expectedFailure: Boolean(scenarioSpec.expectedFailure),
+    failurePattern: scenarioSpec.failurePattern ?? "",
     reason: scenarioSpec.reason ?? "",
     status,
     timeMs: Date.now() - started,
@@ -614,6 +616,7 @@ async function writeScenarioJUnitReport(results) {
       `      <property name="area" value="${xmlEscape(result.area)}"/>`,
       `      <property name="progress" value="${xmlEscape(result.progress)}"/>`,
       `      <property name="expectedFailure" value="${result.expectedFailure ? "true" : "false"}"/>`,
+      result.failurePattern ? `      <property name="failurePattern" value="${xmlEscape(result.failurePattern)}"/>` : null,
       result.reason ? `      <property name="reason" value="${xmlEscape(result.reason)}"/>` : null
     ].filter(Boolean).join("\n");
     if (result.status === "passed") {
@@ -653,6 +656,15 @@ function errorStack(error) {
   if (typeof error?.stack === "string") return error.stack;
   const message = errorMessage(error);
   return message || null;
+}
+
+function expectedFailureMatches(scenarioSpec, error) {
+  if (!scenarioSpec.failurePattern) return true;
+  const haystack = [
+    errorMessage(error),
+    errorStack(error)
+  ].join("\n");
+  return new RegExp(scenarioSpec.failurePattern, "i").test(haystack);
 }
 
 async function selectedScenarios(config) {
@@ -851,11 +863,19 @@ async function runSelfTest() {
     normalizeAreaToken("Core-Plugin") === "coreplugin",
     "normalizeAreaToken should match plugin area aliases"
   );
+  assertSelf(
+    expectedFailureMatches({ failurePattern: "known failure" }, new Error("this is a known failure")),
+    "expectedFailureMatches should accept matching expected failures"
+  );
+  assertSelf(
+    !expectedFailureMatches({ failurePattern: "known failure" }, new Error("different regression")),
+    "expectedFailureMatches should reject unexpected failure reasons"
+  );
 
   const xmlResults = [
     scenarioResult({ path: "tests/scenarios/pass.js", area: "CorePlugin" }, "Pass <case>", "[1/2] pass", Date.now() - 250, "passed"),
     scenarioResult(
-      { path: "tests/scenarios/expected.js", expectedFailure: true, reason: "known <bug>" },
+      { path: "tests/scenarios/expected.js", expectedFailure: true, failurePattern: "expected stack", reason: "known <bug>" },
       "Expected Failure",
       "[2/2] expected",
       Date.now() - 500,
@@ -868,6 +888,7 @@ async function runSelfTest() {
   assertSelf(report.includes('tests="2"'), "JUnit report should include the testcase count");
   assertSelf(report.includes('skipped="1"'), "JUnit report should include expected failures as skipped");
   assertSelf(report.includes('property name="area" value="CorePlugin"'), "JUnit report should include scenario areas");
+  assertSelf(report.includes('property name="failurePattern" value="expected stack"'), "JUnit report should include expected-failure patterns");
   assertSelf(report.includes("known &lt;bug&gt;"), "JUnit report should XML-escape expected-failure reasons");
 
   const artifact = await writeScenarioFailureArtifact(
