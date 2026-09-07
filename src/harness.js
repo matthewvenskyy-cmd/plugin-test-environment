@@ -35,6 +35,10 @@ async function main() {
     await listExpectedFailures(config);
     return;
   }
+  if (command === "list-areas") {
+    await listAreas(config);
+    return;
+  }
   if (command === "setup") {
     await setup(config);
     return;
@@ -418,6 +422,28 @@ async function listExpectedFailures(config) {
   console.log(scenarioListSummary(scenarios));
 }
 
+async function listAreas(config) {
+  const details = await scenarioListDetails(await selectedScenarios(config));
+  const areas = scenarioAreaSummary(details);
+  if (flags.json) {
+    console.log(JSON.stringify({
+      summary: {
+        totalAreas: areas.length,
+        totalScenarios: details.length
+      },
+      areas
+    }, null, 2));
+    return;
+  }
+  if (areas.length === 0) {
+    console.log("No scenario areas matched.");
+    return;
+  }
+  for (const area of areas) {
+    console.log(`${area.area}: total=${area.total} normal=${area.normal} manual=${area.manual} expected-failure=${area.expectedFailure}`);
+  }
+}
+
 async function scenarioListDetails(scenarios) {
   return Promise.all(scenarios.map(async (scenario) => {
     const spec = normalizeScenarioSpec(scenario);
@@ -465,6 +491,19 @@ function expectedFailureSummary(details) {
       Object.entries(groupExpectedFailuresByArea(details)).map(([area, areaDetails]) => [area, areaDetails.length])
     )
   };
+}
+
+function scenarioAreaSummary(details) {
+  return Object.entries(details.reduce((areas, detail) => {
+    areas[detail.area] ??= { area: detail.area, total: 0, normal: 0, manual: 0, expectedFailure: 0 };
+    areas[detail.area].total += 1;
+    if (detail.manual) areas[detail.area].manual += 1;
+    if (detail.expectedFailure) areas[detail.area].expectedFailure += 1;
+    if (!detail.manual && !detail.expectedFailure) areas[detail.area].normal += 1;
+    return areas;
+  }, {}))
+    .map(([, area]) => area)
+    .sort((a, b) => a.area.localeCompare(b.area));
 }
 
 function groupExpectedFailuresByArea(details) {
@@ -619,7 +658,7 @@ function errorStack(error) {
 async function selectedScenarios(config) {
   let scenarios = config.scenarios ?? [];
   const selected = flags.scenario;
-  if (!selected) {
+  if (!selected && !flags.all) {
     scenarios = scenarios.filter((scenario) => !normalizeScenarioSpec(scenario).manual);
   } else {
     scenarios = await scenariosMatchingText(scenarios, splitFlagValues(selected));
@@ -795,6 +834,14 @@ async function runSelfTest() {
       { path: "tests/scenarios/b.js", expectedFailure: true, area: "CorePlugin" }
     ]).byArea.CorePlugin === 2,
     "expectedFailureSummary should count failures by area"
+  );
+  assertSelf(
+    scenarioAreaSummary([
+      { path: "tests/scenarios/a.js", area: "CorePlugin" },
+      { path: "tests/scenarios/b.js", area: "CorePlugin", expectedFailure: true },
+      { path: "tests/scenarios/c.js", area: "ClassesPlugin", manual: true }
+    ])[1].expectedFailure === 1,
+    "scenarioAreaSummary should group scenario counts by area"
   );
   assertSelf(
     splitFlagValues("CorePlugin, ClassesPlugin ").length === 2,
