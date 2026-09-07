@@ -459,12 +459,29 @@ async function validateConfig(config) {
       continue;
     }
     const source = await fs.readFile(absolutePath, "utf8");
-    for (const username of scenarioSpawnBotUsernames(source)) {
+    const spawnedUsernames = scenarioSpawnBotUsernames(source);
+    for (const username of spawnedUsernames) {
       if (username.length > 16) {
         issues.push({
           severity: "error",
           path: scenarioPath,
           message: `spawnBot username "${username}" is ${username.length} characters; Minecraft usernames must be 16 or fewer.`
+        });
+      }
+    }
+    const knownUsernames = new Set(["ScenarioBot", ...spawnedUsernames]);
+    for (const username of scenarioCommandUsernames(source)) {
+      if (username.length > 16) {
+        issues.push({
+          severity: "error",
+          path: scenarioPath,
+          message: `Command references username "${username}" with ${username.length} characters; Minecraft usernames must be 16 or fewer.`
+        });
+      } else if (!knownUsernames.has(username)) {
+        issues.push({
+          severity: "warning",
+          path: scenarioPath,
+          message: `Command references username "${username}" that is not ScenarioBot or a spawnBot user in this scenario.`
         });
       }
     }
@@ -737,6 +754,42 @@ function scenarioSpawnBotUsernames(source) {
   return Array.from(source.matchAll(/spawnBot\("([^"]+)"/g), (match) => match[1]);
 }
 
+function scenarioCommandUsernames(source) {
+  const commandUsernames = new Set();
+  for (const commandText of literalScenarioCommands(source)) {
+    const tokens = commandText.trim().split(/\s+/);
+    const commandName = tokens[0];
+    const username = commandUsernameArgument(commandName, tokens);
+    if (username && /^[A-Za-z0-9_]+$/.test(username)) {
+      commandUsernames.add(username);
+    }
+  }
+  return [...commandUsernames];
+}
+
+function literalScenarioCommands(source) {
+  return Array.from(source.matchAll(/\bcommand\(\s*(["'`])([\s\S]*?)\1/g), (match) => match[2]);
+}
+
+function commandUsernameArgument(commandName, tokens) {
+  switch (commandName) {
+    case "clear":
+    case "deop":
+    case "op":
+    case "tp":
+    case "give":
+      return tokens[1];
+    case "gamemode":
+      return tokens[2];
+    case "effect":
+      return tokens[1] === "give" ? tokens[2] : null;
+    case "data":
+      return tokens[1] === "get" && tokens[2] === "entity" ? tokens[3] : null;
+    default:
+      return null;
+  }
+}
+
 async function selectedScenarios(config) {
   let scenarios = config.scenarios ?? [];
   const selected = flags.scenario;
@@ -944,6 +997,14 @@ async function runSelfTest() {
   assertSelf(
     scenarioSpawnBotUsernames('await spawnBot("SixteenCharName1"); await spawnBot("ShortName");').join(",") === "SixteenCharName1,ShortName",
     "scenarioSpawnBotUsernames should read literal spawnBot usernames"
+  );
+  assertSelf(
+    scenarioCommandUsernames('await command("clear ScenarioBot", 250); await command("effect give HelperBot minecraft:slow_falling 30 1 true", 250);').join(",") === "ScenarioBot,HelperBot",
+    "scenarioCommandUsernames should read common command player arguments"
+  );
+  assertSelf(
+    scenarioCommandUsernames('assert(false, "gamemode survival should work"); await command("gamemode survival ModeBot", 250);').join(",") === "ModeBot",
+    "scenarioCommandUsernames should ignore prose and parse command argument order"
   );
 
   const xmlResults = [
