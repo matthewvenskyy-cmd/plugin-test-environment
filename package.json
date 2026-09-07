@@ -10,6 +10,7 @@
     "server": "node src/harness.js server",
     "test": "npm run selftest && npm run smoke && npm run scenarios",
     "selftest": "node src/harness.js selftest",
+    "validate:config": "node src/harness.js validate-config",
     "list:scenarios": "node src/harness.js list-scenarios",
     "list:expected-failures": "node src/harness.js list-expected-failures",
     "list:areas": "node src/harness.js list-areas",

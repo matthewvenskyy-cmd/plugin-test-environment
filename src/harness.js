@@ -39,6 +39,10 @@ async function main() {
     await listAreas(config);
     return;
   }
+  if (command === "validate-config") {
+    await validateConfig(config);
+    return;
+  }
   if (command === "setup") {
     await setup(config);
     return;
@@ -444,6 +448,68 @@ async function listAreas(config) {
   }
 }
 
+async function validateConfig(config) {
+  const issues = [];
+  for (const scenario of config.scenarios ?? []) {
+    const spec = normalizeScenarioSpec(scenario);
+    const scenarioPath = spec.path ?? "";
+    const absolutePath = path.resolve(root, scenarioPath);
+    if (!scenarioPath || !existsSync(absolutePath)) {
+      issues.push({ severity: "error", path: scenarioPath, message: "Scenario file does not exist." });
+      continue;
+    }
+    const source = await fs.readFile(absolutePath, "utf8");
+    for (const username of scenarioSpawnBotUsernames(source)) {
+      if (username.length > 16) {
+        issues.push({
+          severity: "error",
+          path: scenarioPath,
+          message: `spawnBot username "${username}" is ${username.length} characters; Minecraft usernames must be 16 or fewer.`
+        });
+      }
+    }
+    if (spec.failurePattern) {
+      try {
+        new RegExp(spec.failurePattern, "i");
+      } catch (error) {
+        issues.push({
+          severity: "error",
+          path: scenarioPath,
+          message: `failurePattern is not a valid regular expression: ${errorMessage(error)}`
+        });
+      }
+    }
+    if (spec.failurePattern && !spec.expectedFailure) {
+      issues.push({
+        severity: "warning",
+        path: scenarioPath,
+        message: "failurePattern is ignored unless expectedFailure is true."
+      });
+    }
+  }
+
+  if (flags.json) {
+    console.log(JSON.stringify({
+      summary: {
+        totalIssues: issues.length,
+        errors: issues.filter((issue) => issue.severity === "error").length,
+        warnings: issues.filter((issue) => issue.severity === "warning").length
+      },
+      issues
+    }, null, 2));
+  } else if (issues.length === 0) {
+    console.log("Config validation passed.");
+  } else {
+    for (const issue of issues) {
+      console.log(`${issue.severity.toUpperCase()}: ${issue.path}: ${issue.message}`);
+    }
+  }
+
+  if (issues.some((issue) => issue.severity === "error")) {
+    process.exitCode = 1;
+  }
+}
+
 async function scenarioListDetails(scenarios) {
   return Promise.all(scenarios.map(async (scenario) => {
     const spec = normalizeScenarioSpec(scenario);
@@ -667,6 +733,10 @@ function expectedFailureMatches(scenarioSpec, error) {
   return new RegExp(scenarioSpec.failurePattern, "i").test(haystack);
 }
 
+function scenarioSpawnBotUsernames(source) {
+  return Array.from(source.matchAll(/spawnBot\("([^"]+)"/g), (match) => match[1]);
+}
+
 async function selectedScenarios(config) {
   let scenarios = config.scenarios ?? [];
   const selected = flags.scenario;
@@ -870,6 +940,10 @@ async function runSelfTest() {
   assertSelf(
     !expectedFailureMatches({ failurePattern: "known failure" }, new Error("different regression")),
     "expectedFailureMatches should reject unexpected failure reasons"
+  );
+  assertSelf(
+    scenarioSpawnBotUsernames('await spawnBot("SixteenCharName1"); await spawnBot("ShortName");').join(",") === "SixteenCharName1,ShortName",
+    "scenarioSpawnBotUsernames should read literal spawnBot usernames"
   );
 
   const xmlResults = [

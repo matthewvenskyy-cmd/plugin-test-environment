@@ -48,6 +48,7 @@ npm.cmd run scenarios
 List scenarios without starting Paper:
 
 ```powershell
+npm.cmd run validate:config
 npm.cmd run list:areas
 npm.cmd run list:areas -- --all
 npm.cmd run list:scenarios
