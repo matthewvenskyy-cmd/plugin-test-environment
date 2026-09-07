@@ -615,22 +615,41 @@ function errorStack(error) {
 }
 
 async function selectedScenarios(config) {
-  const scenarios = config.scenarios ?? [];
+  let scenarios = config.scenarios ?? [];
   const selected = flags.scenario;
   if (!selected) {
-    return scenarios.filter((scenario) => !normalizeScenarioSpec(scenario).manual);
+    scenarios = scenarios.filter((scenario) => !normalizeScenarioSpec(scenario).manual);
+  } else {
+    scenarios = await scenariosMatchingText(scenarios, splitFlagValues(selected));
   }
-  const needles = String(selected).split(",").map((value) => value.trim().toLowerCase()).filter(Boolean);
+  const selectedAreas = splitFlagValues(flags.area).map(normalizeAreaToken);
+  if (selectedAreas.length === 0) return scenarios;
+  return scenarios.filter((scenario) => {
+    const area = normalizeAreaToken(inferScenarioArea(normalizeScenarioSpec(scenario)));
+    return selectedAreas.includes(area);
+  });
+}
+
+async function scenariosMatchingText(scenarios, needles) {
+  if (needles.length === 0) return scenarios;
   const searchable = await Promise.all(scenarios.map(async (scenario) => {
-    const scenarioPath = normalizeScenarioSpec(scenario).path;
     return {
       scenario,
       text: await scenarioSearchText(normalizeScenarioSpec(scenario))
     };
   }));
   return searchable
-    .filter(({ text }) => needles.some((needle) => text.includes(needle)))
+    .filter(({ text }) => needles.some((needle) => text.includes(needle.toLowerCase())))
     .map(({ scenario }) => scenario);
+}
+
+function splitFlagValues(value) {
+  if (!value) return [];
+  return String(value).split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function normalizeAreaToken(value) {
+  return String(value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 function normalizeScenarioSpec(scenario) {
@@ -774,6 +793,14 @@ async function runSelfTest() {
       { path: "tests/scenarios/b.js", expectedFailure: true, area: "CorePlugin" }
     ]).byArea.CorePlugin === 2,
     "expectedFailureSummary should count failures by area"
+  );
+  assertSelf(
+    splitFlagValues("CorePlugin, ClassesPlugin ").length === 2,
+    "splitFlagValues should parse comma-separated filters"
+  );
+  assertSelf(
+    normalizeAreaToken("Core-Plugin") === "coreplugin",
+    "normalizeAreaToken should match plugin area aliases"
   );
 
   const xmlResults = [

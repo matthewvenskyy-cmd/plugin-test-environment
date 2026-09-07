@@ -51,18 +51,21 @@ List scenarios without starting Paper:
 npm.cmd run list:scenarios
 node src/harness.js list-scenarios --scenario="preserves contents"
 node src/harness.js list-scenarios --scenario=bct-corebreaker --json
+node src/harness.js list-scenarios --area=ClassesPlugin
 ```
 
 List tracked expected-failure gameplay regressions, grouped by plugin area, without starting Paper:
 
 ```powershell
 npm.cmd run list:expected-failures
+node src/harness.js list-expected-failures --area=CorePlugin
 node src/harness.js list-expected-failures --scenario=mounted --json
 ```
 
-Run matching scenarios by filename fragment, exported scenario name, or expected-failure reason text:
+Run matching scenarios by plugin area, filename fragment, exported scenario name, or expected-failure reason text:
 
 ```powershell
+node src/harness.js scenarios --no-build --area=CorePlugin
 node src/harness.js scenarios --no-build --scenario=core-owner
 node src/harness.js scenarios --no-build --scenario=bct-corebreaker
 node src/harness.js scenarios --no-build --scenario="preserves contents"
