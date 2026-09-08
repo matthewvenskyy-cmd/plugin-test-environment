@@ -450,6 +450,13 @@ async function listAreas(config) {
 
 async function validateConfig(config) {
   const issues = [];
+  for (const scenarioPath of duplicateScenarioPaths(config.scenarios ?? [])) {
+    issues.push({
+      severity: "error",
+      path: scenarioPath,
+      message: "Scenario is listed more than once in config."
+    });
+  }
   for (const scenario of config.scenarios ?? []) {
     const spec = normalizeScenarioSpec(scenario);
     const scenarioPath = spec.path ?? "";
@@ -788,6 +795,26 @@ function duplicateValues(values) {
   return [...duplicates];
 }
 
+function duplicateScenarioPaths(scenarios) {
+  const seen = new Map();
+  const duplicates = new Map();
+  for (const scenario of scenarios) {
+    const scenarioPath = normalizeScenarioSpec(scenario).path ?? "";
+    const key = normalizeScenarioPathKey(scenarioPath);
+    if (!key) continue;
+    if (seen.has(key)) {
+      duplicates.set(key, seen.get(key));
+    } else {
+      seen.set(key, scenarioPath);
+    }
+  }
+  return [...duplicates.values()];
+}
+
+function normalizeScenarioPathKey(scenarioPath) {
+  return scenarioPath.replace(/\\/g, "/").toLowerCase();
+}
+
 function scenarioCommandUsernames(source) {
   const commandUsernames = new Set();
   for (const commandText of literalScenarioCommands(source)) {
@@ -1056,6 +1083,15 @@ async function runSelfTest() {
   assertSelf(
     duplicateValues(["SameBot", "OtherBot", "SameBot"]).join(",") === "SameBot",
     "duplicateValues should report repeated scenario usernames once"
+  );
+  assertSelf(
+    duplicateScenarioPaths([
+      "tests/scenarios/a.js",
+      { path: "tests\\scenarios\\b.js" },
+      { path: "TESTS/SCENARIOS/A.JS", expectedFailure: true },
+      "tests/scenarios/b.js"
+    ]).join(",") === "tests/scenarios/a.js,tests\\scenarios\\b.js",
+    "duplicateScenarioPaths should report repeated config scenario paths once"
   );
   assertSelf(
     scenarioCommandUsernames('await command("clear ScenarioBot", 250); await command("effect give HelperBot minecraft:slow_falling 30 1 true", 250);').join(",") === "ScenarioBot,HelperBot",
