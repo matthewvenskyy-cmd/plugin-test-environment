@@ -144,7 +144,7 @@ Manual scenarios are skipped by default and can be run with `--scenario=<name>`.
 
 `npm.cmd run validate:config` checks scenario paths, duplicate scenario registrations, exported scenario names and `run` functions, expected-failure regexes, duplicate or overlong `spawnBot` usernames, and literal command references to unknown or overlong player names.
 
-Scenario modules receive `ctx.waitForCondition(predicate, { timeoutMs, intervalMs, label })` for arbitrary polling, plus `ctx.waitForInventory(predicate, timeoutMs)` for the primary bot inventory.
+Scenario modules receive `ctx.waitForCondition(predicate, { timeoutMs, intervalMs, label })` for arbitrary polling, plus `ctx.waitForInventory(predicate, timeoutMs)` for the primary bot inventory. Shared scenario helpers also export `waitForCondition` for bot-side polling utilities.
 
 ## Suggested Testing Strategy
 

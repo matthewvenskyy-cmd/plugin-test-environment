@@ -28,24 +28,40 @@ export function countItemsByName(bot, itemName) {
     .reduce((total, item) => total + item.count, 0);
 }
 
-export async function waitForInventoryItem(bot, predicate, label, timeoutMs = 5000) {
+export async function waitForCondition(predicate, options = {}) {
+  const timeoutMs = options.timeoutMs ?? 5000;
+  const intervalMs = options.intervalMs ?? 100;
+  const label = options.label ?? "condition";
   const started = Date.now();
+  let lastError = null;
   while (Date.now() - started < timeoutMs) {
-    const item = bot.inventory.items().find(predicate);
-    if (item) return item;
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    try {
+      const value = await predicate();
+      if (value) return value;
+    } catch (error) {
+      lastError = error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
-  throw new Error(`Timed out waiting for ${label}`);
+  const suffix = lastError ? ` Last error: ${lastError.message ?? lastError}` : "";
+  throw new Error(`Timed out waiting for ${label}.${suffix}`);
+}
+
+export async function waitForInventoryItem(bot, predicate, label, timeoutMs = 5000) {
+  return waitForCondition(
+    () => bot.inventory.items().find(predicate),
+    { timeoutMs, label }
+  );
 }
 
 export async function waitForBlock(bot, position, blockName, label, timeoutMs = 5000) {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    const block = bot.blockAt(position);
-    if (block?.name === blockName) return block;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  throw new Error(`Timed out waiting for ${label}`);
+  return waitForCondition(
+    () => {
+      const block = bot.blockAt(position);
+      return block?.name === blockName ? block : null;
+    },
+    { timeoutMs, label }
+  );
 }
 
 export async function placeBiggerCraftingTable(ctx, bot, bctPosition, supportPosition, options = {}) {
