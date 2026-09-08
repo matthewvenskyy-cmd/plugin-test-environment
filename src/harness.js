@@ -995,6 +995,24 @@ function formatItem(item) {
   return parts.join(" ");
 }
 
+async function waitForCondition(predicate, options = {}) {
+  const timeoutMs = options.timeoutMs ?? 5000;
+  const intervalMs = options.intervalMs ?? 100;
+  const label = options.label ?? "condition";
+  const started = Date.now();
+  let lastError = null;
+  while (Date.now() - started < timeoutMs) {
+    try {
+      if (await predicate()) return;
+    } catch (error) {
+      lastError = error;
+    }
+    await delay(intervalMs);
+  }
+  const suffix = lastError ? ` Last error: ${errorMessage(lastError)}` : "";
+  throw new Error(`Timed out waiting for ${label}.${suffix}`);
+}
+
 async function runSelfTest() {
   await fs.mkdir(workDir, { recursive: true });
   const expected = "&lt;scenario &amp; &quot;bot&quot;&gt;";
@@ -1101,6 +1119,19 @@ async function runSelfTest() {
     scenarioCommandUsernames('assert(false, "gamemode survival should work"); await command("gamemode survival ModeBot", 250);').join(",") === "ModeBot",
     "scenarioCommandUsernames should ignore prose and parse command argument order"
   );
+  let waitAttempts = 0;
+  await waitForCondition(() => {
+    waitAttempts += 1;
+    return waitAttempts === 2;
+  }, { timeoutMs: 1000, intervalMs: 1, label: "synthetic condition" });
+  assertSelf(waitAttempts === 2, "waitForCondition should poll until the predicate passes");
+  let waitTimedOut = false;
+  try {
+    await waitForCondition(() => false, { timeoutMs: 5, intervalMs: 1, label: "never true" });
+  } catch (error) {
+    waitTimedOut = errorMessage(error).includes("never true");
+  }
+  assertSelf(waitTimedOut, "waitForCondition should throw readable timeout errors");
 
   const xmlResults = [
     scenarioResult({ path: "tests/scenarios/pass.js", area: "CorePlugin" }, "Pass <case>", "[1/2] pass", Date.now() - 250, "passed"),
@@ -1198,13 +1229,17 @@ function createScenarioContext(config, server, bot, name, extraBots) {
       return extraBot;
     },
     wait: delay,
+    waitForCondition: async (predicate, options = {}) => {
+      await waitForCondition(predicate, {
+        label: `condition in ${name}`,
+        ...options
+      });
+    },
     waitForInventory: async (predicate, timeoutMs = 5000) => {
-      const started = Date.now();
-      while (Date.now() - started < timeoutMs) {
-        if (predicate(bot.inventory.items())) return;
-        await delay(100);
-      }
-      throw new Error(`Timed out waiting for inventory condition in ${name}`);
+      await waitForCondition(() => predicate(bot.inventory.items()), {
+        timeoutMs,
+        label: `inventory condition in ${name}`
+      });
     },
     assert: (condition, message) => {
       if (!condition) throw new Error(`${name}: ${message}`);
