@@ -456,6 +456,7 @@ async function listFailures() {
     if (failure.area) console.log(`  area: ${failure.area}`);
     if (failure.progress) console.log(`  progress: ${failure.progress}`);
     if (failure.message) console.log(`  message: ${failure.message}`);
+    if (failure.artifactPath) console.log(`  artifact: ${failure.artifactPath}`);
     console.log(`  rerun: node src/harness.js scenarios --no-build --scenario="${failure.path}"`);
   }
 }
@@ -754,8 +755,8 @@ async function runScenarioBatch(config, server, scenarios) {
             await writeScenarioJUnitReport(results);
             console.log(`Scenario expected failure: ${name} (${scenarioSpec.reason ?? message})`);
           } else {
-            await writeScenarioFailureArtifact(server, scenarioSpec, name, progress, error, [bot, ...extraBots]);
-            results.push(scenarioResult(scenarioSpec, name, progress, started, "failed", error));
+            const artifactPath = await writeScenarioFailureArtifact(server, scenarioSpec, name, progress, error, [bot, ...extraBots]);
+            results.push(scenarioResult(scenarioSpec, name, progress, started, "failed", error, artifactPath));
             await writeScenarioJUnitReport(results);
             throw error;
           }
@@ -773,7 +774,7 @@ async function runScenarioBatch(config, server, scenarios) {
   }
 }
 
-function scenarioResult(scenarioSpec, name, progress, started, status, error = null) {
+function scenarioResult(scenarioSpec, name, progress, started, status, error = null, artifactPath = "") {
   return {
     name,
     progress,
@@ -784,7 +785,8 @@ function scenarioResult(scenarioSpec, name, progress, started, status, error = n
     reason: scenarioSpec.reason ?? "",
     status,
     timeMs: Date.now() - started,
-    error
+    error,
+    artifactPath
   };
 }
 
@@ -804,7 +806,8 @@ async function writeScenarioJUnitReport(results) {
       `      <property name="progress" value="${xmlEscape(result.progress)}"/>`,
       `      <property name="expectedFailure" value="${result.expectedFailure ? "true" : "false"}"/>`,
       result.failurePattern ? `      <property name="failurePattern" value="${xmlEscape(result.failurePattern)}"/>` : null,
-      result.reason ? `      <property name="reason" value="${xmlEscape(result.reason)}"/>` : null
+      result.reason ? `      <property name="reason" value="${xmlEscape(result.reason)}"/>` : null,
+      result.artifactPath ? `      <property name="artifactPath" value="${xmlEscape(path.relative(root, result.artifactPath))}"/>` : null
     ].filter(Boolean).join("\n");
     if (result.status === "passed") {
       return `    <testcase ${attributes}>\n      <properties>\n${properties}\n      </properties>\n    </testcase>`;
@@ -858,6 +861,7 @@ function parseScenarioFailures(report) {
       path: properties.path ?? "",
       area: properties.area ?? "",
       progress: properties.progress ?? "",
+      artifactPath: properties.artifactPath ?? "",
       message: failureAttributes.message ?? "",
       details: xmlUnescape(failure[2]).trim()
     });
@@ -1286,7 +1290,8 @@ async function runSelfTest() {
       "[3/3] fail",
       Date.now() - 750,
       "failed",
-      new Error("bad <stack>")
+      new Error("bad <stack>"),
+      path.join(workDir, "failures", "synthetic-failure.txt")
     )
   ];
   await writeScenarioJUnitReport(xmlResults);
@@ -1302,6 +1307,7 @@ async function runSelfTest() {
   assertSelf(reportFailures[0].name === "Failed <case>", "parseScenarioFailures should unescape failure names");
   assertSelf(reportFailures[0].path === "tests/scenarios/fail.js", "parseScenarioFailures should read scenario paths");
   assertSelf(reportFailures[0].message === "bad <stack>", "parseScenarioFailures should unescape failure messages");
+  assertSelf(reportFailures[0].artifactPath === ".work\\failures\\synthetic-failure.txt", "parseScenarioFailures should read artifact paths");
   assertSelf(
     scenariosMatchingFailurePaths(
       [
