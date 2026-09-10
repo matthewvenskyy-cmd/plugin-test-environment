@@ -15,6 +15,7 @@
     "list:expected-failures": "node src/harness.js list-expected-failures",
     "list:failures": "node src/harness.js list-failures",
     "list:areas": "node src/harness.js list-areas",
+    "rerun:failures": "node src/harness.js rerun-failures --no-build",
     "scenarios": "node src/harness.js scenarios --no-build",
     "scenarios:build": "npm run build && npm run scenarios",
     "smoke": "node src/harness.js smoke",

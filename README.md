@@ -73,6 +73,13 @@ node src/harness.js list-failures --json
 node src/harness.js list-failures --report=.work/reports/scenarios.xml
 ```
 
+Rerun only the failed scenarios from the last JUnit report:
+
+```powershell
+npm.cmd run rerun:failures
+node src/harness.js rerun-failures --no-build --fresh-scenarios
+```
+
 Run matching scenarios by plugin area, filename fragment, exported scenario name, or expected-failure reason text:
 
 ```powershell

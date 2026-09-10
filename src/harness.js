@@ -39,6 +39,10 @@ async function main() {
     await listFailures();
     return;
   }
+  if (command === "rerun-failures") {
+    await rerunFailures(config);
+    return;
+  }
   if (command === "list-areas") {
     await listAreas(config);
     return;
@@ -361,7 +365,10 @@ async function runScenarios(config, server) {
 async function runFreshScenarios(config) {
   const scenarios = await selectedScenarios(config);
   if (scenarios.length === 0) return;
+  await runFreshScenarioList(config, scenarios);
+}
 
+async function runFreshScenarioList(config, scenarios) {
   for (const scenarioSpec of scenarios) {
     const progress = scenarioProgress(scenarioSpec, scenarios);
     console.log(`Fresh server scenario ${progress}`);
@@ -431,12 +438,7 @@ async function listExpectedFailures(config) {
 }
 
 async function listFailures() {
-  const reportPath = path.resolve(root, flags.report ?? path.join(reportsDir, "scenarios.xml"));
-  if (!existsSync(reportPath)) {
-    throw new Error(`Scenario report does not exist: ${reportPath}`);
-  }
-  const report = await fs.readFile(reportPath, "utf8");
-  const failures = parseScenarioFailures(report);
+  const { failures } = await readScenarioFailures();
   if (flags.json) {
     console.log(JSON.stringify({
       summary: { failures: failures.length },
@@ -455,6 +457,48 @@ async function listFailures() {
     if (failure.progress) console.log(`  progress: ${failure.progress}`);
     if (failure.message) console.log(`  message: ${failure.message}`);
     console.log(`  rerun: node src/harness.js scenarios --no-build --scenario="${failure.path}"`);
+  }
+}
+
+async function readScenarioFailures() {
+  const reportPath = path.resolve(root, flags.report ?? path.join(reportsDir, "scenarios.xml"));
+  if (!existsSync(reportPath)) {
+    throw new Error(`Scenario report does not exist: ${reportPath}`);
+  }
+  const report = await fs.readFile(reportPath, "utf8");
+  return {
+    reportPath,
+    failures: parseScenarioFailures(report)
+  };
+}
+
+async function rerunFailures(config) {
+  const { failures, reportPath } = await readScenarioFailures();
+  if (failures.length === 0) {
+    console.log("No failed scenarios found in report.");
+    return;
+  }
+  const scenarios = scenariosMatchingFailurePaths(config.scenarios ?? [], failures);
+  if (scenarios.length === 0) {
+    throw new Error(`No configured scenarios matched failures in ${reportPath}`);
+  }
+  console.log(`Rerunning ${scenarios.length} failed scenario(s) from ${path.relative(root, reportPath)}.`);
+  await setup(config);
+  if (!flags["no-build"]) await buildProjects(config);
+  if (flags["fresh-scenarios"]) {
+    await runFreshScenarioList(config, scenarios);
+    console.log("Failed scenario rerun passed.");
+    return;
+  }
+  await prepareServer(config);
+  const server = await runServer(config, { interactive: false });
+  try {
+    await runConsoleSmoke(config, server);
+    await runScenarioBatch(config, server, scenarios);
+    await assertCleanLog(config);
+    console.log("Failed scenario rerun passed.");
+  } finally {
+    await stopServer(server);
   }
 }
 
@@ -826,7 +870,7 @@ function parseTestcaseProperties(testcaseBody) {
   for (const property of testcaseBody.matchAll(/<property\b([^>]*)\/>/g)) {
     const attributes = parseXmlAttributes(property[1]);
     if (attributes.name) {
-      properties[attributes.name] = xmlUnescape(attributes.value);
+      properties[attributes.name] = attributes.value ?? "";
     }
   }
   return properties;
@@ -894,6 +938,18 @@ function duplicateScenarioPaths(scenarios) {
 
 function normalizeScenarioPathKey(scenarioPath) {
   return scenarioPath.replace(/\\/g, "/").toLowerCase();
+}
+
+function scenariosMatchingFailurePaths(scenarios, failures) {
+  const failedPaths = new Set(
+    failures
+      .map((failure) => normalizeScenarioPathKey(failure.path))
+      .filter(Boolean)
+  );
+  return scenarios.filter((scenario) => {
+    const scenarioPath = normalizeScenarioSpec(scenario).path ?? "";
+    return failedPaths.has(normalizeScenarioPathKey(scenarioPath));
+  });
 }
 
 function scenarioCommandUsernames(source) {
@@ -1246,6 +1302,16 @@ async function runSelfTest() {
   assertSelf(reportFailures[0].name === "Failed <case>", "parseScenarioFailures should unescape failure names");
   assertSelf(reportFailures[0].path === "tests/scenarios/fail.js", "parseScenarioFailures should read scenario paths");
   assertSelf(reportFailures[0].message === "bad <stack>", "parseScenarioFailures should unescape failure messages");
+  assertSelf(
+    scenariosMatchingFailurePaths(
+      [
+        "tests/scenarios/pass.js",
+        { path: "tests\\scenarios\\fail.js", expectedFailure: true }
+      ],
+      reportFailures
+    ).length === 1,
+    "scenariosMatchingFailurePaths should select configured scenarios from failed report paths"
+  );
   await writeScenarioJUnitReport(xmlResults.filter((result) => result.status !== "failed"));
 
   const artifact = await writeScenarioFailureArtifact(
