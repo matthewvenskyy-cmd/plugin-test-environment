@@ -13,6 +13,7 @@
     "validate:config": "node src/harness.js validate-config",
     "list:scenarios": "node src/harness.js list-scenarios",
     "list:expected-failures": "node src/harness.js list-expected-failures",
+    "list:failures": "node src/harness.js list-failures",
     "list:areas": "node src/harness.js list-areas",
     "scenarios": "node src/harness.js scenarios --no-build",
     "scenarios:build": "npm run build && npm run scenarios",

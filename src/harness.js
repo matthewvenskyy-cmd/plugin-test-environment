@@ -35,6 +35,10 @@ async function main() {
     await listExpectedFailures(config);
     return;
   }
+  if (command === "list-failures") {
+    await listFailures();
+    return;
+  }
   if (command === "list-areas") {
     await listAreas(config);
     return;
@@ -426,6 +430,34 @@ async function listExpectedFailures(config) {
   console.log(scenarioListSummary(scenarios));
 }
 
+async function listFailures() {
+  const reportPath = path.resolve(root, flags.report ?? path.join(reportsDir, "scenarios.xml"));
+  if (!existsSync(reportPath)) {
+    throw new Error(`Scenario report does not exist: ${reportPath}`);
+  }
+  const report = await fs.readFile(reportPath, "utf8");
+  const failures = parseScenarioFailures(report);
+  if (flags.json) {
+    console.log(JSON.stringify({
+      summary: { failures: failures.length },
+      failures
+    }, null, 2));
+    return;
+  }
+  if (failures.length === 0) {
+    console.log("No failed scenarios found in report.");
+    return;
+  }
+  for (const failure of failures) {
+    console.log(failure.name || path.basename(failure.path));
+    console.log(`  path: ${failure.path}`);
+    if (failure.area) console.log(`  area: ${failure.area}`);
+    if (failure.progress) console.log(`  progress: ${failure.progress}`);
+    if (failure.message) console.log(`  message: ${failure.message}`);
+    console.log(`  rerun: node src/harness.js scenarios --no-build --scenario="${failure.path}"`);
+  }
+}
+
 async function listAreas(config) {
   const details = await scenarioListDetails(await selectedScenarios(config));
   const areas = scenarioAreaSummary(details);
@@ -757,6 +789,55 @@ function xmlEscape(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
+}
+
+function xmlUnescape(value) {
+  return String(value ?? "")
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&gt;/g, ">")
+    .replace(/&lt;/g, "<")
+    .replace(/&amp;/g, "&");
+}
+
+function parseScenarioFailures(report) {
+  const failures = [];
+  for (const testcase of report.matchAll(/<testcase\b([^>]*)>([\s\S]*?)<\/testcase>/g)) {
+    const attributes = parseXmlAttributes(testcase[1]);
+    const body = testcase[2];
+    const failure = body.match(/<failure\b([^>]*)>([\s\S]*?)<\/failure>/);
+    if (!failure) continue;
+    const failureAttributes = parseXmlAttributes(failure[1]);
+    const properties = parseTestcaseProperties(body);
+    failures.push({
+      name: attributes.name ?? "",
+      path: properties.path ?? "",
+      area: properties.area ?? "",
+      progress: properties.progress ?? "",
+      message: failureAttributes.message ?? "",
+      details: xmlUnescape(failure[2]).trim()
+    });
+  }
+  return failures;
+}
+
+function parseTestcaseProperties(testcaseBody) {
+  const properties = {};
+  for (const property of testcaseBody.matchAll(/<property\b([^>]*)\/>/g)) {
+    const attributes = parseXmlAttributes(property[1]);
+    if (attributes.name) {
+      properties[attributes.name] = xmlUnescape(attributes.value);
+    }
+  }
+  return properties;
+}
+
+function parseXmlAttributes(source) {
+  const attributes = {};
+  for (const match of source.matchAll(/([A-Za-z_:][\w:.-]*)="([^"]*)"/g)) {
+    attributes[match[1]] = xmlUnescape(match[2]);
+  }
+  return attributes;
 }
 
 function errorMessage(error) {
@@ -1142,15 +1223,30 @@ async function runSelfTest() {
       Date.now() - 500,
       "expectedFailure",
       new Error("expected stack")
+    ),
+    scenarioResult(
+      { path: "tests/scenarios/fail.js", area: "BiggerCraftingTable" },
+      "Failed <case>",
+      "[3/3] fail",
+      Date.now() - 750,
+      "failed",
+      new Error("bad <stack>")
     )
   ];
   await writeScenarioJUnitReport(xmlResults);
   const report = await fs.readFile(path.join(reportsDir, "scenarios.xml"), "utf8");
-  assertSelf(report.includes('tests="2"'), "JUnit report should include the testcase count");
+  assertSelf(report.includes('tests="3"'), "JUnit report should include the testcase count");
+  assertSelf(report.includes('failures="1"'), "JUnit report should include the failure count");
   assertSelf(report.includes('skipped="1"'), "JUnit report should include expected failures as skipped");
   assertSelf(report.includes('property name="area" value="CorePlugin"'), "JUnit report should include scenario areas");
   assertSelf(report.includes('property name="failurePattern" value="expected stack"'), "JUnit report should include expected-failure patterns");
   assertSelf(report.includes("known &lt;bug&gt;"), "JUnit report should XML-escape expected-failure reasons");
+  const reportFailures = parseScenarioFailures(report);
+  assertSelf(reportFailures.length === 1, "parseScenarioFailures should read failed testcases from the JUnit report");
+  assertSelf(reportFailures[0].name === "Failed <case>", "parseScenarioFailures should unescape failure names");
+  assertSelf(reportFailures[0].path === "tests/scenarios/fail.js", "parseScenarioFailures should read scenario paths");
+  assertSelf(reportFailures[0].message === "bad <stack>", "parseScenarioFailures should unescape failure messages");
+  await writeScenarioJUnitReport(xmlResults.filter((result) => result.status !== "failed"));
 
   const artifact = await writeScenarioFailureArtifact(
     { lines: ["[INFO] first\n", "[ERROR] tail\n"] },

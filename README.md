@@ -65,6 +65,14 @@ node src/harness.js list-expected-failures --area=CorePlugin
 node src/harness.js list-expected-failures --scenario=mounted --json
 ```
 
+List failed scenarios from the last JUnit report and get copyable rerun commands:
+
+```powershell
+npm.cmd run list:failures
+node src/harness.js list-failures --json
+node src/harness.js list-failures --report=.work/reports/scenarios.xml
+```
+
 Run matching scenarios by plugin area, filename fragment, exported scenario name, or expected-failure reason text:
 
 ```powershell
