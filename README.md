@@ -78,6 +78,7 @@ List stored failure artifacts by newest first:
 ```powershell
 npm.cmd run list:artifacts
 node src/harness.js list-artifacts --limit=50
+node src/harness.js list-artifacts --include-selftest
 node src/harness.js list-artifacts --json
 ```
 

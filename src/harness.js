@@ -467,17 +467,25 @@ async function listFailures() {
 
 async function listArtifacts() {
   const artifacts = await failureArtifacts();
-  const limit = parsePositiveInteger(flags.limit, flags.json ? artifacts.length : 20);
-  const listedArtifacts = artifacts.slice(0, limit);
+  const filteredArtifacts = flags["include-selftest"] ? artifacts : artifacts.filter((artifact) => !artifact.selftest);
+  const limit = parsePositiveInteger(flags.limit, flags.json ? filteredArtifacts.length : 20);
+  const listedArtifacts = filteredArtifacts.slice(0, limit);
   if (flags.json) {
     console.log(JSON.stringify({
-      summary: { artifacts: artifacts.length },
+      summary: {
+        artifacts: filteredArtifacts.length,
+        totalArtifacts: artifacts.length,
+        hiddenSelftestArtifacts: artifacts.length - filteredArtifacts.length
+      },
       artifacts: listedArtifacts
     }, null, 2));
     return;
   }
-  if (artifacts.length === 0) {
+  if (filteredArtifacts.length === 0) {
     console.log("No failure artifacts found.");
+    if (artifacts.length > 0) {
+      console.log(`Hidden ${artifacts.length} selftest artifact(s). Use --include-selftest to show them.`);
+    }
     return;
   }
   for (const artifact of listedArtifacts) {
@@ -485,8 +493,12 @@ async function listArtifacts() {
     if (artifact.scenario) console.log(`  scenario: ${artifact.scenario}`);
     if (artifact.message) console.log(`  error: ${artifact.message}`);
   }
-  if (listedArtifacts.length < artifacts.length) {
-    console.log(`Showing ${listedArtifacts.length} of ${artifacts.length} artifact(s). Use --limit=${artifacts.length} to show all.`);
+  if (listedArtifacts.length < filteredArtifacts.length) {
+    console.log(`Showing ${listedArtifacts.length} of ${filteredArtifacts.length} artifact(s). Use --limit=${filteredArtifacts.length} to show all.`);
+  }
+  const hiddenSelftestArtifacts = artifacts.length - filteredArtifacts.length;
+  if (hiddenSelftestArtifacts > 0) {
+    console.log(`Hidden ${hiddenSelftestArtifacts} selftest artifact(s). Use --include-selftest to show them.`);
   }
 }
 
@@ -504,10 +516,16 @@ async function failureArtifacts() {
         path: path.relative(root, artifactPath),
         modifiedIso: stats.mtime.toISOString(),
         scenario: artifactField(text, "Scenario"),
-        message: artifactFirstErrorLine(text)
+        message: artifactFirstErrorLine(text),
+        selftest: isSelftestArtifact(entry.name, text)
       };
     }));
   return artifacts.sort((a, b) => b.modifiedIso.localeCompare(a.modifiedIso));
+}
+
+function isSelftestArtifact(filename, text) {
+  return filename.includes("tests-scenarios-failing-case.js")
+    && artifactField(text, "Scenario") === "Synthetic Failure";
 }
 
 function artifactField(text, label) {
@@ -1406,6 +1424,7 @@ async function runSelfTest() {
   const selftestArtifact = artifacts.find((candidate) => candidate.path === path.relative(root, artifact));
   assertSelf(selftestArtifact?.scenario === "Synthetic Failure", "failureArtifacts should read artifact scenario names");
   assertSelf(selftestArtifact?.message === "Error: synthetic failure", "failureArtifacts should read the first error line");
+  assertSelf(selftestArtifact?.selftest, "failureArtifacts should mark synthetic selftest artifacts");
   console.log("Harness selftest passed.");
 }
 
