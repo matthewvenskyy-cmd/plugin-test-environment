@@ -73,6 +73,14 @@ node src/harness.js list-failures --json
 node src/harness.js list-failures --report=.work/reports/scenarios.xml
 ```
 
+List stored failure artifacts by newest first:
+
+```powershell
+npm.cmd run list:artifacts
+node src/harness.js list-artifacts --limit=50
+node src/harness.js list-artifacts --json
+```
+
 Rerun only the failed scenarios from the last JUnit report:
 
 ```powershell

@@ -39,6 +39,10 @@ async function main() {
     await listFailures();
     return;
   }
+  if (command === "list-artifacts") {
+    await listArtifacts();
+    return;
+  }
   if (command === "rerun-failures") {
     await rerunFailures(config);
     return;
@@ -459,6 +463,62 @@ async function listFailures() {
     if (failure.artifactPath) console.log(`  artifact: ${failure.artifactPath}`);
     console.log(`  rerun: node src/harness.js scenarios --no-build --scenario="${failure.path}"`);
   }
+}
+
+async function listArtifacts() {
+  const artifacts = await failureArtifacts();
+  const limit = parsePositiveInteger(flags.limit, flags.json ? artifacts.length : 20);
+  const listedArtifacts = artifacts.slice(0, limit);
+  if (flags.json) {
+    console.log(JSON.stringify({
+      summary: { artifacts: artifacts.length },
+      artifacts: listedArtifacts
+    }, null, 2));
+    return;
+  }
+  if (artifacts.length === 0) {
+    console.log("No failure artifacts found.");
+    return;
+  }
+  for (const artifact of listedArtifacts) {
+    console.log(`${artifact.modifiedIso}  ${artifact.path}`);
+    if (artifact.scenario) console.log(`  scenario: ${artifact.scenario}`);
+    if (artifact.message) console.log(`  error: ${artifact.message}`);
+  }
+  if (listedArtifacts.length < artifacts.length) {
+    console.log(`Showing ${listedArtifacts.length} of ${artifacts.length} artifact(s). Use --limit=${artifacts.length} to show all.`);
+  }
+}
+
+async function failureArtifacts() {
+  const failuresDir = path.join(workDir, "failures");
+  if (!existsSync(failuresDir)) return [];
+  const entries = await fs.readdir(failuresDir, { withFileTypes: true });
+  const artifacts = await Promise.all(entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".txt"))
+    .map(async (entry) => {
+      const artifactPath = path.join(failuresDir, entry.name);
+      const stats = await fs.stat(artifactPath);
+      const text = await fs.readFile(artifactPath, "utf8").catch(() => "");
+      return {
+        path: path.relative(root, artifactPath),
+        modifiedIso: stats.mtime.toISOString(),
+        scenario: artifactField(text, "Scenario"),
+        message: artifactFirstErrorLine(text)
+      };
+    }));
+  return artifacts.sort((a, b) => b.modifiedIso.localeCompare(a.modifiedIso));
+}
+
+function artifactField(text, label) {
+  const match = text.match(new RegExp(`^${escapeRegExp(label)}:\\s*(.+)$`, "m"));
+  return match?.[1] ?? "";
+}
+
+function artifactFirstErrorLine(text) {
+  const match = text.match(/^Error:\r?\n([\s\S]*?)(?:\r?\n\r?\n|$)/m);
+  if (!match) return "";
+  return match[1].split(/\r?\n/).find((line) => line.trim())?.trim() ?? "";
 }
 
 async function readScenarioFailures() {
@@ -1026,6 +1086,11 @@ function splitFlagValues(value) {
   return String(value).split(",").map((item) => item.trim()).filter(Boolean);
 }
 
+function parsePositiveInteger(value, fallback) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function normalizeAreaToken(value) {
   return String(value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -1224,6 +1289,10 @@ async function runSelfTest() {
     "splitFlagValues should parse comma-separated filters"
   );
   assertSelf(
+    parsePositiveInteger("3", 20) === 3 && parsePositiveInteger("0", 20) === 20,
+    "parsePositiveInteger should parse positive integer flags with a fallback"
+  );
+  assertSelf(
     normalizeAreaToken("Core-Plugin") === "coreplugin",
     "normalizeAreaToken should match plugin area aliases"
   );
@@ -1333,6 +1402,10 @@ async function runSelfTest() {
   assertSelf(artifactText.includes("ScenarioBot"), "failure artifact should include bot usernames");
   assertSelf(artifactText.includes("diamond x2"), "failure artifact should include inventory items");
   assertSelf(artifactText.includes("1.25, 80.00, -3.50"), "failure artifact should include formatted bot positions");
+  const artifacts = await failureArtifacts();
+  const selftestArtifact = artifacts.find((candidate) => candidate.path === path.relative(root, artifact));
+  assertSelf(selftestArtifact?.scenario === "Synthetic Failure", "failureArtifacts should read artifact scenario names");
+  assertSelf(selftestArtifact?.message === "Error: synthetic failure", "failureArtifacts should read the first error line");
   console.log("Harness selftest passed.");
 }
 
