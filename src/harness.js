@@ -471,7 +471,10 @@ async function listFailures() {
 
 async function listArtifacts() {
   const artifacts = await failureArtifacts();
-  const filteredArtifacts = flags["include-selftest"] ? artifacts : artifacts.filter((artifact) => !artifact.selftest);
+  const hiddenSelftestArtifacts = flags["include-selftest"] ? 0 : artifacts.filter((artifact) => artifact.selftest).length;
+  const filteredArtifacts = artifacts
+    .filter((artifact) => flags["include-selftest"] || !artifact.selftest)
+    .filter((artifact) => artifactMatchesSearch(artifact, splitFlagValues(flags.scenario)));
   const limit = parsePositiveInteger(flags.limit, flags.json ? filteredArtifacts.length : 20);
   const listedArtifacts = filteredArtifacts.slice(0, limit);
   if (flags.json) {
@@ -479,7 +482,7 @@ async function listArtifacts() {
       summary: {
         artifacts: filteredArtifacts.length,
         totalArtifacts: artifacts.length,
-        hiddenSelftestArtifacts: artifacts.length - filteredArtifacts.length
+        hiddenSelftestArtifacts
       },
       artifacts: listedArtifacts
     }, null, 2));
@@ -487,8 +490,8 @@ async function listArtifacts() {
   }
   if (filteredArtifacts.length === 0) {
     console.log("No failure artifacts found.");
-    if (artifacts.length > 0) {
-      console.log(`Hidden ${artifacts.length} selftest artifact(s). Use --include-selftest to show them.`);
+    if (hiddenSelftestArtifacts > 0) {
+      console.log(`Hidden ${hiddenSelftestArtifacts} selftest artifact(s). Use --include-selftest to show them.`);
     }
     return;
   }
@@ -500,7 +503,6 @@ async function listArtifacts() {
   if (listedArtifacts.length < filteredArtifacts.length) {
     console.log(`Showing ${listedArtifacts.length} of ${filteredArtifacts.length} artifact(s). Use --limit=${filteredArtifacts.length} to show all.`);
   }
-  const hiddenSelftestArtifacts = artifacts.length - filteredArtifacts.length;
   if (hiddenSelftestArtifacts > 0) {
     console.log(`Hidden ${hiddenSelftestArtifacts} selftest artifact(s). Use --include-selftest to show them.`);
   }
@@ -563,6 +565,16 @@ async function cleanSelftestArtifacts() {
 function isSelftestArtifact(filename, text) {
   return filename.includes("tests-scenarios-failing-case.js")
     && artifactField(text, "Scenario") === "Synthetic Failure";
+}
+
+function artifactMatchesSearch(artifact, needles) {
+  if (needles.length === 0) return true;
+  const haystack = [
+    artifact.path,
+    artifact.scenario,
+    artifact.message
+  ].join("\n").toLowerCase();
+  return needles.some((needle) => haystack.includes(needle.toLowerCase()));
 }
 
 function artifactField(text, label) {
@@ -1346,6 +1358,13 @@ async function runSelfTest() {
   assertSelf(
     parsePositiveInteger("3", 20) === 3 && parsePositiveInteger("0", 20) === 20,
     "parsePositiveInteger should parse positive integer flags with a fallback"
+  );
+  assertSelf(
+    artifactMatchesSearch(
+      { path: ".work/failures/bct.txt", scenario: "BCT duplicate guard", message: "duped custom block" },
+      ["custom block"]
+    ),
+    "artifactMatchesSearch should match failure artifact messages"
   );
   assertSelf(
     normalizeAreaToken("Core-Plugin") === "coreplugin",
