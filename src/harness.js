@@ -918,6 +918,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario defines local BCT display counting; use queryBctDisplayCount from helpers.js instead."
     });
   }
+  if (definesManualBctArtifactCleanup(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario manually clears BCT items/displays; use clearBctArtifacts from helpers.js instead."
+    });
+  }
   if (isBctCorebreakerDigScenario(source, spec) && !source.includes("assertNoBctLeak")) {
     issues.push({
       severity: "warning",
@@ -931,6 +938,11 @@ function scenarioQualityIssues(source, spec) {
 function definesLocalBctDisplayCounter(source) {
   return /function\s+queryBctDisplays\s*\(/.test(source)
     || /queryEntityCount\s*\([^)]*bigger_crafting_table_display/s.test(source);
+}
+
+function definesManualBctArtifactCleanup(source) {
+  return /kill\s+@e\[type=item\]/.test(source)
+    && /kill\s+@e\[type=item_display,tag=bigger_crafting_table_display\]/.test(source);
 }
 
 function isBctCorebreakerDigScenario(source, spec) {
@@ -1559,6 +1571,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/bct-local-display.js" }
     ).some((issue) => issue.message.includes("queryBctDisplayCount")),
     "scenarioQualityIssues should warn when scenarios define local BCT display counters"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'await command("kill @e[type=item]", 250); await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);',
+      { path: "tests/scenarios/bct-manual-cleanup.js" }
+    ).some((issue) => issue.message.includes("clearBctArtifacts")),
+    "scenarioQualityIssues should warn when scenarios manually clear BCT artifacts"
   );
   assertSelf(
     scenarioQualityIssues(
