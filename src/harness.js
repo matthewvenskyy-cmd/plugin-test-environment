@@ -43,6 +43,10 @@ async function main() {
     await listArtifacts();
     return;
   }
+  if (command === "clean-selftest-artifacts") {
+    await cleanSelftestArtifacts();
+    return;
+  }
   if (command === "rerun-failures") {
     await rerunFailures(config);
     return;
@@ -514,6 +518,7 @@ async function failureArtifacts() {
       const text = await fs.readFile(artifactPath, "utf8").catch(() => "");
       return {
         path: path.relative(root, artifactPath),
+        absolutePath: artifactPath,
         modifiedIso: stats.mtime.toISOString(),
         scenario: artifactField(text, "Scenario"),
         message: artifactFirstErrorLine(text),
@@ -521,6 +526,22 @@ async function failureArtifacts() {
       };
     }));
   return artifacts.sort((a, b) => b.modifiedIso.localeCompare(a.modifiedIso));
+}
+
+async function cleanSelftestArtifacts() {
+  const selftestArtifacts = (await failureArtifacts()).filter((artifact) => artifact.selftest);
+  const dryRun = Boolean(flags["dry-run"]);
+  if (selftestArtifacts.length === 0) {
+    console.log("No selftest failure artifacts found.");
+    return;
+  }
+  for (const artifact of selftestArtifacts) {
+    if (!dryRun) {
+      await fs.rm(artifact.absolutePath, { force: true });
+    }
+    console.log(`${dryRun ? "Would remove" : "Removed"} ${artifact.path}`);
+  }
+  console.log(`${dryRun ? "Would remove" : "Removed"} ${selftestArtifacts.length} selftest artifact(s).`);
 }
 
 function isSelftestArtifact(filename, text) {
@@ -1425,6 +1446,7 @@ async function runSelfTest() {
   assertSelf(selftestArtifact?.scenario === "Synthetic Failure", "failureArtifacts should read artifact scenario names");
   assertSelf(selftestArtifact?.message === "Error: synthetic failure", "failureArtifacts should read the first error line");
   assertSelf(selftestArtifact?.selftest, "failureArtifacts should mark synthetic selftest artifacts");
+  assertSelf(selftestArtifact?.absolutePath === artifact, "failureArtifacts should preserve absolute artifact paths for cleanup");
   console.log("Harness selftest passed.");
 }
 

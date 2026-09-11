@@ -16,6 +16,7 @@
     "list:failures": "node src/harness.js list-failures",
     "list:artifacts": "node src/harness.js list-artifacts",
     "list:areas": "node src/harness.js list-areas",
+    "clean:selftest-artifacts": "node src/harness.js clean-selftest-artifacts",
     "rerun:failures": "node src/harness.js rerun-failures --no-build",
     "scenarios": "node src/harness.js scenarios --no-build",
     "scenarios:build": "npm run build && npm run scenarios",

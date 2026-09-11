@@ -82,6 +82,13 @@ node src/harness.js list-artifacts --include-selftest
 node src/harness.js list-artifacts --json
 ```
 
+Clean synthetic selftest artifacts while keeping real scenario failure evidence:
+
+```powershell
+node src/harness.js clean-selftest-artifacts --dry-run
+npm.cmd run clean:selftest-artifacts
+```
+
 Rerun only the failed scenarios from the last JUnit report:
 
 ```powershell
