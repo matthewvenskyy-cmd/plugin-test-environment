@@ -179,6 +179,11 @@ export function queryBctDisplayCount(ctx, position, radius = 1.5) {
   return queryEntityCount(ctx, `@e[type=item_display,tag=bigger_crafting_table_display,x=${position.x + 0.5},y=${position.y + 0.5},z=${position.z + 0.5},distance=..${radius}]`);
 }
 
+export async function countBctItemsNear(ctx, position, holders = [], radius = 3) {
+  const dropped = await queryDroppedItemEntityCount(ctx, position.offset(0.5, 0.5, 0.5), radius);
+  return holders.reduce((total, bot) => total + countBctItems(bot), dropped);
+}
+
 export async function assertNoBctLeak(ctx, options) {
   const {
     position,
@@ -187,9 +192,7 @@ export async function assertNoBctLeak(ctx, options) {
     expectedDisplays = 1,
     droppedRadius = 3
   } = options;
-  const dropped = await queryDroppedItemEntityCount(ctx, position.offset(0.5, 0.5, 0.5), droppedRadius);
-  const inventoryItems = holders.reduce((total, bot) => total + countBctItems(bot), 0);
-  const producedBctCount = inventoryItems + dropped;
+  const producedBctCount = await countBctItemsNear(ctx, position, holders, droppedRadius);
   ctx.assert(producedBctCount === 0, `${label} produced ${producedBctCount} BCT item(s)`);
   const displayCount = await queryBctDisplayCount(ctx, position);
   ctx.assert(displayCount === expectedDisplays, `${label} should have ${expectedDisplays} BCT display entity; found ${displayCount}`);

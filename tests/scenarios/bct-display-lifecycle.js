@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { placeBiggerCraftingTable, queryEntityCount, serverBlockIs, waitForInventoryItem } from "./helpers.js";
+import { placeBiggerCraftingTable, queryBctDisplayCount, serverBlockIs, waitForInventoryItem } from "./helpers.js";
 
 export const name = "BCT display lifecycle follows block";
 
@@ -22,7 +22,7 @@ export async function run(ctx) {
   await command("gamemode survival BctDisplayBot", 250);
 
   await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK, { settleMs: 1250 });
-  assert(await queryBctDisplays(ctx) === 1, "placing a BCT should create exactly one display entity");
+  assert(await queryBctDisplayCount(ctx, BCT_BLOCK) === 1, "placing a BCT should create exactly one display entity");
 
   await command("give BctDisplayBot minecraft:diamond_pickaxe", 500);
   const pickaxe = await waitForInventoryItem(bot, (item) => item?.name === "diamond_pickaxe", "diamond pickaxe");
@@ -35,7 +35,7 @@ export async function run(ctx) {
   }
 
   assert(await serverBlockIs(ctx, BCT_BLOCK, "air"), "normal BCT break should remove the block");
-  assert(await queryBctDisplays(ctx) === 0, "breaking a BCT should remove its display entity");
+  assert(await queryBctDisplayCount(ctx, BCT_BLOCK) === 0, "breaking a BCT should remove its display entity");
 
   await command("kill @e[type=item]", 250);
   await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
@@ -44,8 +44,4 @@ export async function run(ctx) {
   await command(`setblock ${BCT_BLOCK.x} ${BCT_BLOCK.y} ${BCT_BLOCK.z} minecraft:air`, 250);
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:air`, 250);
   await command(`setblock ${FLOOR_BLOCK.x} ${FLOOR_BLOCK.y} ${FLOOR_BLOCK.z} minecraft:air`, 250);
-}
-
-function queryBctDisplays(ctx) {
-  return queryEntityCount(ctx, `@e[type=item_display,tag=bigger_crafting_table_display,x=${BCT_BLOCK.x + 0.5},y=${BCT_BLOCK.y + 0.5},z=${BCT_BLOCK.z + 0.5},distance=..1.5]`);
 }
