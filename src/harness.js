@@ -55,6 +55,10 @@ async function main() {
     await rerunFailures(config);
     return;
   }
+  if (command === "rerun-artifact-summary") {
+    await rerunArtifactSummary(config);
+    return;
+  }
   if (command === "list-areas") {
     await listAreas(config);
     return;
@@ -722,6 +726,58 @@ async function rerunFailures(config) {
   }
 }
 
+async function rerunArtifactSummary(config) {
+  const { filteredArtifacts } = await selectedFailureArtifacts();
+  const groups = artifactFailureSummary(filteredArtifacts);
+  const group = selectedArtifactSummaryGroup(groups);
+  if (!group) {
+    console.log("No matching failure artifact pattern found.");
+    return;
+  }
+  const scenarios = scenariosMatchingPaths(config.scenarios ?? [], group.scenarioPaths);
+  if (scenarios.length === 0) {
+    throw new Error(`No configured scenarios matched artifact pattern paths: ${group.scenarioPaths.join(", ") || "(none)"}`);
+  }
+  console.log(`Rerunning ${scenarios.length} scenario(s) from artifact pattern: ${group.message || "(no error line)"}`);
+  if (flags["dry-run"]) {
+    console.log(`  command: ${rerunScenarioCommand(scenarios.map((scenario) => normalizeScenarioSpec(scenario).path))}`);
+    return;
+  }
+  await setup(config);
+  if (!flags["no-build"]) await buildProjects(config);
+  if (flags["fresh-scenarios"]) {
+    await runFreshScenarioList(config, scenarios);
+    console.log("Artifact pattern rerun passed.");
+    return;
+  }
+  await prepareServer(config);
+  const server = await runServer(config, { interactive: false });
+  try {
+    await runConsoleSmoke(config, server);
+    await runScenarioBatch(config, server, scenarios);
+    await assertCleanLog(config);
+    console.log("Artifact pattern rerun passed.");
+  } finally {
+    await stopServer(server);
+  }
+}
+
+function selectedArtifactSummaryGroup(groups, options = flags) {
+  const pattern = String(options.pattern ?? "").trim().toLowerCase();
+  const index = parsePositiveInteger(options.index, 1) - 1;
+  if (pattern) {
+    return groups.find((group) => {
+      const haystack = [
+        group.message,
+        group.rerunCommand,
+        ...group.scenarioPaths
+      ].join("\n").toLowerCase();
+      return haystack.includes(pattern);
+    });
+  }
+  return groups[index];
+}
+
 async function listAreas(config) {
   const details = await scenarioListDetails(await selectedScenarios(config));
   const areas = scenarioAreaSummary(details);
@@ -1160,15 +1216,15 @@ function duplicateScenarioPaths(scenarios) {
 }
 
 function normalizeScenarioPathKey(scenarioPath) {
-  return scenarioPath.replace(/\\/g, "/").toLowerCase();
+  return String(scenarioPath ?? "").replace(/\\/g, "/").toLowerCase();
 }
 
 function scenariosMatchingFailurePaths(scenarios, failures) {
-  const failedPaths = new Set(
-    failures
-      .map((failure) => normalizeScenarioPathKey(failure.path))
-      .filter(Boolean)
-  );
+  return scenariosMatchingPaths(scenarios, failures.map((failure) => failure.path));
+}
+
+function scenariosMatchingPaths(scenarios, paths) {
+  const failedPaths = new Set(paths.map(normalizeScenarioPathKey).filter(Boolean));
   return scenarios.filter((scenario) => {
     const scenarioPath = normalizeScenarioSpec(scenario).path ?? "";
     return failedPaths.has(normalizeScenarioPathKey(scenarioPath));
@@ -1472,6 +1528,26 @@ async function runSelfTest() {
       { path: "b.txt", modifiedIso: "2026-01-01T00:00:00.000Z", scenario: "A again", scenarioPath: "tests/scenarios/a.js", message: "same" }
     ])[0].rerunCommand === 'node src/harness.js scenarios --no-build --scenario="tests/scenarios/a.js"',
     "artifactFailureSummary should include a de-duplicated rerun command"
+  );
+  const summaryGroups = artifactFailureSummary([
+    { path: "a.txt", modifiedIso: "2026-01-02T00:00:00.000Z", scenario: "A", scenarioPath: "tests/scenarios/a.js", message: "same" },
+    { path: "b.txt", modifiedIso: "2026-01-01T00:00:00.000Z", scenario: "B", scenarioPath: "tests/scenarios/b.js", message: "same" },
+    { path: "c.txt", modifiedIso: "2026-01-03T00:00:00.000Z", scenario: "C", scenarioPath: "tests/scenarios/c.js", message: "other" }
+  ]);
+  assertSelf(
+    selectedArtifactSummaryGroup(summaryGroups, { pattern: "c.js" })?.message === "other",
+    "selectedArtifactSummaryGroup should select a pattern by scenario path text"
+  );
+  assertSelf(
+    selectedArtifactSummaryGroup(summaryGroups, { index: "2" })?.message === "other",
+    "selectedArtifactSummaryGroup should select a pattern by 1-based index"
+  );
+  assertSelf(
+    scenariosMatchingPaths([
+      "tests/scenarios/a.js",
+      { path: "tests\\scenarios\\b.js" }
+    ], ["TESTS/SCENARIOS/B.JS"]).length === 1,
+    "scenariosMatchingPaths should match configured scenario paths case-insensitively"
   );
   assertSelf(
     normalizeAreaToken("Core-Plugin") === "coreplugin",

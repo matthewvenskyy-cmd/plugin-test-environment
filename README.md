@@ -93,6 +93,14 @@ node src/harness.js list-artifact-summary --json
 
 Each text summary group includes a copyable rerun command for the configured scenario paths that produced that pattern.
 
+Rerun the top repeated artifact pattern, or select a different pattern by message/path text:
+
+```powershell
+npm.cmd run rerun:artifact-summary
+node src/harness.js rerun-artifact-summary --no-build --pattern=windowOpen --dry-run
+node src/harness.js rerun-artifact-summary --no-build --index=2 --fresh-scenarios
+```
+
 Clean synthetic selftest artifacts while keeping real scenario failure evidence:
 
 ```powershell
