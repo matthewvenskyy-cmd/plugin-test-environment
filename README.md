@@ -195,7 +195,7 @@ Manual scenarios are skipped by default and can be run with `--scenario=<name>`.
 
 `npm.cmd run validate:config` checks scenario paths, duplicate scenario registrations, exported scenario names and `run` functions, expected-failure regexes, duplicate or overlong `spawnBot` usernames, literal command references to unknown or overlong player names, and BCT/Corebreaker scenario helper usage.
 
-Scenario modules receive `ctx.waitForCondition(predicate, { timeoutMs, intervalMs, label })` for arbitrary polling, plus `ctx.waitForInventory(predicate, timeoutMs)` for the primary bot inventory. Shared scenario helpers also export `waitForCondition` for bot-side polling utilities, `queryBctDisplayCount` and `countBctItemsNear` for BCT display/item accounting, and `assertNoBctLeak` for cross-plugin custom-block item/display leak assertions.
+Scenario modules receive `ctx.waitForCondition(predicate, { timeoutMs, intervalMs, label })` for arbitrary polling, plus `ctx.waitForInventory(predicate, timeoutMs)` for the primary bot inventory. Shared scenario helpers also export `waitForCondition` for bot-side polling utilities, `clearBctArtifacts` for BCT item/display cleanup, `queryBctDisplayCount` and `countBctItemsNear` for BCT display/item accounting, and `assertNoBctLeak` for cross-plugin custom-block item/display leak assertions.
 
 ## Suggested Testing Strategy
 

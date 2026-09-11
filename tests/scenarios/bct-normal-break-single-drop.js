@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { countBctItemsNear, countItemsByName, placeBiggerCraftingTable, serverBlockIs } from "./helpers.js";
+import { clearBctArtifacts, countBctItemsNear, countItemsByName, placeBiggerCraftingTable, serverBlockIs } from "./helpers.js";
 
 export const name = "BCT normal break returns one item";
 
@@ -10,7 +10,7 @@ const FLOOR_BLOCK = new Vec3(2, 79, 0);
 export async function run(ctx) {
   const { bot, assert, command, wait } = ctx;
 
-  await command("kill @e[type=item]", 250);
+  await clearBctArtifacts(ctx);
   await command(`setblock ${FLOOR_BLOCK.x} ${FLOOR_BLOCK.y} ${FLOOR_BLOCK.z} minecraft:stone`, 250);
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:stone`, 250);
   await command(`setblock ${BCT_BLOCK.x} ${BCT_BLOCK.y} ${BCT_BLOCK.z} minecraft:air`, 250);
@@ -41,7 +41,7 @@ export async function run(ctx) {
   const returnedBctCount = await countBctItemsNear(ctx, BCT_BLOCK, [bot]);
   assert(returnedBctCount === 1, `normal BCT break should leave exactly one BCT item, found ${returnedBctCount}`);
 
-  await command("kill @e[type=item]", 250);
+  await clearBctArtifacts(ctx);
   await command("clear ScenarioBot minecraft:crafter", 250);
   await command("clear ScenarioBot minecraft:diamond_pickaxe", 250);
   await command(`setblock ${BCT_BLOCK.x} ${BCT_BLOCK.y} ${BCT_BLOCK.z} minecraft:air`, 250);

@@ -28,6 +28,11 @@ export function countItemsByName(bot, itemName) {
     .reduce((total, item) => total + item.count, 0);
 }
 
+export async function clearBctArtifacts(ctx) {
+  await ctx.command("kill @e[type=item]", 250);
+  await ctx.command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
+}
+
 export async function waitForCondition(predicate, options = {}) {
   const timeoutMs = options.timeoutMs ?? 5000;
   const intervalMs = options.intervalMs ?? 100;
