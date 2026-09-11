@@ -1,10 +1,9 @@
 import { Vec3 } from "vec3";
 import {
-  countBctItems,
+  assertNoBctLeak,
   isCorebreakerItem,
   placeBiggerCraftingTable,
-  queryDroppedItemEntityCount,
-  queryEntityCount,
+  queryBctDisplayCount,
   selectedItemHasNoDamage,
   waitForBlock,
   waitForChat,
@@ -55,7 +54,7 @@ export async function run(ctx) {
     await wait(500);
 
     await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK);
-    assert(await queryBctDisplays(ctx) === 1, "placing a BCT should create exactly one display entity before mounted target contents check");
+    assert(await queryBctDisplayCount(ctx, BCT_BLOCK) === 1, "placing a BCT should create exactly one display entity before mounted target contents check");
 
     await command("give ScenarioBot minecraft:diamond 1", 500);
     const diamond = await waitForInventoryItem(bot, (item) => item?.name === "diamond", "mounted target BCT contents test diamond");
@@ -88,12 +87,11 @@ export async function run(ctx) {
     await wait(1000);
 
     assert(target.blockAt(BCT_BLOCK)?.name === "crafter", "ridden target Corebreaker should not remove a BCT with contents");
-    assert(await queryBctDisplays(ctx) === 1, "ridden target Corebreaker attempt should leave the BCT display entity intact");
-    const producedBctCount = countBctItems(bot)
-      + countBctItems(rider)
-      + countBctItems(target)
-      + await queryDroppedItemEntityCount(ctx, BCT_BLOCK.offset(0.5, 0.5, 0.5));
-    assert(producedBctCount === 0, `ridden target Corebreaker contents attempt produced ${producedBctCount} BCT item(s)`);
+    await assertNoBctLeak(ctx, {
+      position: BCT_BLOCK,
+      holders: [bot, rider, target],
+      label: "ridden target Corebreaker contents attempt"
+    });
     assert(await selectedItemHasNoDamage(ctx, "MTBctContents"), "ridden target Corebreaker contents attempt should not damage the Corebreaker");
 
     const secondWindow = await bot.openBlock(bot.blockAt(BCT_BLOCK));
@@ -112,8 +110,4 @@ export async function run(ctx) {
     await command("fill 461 79 -2 462 79 2 minecraft:air", 500);
     await command("forceload remove 461 -2 462 2", 250);
   }
-}
-
-function queryBctDisplays(ctx) {
-  return queryEntityCount(ctx, `@e[type=item_display,tag=bigger_crafting_table_display,x=${BCT_BLOCK.x + 0.5},y=${BCT_BLOCK.y + 0.5},z=${BCT_BLOCK.z + 0.5},distance=..1.5]`);
 }

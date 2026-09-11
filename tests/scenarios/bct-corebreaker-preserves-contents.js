@@ -1,10 +1,9 @@
 import { Vec3 } from "vec3";
 import {
-  countBctItems,
+  assertNoBctLeak,
   isCorebreakerItem,
   placeBiggerCraftingTable,
-  queryDroppedItemEntityCount,
-  queryEntityCount,
+  queryBctDisplayCount,
   selectedItemHasNoDamage,
   waitForBlock,
   waitForInventoryItem
@@ -33,7 +32,7 @@ export async function run(ctx) {
     await waitForBlock(bot, SUPPORT_BLOCK, "stone", "BCT support block");
 
     await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK);
-    assert(await queryBctDisplays(ctx) === 1, "placing a BCT should create exactly one display entity");
+    assert(await queryBctDisplayCount(ctx, BCT_BLOCK) === 1, "placing a BCT should create exactly one display entity");
 
     await command("give ScenarioBot minecraft:diamond 1", 500);
     const diamond = await waitForInventoryItem(bot, (item) => item?.name === "diamond", "BCT test diamond");
@@ -54,9 +53,11 @@ export async function run(ctx) {
     await wait(1500);
 
     assert(bot.blockAt(BCT_BLOCK)?.name === "crafter", "Corebreaker should not remove a BCT with contents");
-    assert(await queryBctDisplays(ctx) === 1, "Corebreaker attempt should leave the BCT display entity intact");
-    const producedBctCount = countBctItems(bot) + await queryDroppedItemEntityCount(ctx, BCT_BLOCK.offset(0.5, 0.5, 0.5));
-    assert(producedBctCount === 0, `Corebreaker attempt produced ${producedBctCount} BCT item(s)`);
+    await assertNoBctLeak(ctx, {
+      position: BCT_BLOCK,
+      holders: [bot],
+      label: "Corebreaker attempt"
+    });
     assert(await selectedItemHasNoDamage(ctx, "ScenarioBot"), "Corebreaker attempt should not damage the Corebreaker");
 
     const secondWindow = await bot.openBlock(bot.blockAt(BCT_BLOCK));
@@ -71,8 +72,4 @@ export async function run(ctx) {
     await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:air`, 250);
     await command(`setblock ${FLOOR_BLOCK.x} ${FLOOR_BLOCK.y} ${FLOOR_BLOCK.z} minecraft:air`, 250);
   }
-}
-
-function queryBctDisplays(ctx) {
-  return queryEntityCount(ctx, `@e[type=item_display,tag=bigger_crafting_table_display,x=${BCT_BLOCK.x + 0.5},y=${BCT_BLOCK.y + 0.5},z=${BCT_BLOCK.z + 0.5},distance=..1.5]`);
 }

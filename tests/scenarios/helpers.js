@@ -175,6 +175,26 @@ export async function queryDroppedItemEntityCount(ctx, position, radius = 3) {
   return queryEntityCount(ctx, `@e[type=item,x=${position.x},y=${position.y},z=${position.z},distance=..${radius}]`);
 }
 
+export function queryBctDisplayCount(ctx, position, radius = 1.5) {
+  return queryEntityCount(ctx, `@e[type=item_display,tag=bigger_crafting_table_display,x=${position.x + 0.5},y=${position.y + 0.5},z=${position.z + 0.5},distance=..${radius}]`);
+}
+
+export async function assertNoBctLeak(ctx, options) {
+  const {
+    position,
+    holders = [],
+    label = "BCT state",
+    expectedDisplays = 1,
+    droppedRadius = 3
+  } = options;
+  const dropped = await queryDroppedItemEntityCount(ctx, position.offset(0.5, 0.5, 0.5), droppedRadius);
+  const inventoryItems = holders.reduce((total, bot) => total + countBctItems(bot), 0);
+  const producedBctCount = inventoryItems + dropped;
+  ctx.assert(producedBctCount === 0, `${label} produced ${producedBctCount} BCT item(s)`);
+  const displayCount = await queryBctDisplayCount(ctx, position);
+  ctx.assert(displayCount === expectedDisplays, `${label} should have ${expectedDisplays} BCT display entity; found ${displayCount}`);
+}
+
 export async function queryEntityCount(ctx, selector) {
   const objective = "scenario_count";
   await ctx.command(`scoreboard objectives add ${objective} dummy`, 100);

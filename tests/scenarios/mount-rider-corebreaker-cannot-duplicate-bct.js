@@ -1,12 +1,12 @@
 import { Vec3 } from "vec3";
 import {
+  assertNoBctLeak,
   countBctItems,
   countMatchingItems,
   isCorebreakerItem,
   placeBiggerCraftingTable,
+  queryBctDisplayCount,
   queryCorebreakerCharges,
-  queryDroppedItemEntityCount,
-  queryEntityCount,
   selectedItemHasNoDamage,
   waitForBlock,
   waitForChat,
@@ -56,7 +56,7 @@ export async function run(ctx) {
 
     await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK);
     assert(countBctItems(bot) === 0, "BCT item should be consumed after placement");
-    assert(await queryBctDisplays(ctx) === 1, "placing a BCT should create exactly one display entity");
+    assert(await queryBctDisplayCount(ctx, BCT_BLOCK) === 1, "placing a BCT should create exactly one display entity");
 
     const corebreaker = await waitForInventoryItem(rider, isCorebreakerItem, "mounted rider Corebreaker");
     const startingCorebreakers = countMatchingItems(rider, isCorebreakerItem);
@@ -86,12 +86,11 @@ export async function run(ctx) {
     await wait(1000);
 
     assert(rider.blockAt(BCT_BLOCK)?.name === "crafter", "mounted Corebreaker should not remove the BCT");
-    assert(await queryBctDisplays(ctx) === 1, "mounted Corebreaker attempt should not remove or duplicate the BCT display entity");
-    const producedBctCount = countBctItems(bot)
-      + countBctItems(rider)
-      + countBctItems(seat)
-      + await queryDroppedItemEntityCount(ctx, BCT_BLOCK.offset(0.5, 0.5, 0.5));
-    assert(producedBctCount === 0, `mounted Corebreaker attempt produced ${producedBctCount} BCT item(s)`);
+    await assertNoBctLeak(ctx, {
+      position: BCT_BLOCK,
+      holders: [bot, rider, seat],
+      label: "mounted Corebreaker attempt"
+    });
     assert(countMatchingItems(rider, isCorebreakerItem) === startingCorebreakers, "mounted denied BCT break should keep the Corebreaker item");
     assert(await queryCorebreakerCharges(rider) === startingCharges, "mounted denied BCT break should not consume a Corebreaker charge");
     assert(await selectedItemHasNoDamage(ctx, "MountBctBreak"), "mounted denied BCT break should not damage the Corebreaker");
@@ -105,8 +104,4 @@ export async function run(ctx) {
     await command("fill 231 79 -3 233 79 2 minecraft:air", 500);
     await command("forceload remove 232 1", 250);
   }
-}
-
-function queryBctDisplays(ctx) {
-  return queryEntityCount(ctx, `@e[type=item_display,tag=bigger_crafting_table_display,x=${BCT_BLOCK.x + 0.5},y=${BCT_BLOCK.y + 0.5},z=${BCT_BLOCK.z + 0.5},distance=..1.5]`);
 }

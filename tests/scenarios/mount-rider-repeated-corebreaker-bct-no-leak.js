@@ -1,12 +1,12 @@
 import { Vec3 } from "vec3";
 import {
+  assertNoBctLeak,
   countBctItems,
   countMatchingItems,
   isCorebreakerItem,
   placeBiggerCraftingTable,
+  queryBctDisplayCount,
   queryCorebreakerCharges,
-  queryDroppedItemEntityCount,
-  queryEntityCount,
   selectedItemHasNoDamage,
   waitForBlock,
   waitForChat,
@@ -57,7 +57,7 @@ export async function run(ctx) {
 
     await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK);
     assert(countBctItems(bot) === 0, "BCT item should be consumed after placement");
-    assert(await queryBctDisplays(ctx) === 1, "placing a BCT should create exactly one display entity before repeated mounted attempts");
+    assert(await queryBctDisplayCount(ctx, BCT_BLOCK) === 1, "placing a BCT should create exactly one display entity before repeated mounted attempts");
 
     const corebreaker = await waitForInventoryItem(rider, isCorebreakerItem, "mounted rider repeated BCT Corebreaker");
     const startingCorebreakers = countMatchingItems(rider, isCorebreakerItem);
@@ -88,12 +88,11 @@ export async function run(ctx) {
       await wait(1000);
 
       assert(rider.blockAt(BCT_BLOCK)?.name === "crafter", `attempt ${attempt} should leave the BCT block placed`);
-      assert(await queryBctDisplays(ctx) === 1, `attempt ${attempt} should keep exactly one BCT display entity`);
-      const producedBctCount = countBctItems(bot)
-        + countBctItems(rider)
-        + countBctItems(seat)
-        + await queryDroppedItemEntityCount(ctx, BCT_BLOCK.offset(0.5, 0.5, 0.5));
-      assert(producedBctCount === 0, `attempt ${attempt} produced ${producedBctCount} BCT item(s)`);
+      await assertNoBctLeak(ctx, {
+        position: BCT_BLOCK,
+        holders: [bot, rider, seat],
+        label: `attempt ${attempt}`
+      });
       assert(countMatchingItems(rider, isCorebreakerItem) === startingCorebreakers, `attempt ${attempt} should keep the Corebreaker item`);
       assert(await queryCorebreakerCharges(rider) === startingCharges, `attempt ${attempt} should not consume a Corebreaker charge`);
       assert(await selectedItemHasNoDamage(ctx, "MRBctRepeat"), `attempt ${attempt} should not damage the Corebreaker`);
@@ -110,8 +109,4 @@ export async function run(ctx) {
     await command("fill 449 79 -2 450 79 2 minecraft:air", 500);
     await command("forceload remove 449 -2 450 2", 250);
   }
-}
-
-function queryBctDisplays(ctx) {
-  return queryEntityCount(ctx, `@e[type=item_display,tag=bigger_crafting_table_display,x=${BCT_BLOCK.x + 0.5},y=${BCT_BLOCK.y + 0.5},z=${BCT_BLOCK.z + 0.5},distance=..1.5]`);
 }
