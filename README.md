@@ -85,7 +85,8 @@ node src/harness.js list-artifacts --json
 Clean synthetic selftest artifacts while keeping real scenario failure evidence:
 
 ```powershell
-node src/harness.js clean-selftest-artifacts --dry-run
+node src/harness.js clean-selftest-artifacts --dry-run --limit=20
+node src/harness.js clean-selftest-artifacts --dry-run --json
 npm.cmd run clean:selftest-artifacts
 ```
 

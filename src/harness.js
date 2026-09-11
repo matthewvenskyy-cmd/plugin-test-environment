@@ -531,17 +531,33 @@ async function failureArtifacts() {
 async function cleanSelftestArtifacts() {
   const selftestArtifacts = (await failureArtifacts()).filter((artifact) => artifact.selftest);
   const dryRun = Boolean(flags["dry-run"]);
+  const limit = parsePositiveInteger(flags.limit, selftestArtifacts.length);
+  const targetArtifacts = selftestArtifacts.slice(0, limit);
+  const action = dryRun ? "wouldRemove" : "removed";
+  if (flags.json) {
+    console.log(JSON.stringify({
+      summary: {
+        [action]: targetArtifacts.length,
+        totalSelftestArtifacts: selftestArtifacts.length
+      },
+      artifacts: targetArtifacts
+    }, null, 2));
+    return;
+  }
   if (selftestArtifacts.length === 0) {
     console.log("No selftest failure artifacts found.");
     return;
   }
-  for (const artifact of selftestArtifacts) {
+  for (const artifact of targetArtifacts) {
     if (!dryRun) {
       await fs.rm(artifact.absolutePath, { force: true });
     }
     console.log(`${dryRun ? "Would remove" : "Removed"} ${artifact.path}`);
   }
-  console.log(`${dryRun ? "Would remove" : "Removed"} ${selftestArtifacts.length} selftest artifact(s).`);
+  console.log(`${dryRun ? "Would remove" : "Removed"} ${targetArtifacts.length} selftest artifact(s).`);
+  if (targetArtifacts.length < selftestArtifacts.length) {
+    console.log(`${selftestArtifacts.length - targetArtifacts.length} selftest artifact(s) remain after this limited cleanup.`);
+  }
 }
 
 function isSelftestArtifact(filename, text) {
