@@ -534,8 +534,12 @@ async function listArtifactSummary() {
   }
   for (const group of listedGroups) {
     console.log(`${group.count}x ${group.message || "(no error line)"}`);
+    if (group.rerunCommand) {
+      console.log(`  rerun: ${group.rerunCommand}`);
+    }
     for (const example of group.examples) {
       console.log(`  ${example.modifiedIso}  ${example.scenario || example.path}`);
+      if (example.scenarioPath) console.log(`    path: ${example.scenarioPath}`);
       console.log(`    artifact: ${example.path}`);
     }
   }
@@ -571,6 +575,7 @@ async function failureArtifacts() {
         absolutePath: artifactPath,
         modifiedIso: stats.mtime.toISOString(),
         scenario: artifactField(text, "Scenario"),
+        scenarioPath: artifactField(text, "Path"),
         message: artifactFirstErrorLine(text),
         selftest: isSelftestArtifact(entry.name, text)
       };
@@ -620,6 +625,7 @@ function artifactMatchesSearch(artifact, needles) {
   const haystack = [
     artifact.path,
     artifact.scenario,
+    artifact.scenarioPath,
     artifact.message
   ].join("\n").toLowerCase();
   return needles.some((needle) => haystack.includes(needle.toLowerCase()));
@@ -629,18 +635,38 @@ function artifactFailureSummary(artifacts) {
   const groups = new Map();
   for (const artifact of artifacts) {
     const key = artifact.message || "(no error line)";
-    const group = groups.get(key) ?? { message: artifact.message, count: 0, examples: [] };
+    const group = groups.get(key) ?? { message: artifact.message, count: 0, examples: [], scenarioPaths: [] };
     group.count += 1;
+    if (artifact.scenarioPath && !group.scenarioPaths.includes(artifact.scenarioPath)) {
+      group.scenarioPaths.push(artifact.scenarioPath);
+    }
     if (group.examples.length < 3) {
       group.examples.push({
         path: artifact.path,
         modifiedIso: artifact.modifiedIso,
-        scenario: artifact.scenario
+        scenario: artifact.scenario,
+        scenarioPath: artifact.scenarioPath
       });
     }
     groups.set(key, group);
   }
-  return [...groups.values()].sort((a, b) => b.count - a.count || (a.message || "").localeCompare(b.message || ""));
+  return [...groups.values()]
+    .map((group) => ({
+      ...group,
+      rerunCommand: group.scenarioPaths.length > 0 ? rerunScenarioCommand(group.scenarioPaths) : ""
+    }))
+    .sort((a, b) => b.count - a.count || (a.message || "").localeCompare(b.message || ""));
+}
+
+function rerunScenarioCommand(scenarioPaths) {
+  return [
+    "node src/harness.js scenarios --no-build",
+    ...scenarioPaths.map((scenarioPath) => `--scenario="${escapeCommandDoubleQuoted(scenarioPath)}"`)
+  ].join(" ");
+}
+
+function escapeCommandDoubleQuoted(value) {
+  return String(value).replace(/"/g, "\\\"");
 }
 
 function artifactField(text, label) {
@@ -1434,11 +1460,18 @@ async function runSelfTest() {
   );
   assertSelf(
     artifactFailureSummary([
-      { path: "a.txt", modifiedIso: "2026-01-02T00:00:00.000Z", scenario: "A", message: "same" },
-      { path: "b.txt", modifiedIso: "2026-01-01T00:00:00.000Z", scenario: "B", message: "same" },
-      { path: "c.txt", modifiedIso: "2026-01-03T00:00:00.000Z", scenario: "C", message: "other" }
+      { path: "a.txt", modifiedIso: "2026-01-02T00:00:00.000Z", scenario: "A", scenarioPath: "tests/scenarios/a.js", message: "same" },
+      { path: "b.txt", modifiedIso: "2026-01-01T00:00:00.000Z", scenario: "B", scenarioPath: "tests/scenarios/b.js", message: "same" },
+      { path: "c.txt", modifiedIso: "2026-01-03T00:00:00.000Z", scenario: "C", scenarioPath: "tests/scenarios/c.js", message: "other" }
     ])[0].count === 2,
     "artifactFailureSummary should group artifacts by first error line"
+  );
+  assertSelf(
+    artifactFailureSummary([
+      { path: "a.txt", modifiedIso: "2026-01-02T00:00:00.000Z", scenario: "A", scenarioPath: "tests/scenarios/a.js", message: "same" },
+      { path: "b.txt", modifiedIso: "2026-01-01T00:00:00.000Z", scenario: "A again", scenarioPath: "tests/scenarios/a.js", message: "same" }
+    ])[0].rerunCommand === 'node src/harness.js scenarios --no-build --scenario="tests/scenarios/a.js"',
+    "artifactFailureSummary should include a de-duplicated rerun command"
   );
   assertSelf(
     normalizeAreaToken("Core-Plugin") === "coreplugin",
@@ -1553,6 +1586,7 @@ async function runSelfTest() {
   const artifacts = await failureArtifacts();
   const selftestArtifact = artifacts.find((candidate) => candidate.path === path.relative(root, artifact));
   assertSelf(selftestArtifact?.scenario === "Synthetic Failure", "failureArtifacts should read artifact scenario names");
+  assertSelf(selftestArtifact?.scenarioPath === "tests/scenarios/failing-case.js", "failureArtifacts should read artifact scenario paths");
   assertSelf(selftestArtifact?.message === "Error: synthetic failure", "failureArtifacts should read the first error line");
   assertSelf(selftestArtifact?.selftest, "failureArtifacts should mark synthetic selftest artifacts");
   assertSelf(selftestArtifact?.absolutePath === artifact, "failureArtifacts should preserve absolute artifact paths for cleanup");

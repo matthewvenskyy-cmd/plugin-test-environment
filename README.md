@@ -91,6 +91,8 @@ node src/harness.js list-artifact-summary --scenario=mounted
 node src/harness.js list-artifact-summary --json
 ```
 
+Each text summary group includes a copyable rerun command for the configured scenario paths that produced that pattern.
+
 Clean synthetic selftest artifacts while keeping real scenario failure evidence:
 
 ```powershell
