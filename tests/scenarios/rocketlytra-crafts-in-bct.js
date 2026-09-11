@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { countItemsByName, displayText, placeBiggerCraftingTable, waitForInventoryItem } from "./helpers.js";
+import { clearBctArtifacts, countItemsByName, displayText, placeBiggerCraftingTable, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Rocketlytra crafts inside Bigger Crafting Table";
 
@@ -12,8 +12,7 @@ export async function run(ctx) {
   const { assert, command, wait, spawnBot } = ctx;
   const bot = await spawnBot("RocketBct");
 
-  await command("kill @e[type=item]", 250);
-  await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
+  await clearBctArtifacts(ctx);
   await command(`setblock ${FLOOR_BLOCK.x} ${FLOOR_BLOCK.y} ${FLOOR_BLOCK.z} minecraft:stone`, 250);
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:stone`, 250);
   await command(`setblock ${BCT_BLOCK.x} ${BCT_BLOCK.y} ${BCT_BLOCK.z} minecraft:air`, 250);
@@ -47,8 +46,7 @@ export async function run(ctx) {
   assert(rocketlytra.name === "elytra", `crafted item should stay an elytra, got ${rocketlytra.name}`);
   assert(countItemsByName(bot, "firework_rocket") === 0, "BCT crafting should consume exactly three firework rockets");
 
-  await command("kill @e[type=item]", 250);
-  await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
+  await clearBctArtifacts(ctx);
   await command("clear RocketBct", 250);
   await command(`setblock ${BCT_BLOCK.x} ${BCT_BLOCK.y} ${BCT_BLOCK.z} minecraft:air`, 250);
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:air`, 250);

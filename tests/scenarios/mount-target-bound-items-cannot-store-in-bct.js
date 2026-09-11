@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearBctArtifacts,
   countMatchingItems,
   isCoreItem,
   isCorebreakerItem,
@@ -23,8 +24,7 @@ export async function run(ctx) {
   const target = await spawnBot("MtTgtBct", { op: false });
 
   try {
-    await command("kill @e[type=item]", 250);
-    await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
+    await clearBctArtifacts(ctx);
     await command("forceload add 273 0 275 2", 250);
     await wait(500);
     await command("deop MtTgtBctR", 250);
@@ -89,8 +89,7 @@ export async function run(ctx) {
   } finally {
     rider.chat("/unmount");
     await wait(500);
-    await command("kill @e[type=item]", 250);
-    await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
+    await clearBctArtifacts(ctx);
     await command("clear MtTgtBctPlace minecraft:crafter", 250);
     await command(`setblock ${BCT_BLOCK.x} ${BCT_BLOCK.y} ${BCT_BLOCK.z} minecraft:air`, 250);
     await command("fill 273 79 0 275 79 2 minecraft:air", 500);

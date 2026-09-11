@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearBctArtifacts,
   countMatchingItems,
   isCoreItem,
   isCorebreakerItem,
@@ -19,8 +20,7 @@ export async function run(ctx) {
   const bot = await spawnBot("BoundBctHotbar");
 
   try {
-    await command("kill @e[type=item]", 250);
-    await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
+    await clearBctArtifacts(ctx);
     await command("forceload add 204 1", 250);
     await command(`setblock ${FLOOR_BLOCK.x} ${FLOOR_BLOCK.y} ${FLOOR_BLOCK.z} minecraft:stone`, 250);
     await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:stone`, 250);
@@ -44,8 +44,7 @@ export async function run(ctx) {
     assert(countMatchingItems(bot, isCoreItem) === startingCoreItems, "bound core item count should stay stable after BCT hotbar-swap attempts");
     assert(countMatchingItems(bot, isCorebreakerItem) === startingCorebreakers, "Corebreaker count should stay stable after BCT hotbar-swap attempts");
   } finally {
-    await command("kill @e[type=item]", 250);
-    await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
+    await clearBctArtifacts(ctx);
     await command("clear BoundBctHotbar minecraft:crafter", 250);
     await command(`setblock ${BCT_BLOCK.x} ${BCT_BLOCK.y} ${BCT_BLOCK.z} minecraft:air`, 250);
     await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:air`, 250);

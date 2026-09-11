@@ -1,6 +1,7 @@
 import { Vec3 } from "vec3";
 import {
   assertNoBctLeak,
+  clearBctArtifacts,
   countBctItems,
   countMatchingItems,
   isCorebreakerItem,
@@ -24,8 +25,7 @@ export async function run(ctx) {
   const breaker = await spawnBot("BctRepeatBreak", { op: false });
 
   try {
-    await command("kill @e[type=item]", 250);
-    await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
+    await clearBctArtifacts(ctx);
     await command("forceload add 216 1", 250);
     await command(`setblock ${PLACER_FLOOR.x} ${PLACER_FLOOR.y} ${PLACER_FLOOR.z} minecraft:stone`, 250);
     await command(`setblock ${BREAKER_FLOOR.x} ${BREAKER_FLOOR.y} ${BREAKER_FLOOR.z} minecraft:stone`, 250);
@@ -73,8 +73,7 @@ export async function run(ctx) {
       assert(await selectedItemHasNoDamage(ctx, "BctRepeatBreak"), `attempt ${attempt} should not damage the Corebreaker`);
     }
   } finally {
-    await command("kill @e[type=item]", 250);
-    await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
+    await clearBctArtifacts(ctx);
     await command("clear ScenarioBot minecraft:crafter", 250);
     await command(`setblock ${BCT_BLOCK.x} ${BCT_BLOCK.y} ${BCT_BLOCK.z} minecraft:air`, 250);
     await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:air`, 250);

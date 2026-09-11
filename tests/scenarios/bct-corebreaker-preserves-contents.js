@@ -1,6 +1,7 @@
 import { Vec3 } from "vec3";
 import {
   assertNoBctLeak,
+  clearBctArtifacts,
   isCorebreakerItem,
   placeBiggerCraftingTable,
   queryBctDisplayCount,
@@ -19,8 +20,7 @@ export async function run(ctx) {
   const { bot, assert, command, wait } = ctx;
 
   try {
-    await command("kill @e[type=item]", 250);
-    await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
+    await clearBctArtifacts(ctx);
     await command(`setblock ${FLOOR_BLOCK.x} ${FLOOR_BLOCK.y} ${FLOOR_BLOCK.z} minecraft:stone`, 250);
     await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:stone`, 250);
     await command(`setblock ${BCT_BLOCK.x} ${BCT_BLOCK.y} ${BCT_BLOCK.z} minecraft:air`, 250);
@@ -64,8 +64,7 @@ export async function run(ctx) {
     assert(secondWindow.containerItems().some((item) => item?.name === "diamond"), "Corebreaker attempt should preserve BCT inventory contents");
     secondWindow.close();
   } finally {
-    await command("kill @e[type=item]", 250);
-    await command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
+    await clearBctArtifacts(ctx);
     await command("clear ScenarioBot minecraft:crafter", 250);
     await command("clear ScenarioBot minecraft:diamond", 250);
     await command(`setblock ${BCT_BLOCK.x} ${BCT_BLOCK.y} ${BCT_BLOCK.z} minecraft:air`, 250);
