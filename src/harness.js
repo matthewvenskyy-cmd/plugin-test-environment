@@ -43,6 +43,10 @@ async function main() {
     await listArtifacts();
     return;
   }
+  if (command === "list-artifact-summary") {
+    await listArtifactSummary();
+    return;
+  }
   if (command === "clean-selftest-artifacts") {
     await cleanSelftestArtifacts();
     return;
@@ -470,11 +474,7 @@ async function listFailures() {
 }
 
 async function listArtifacts() {
-  const artifacts = await failureArtifacts();
-  const hiddenSelftestArtifacts = flags["include-selftest"] ? 0 : artifacts.filter((artifact) => artifact.selftest).length;
-  const filteredArtifacts = artifacts
-    .filter((artifact) => flags["include-selftest"] || !artifact.selftest)
-    .filter((artifact) => artifactMatchesSearch(artifact, splitFlagValues(flags.scenario)));
+  const { artifacts, filteredArtifacts, hiddenSelftestArtifacts } = await selectedFailureArtifacts();
   const limit = parsePositiveInteger(flags.limit, flags.json ? filteredArtifacts.length : 20);
   const listedArtifacts = filteredArtifacts.slice(0, limit);
   if (flags.json) {
@@ -506,6 +506,54 @@ async function listArtifacts() {
   if (hiddenSelftestArtifacts > 0) {
     console.log(`Hidden ${hiddenSelftestArtifacts} selftest artifact(s). Use --include-selftest to show them.`);
   }
+}
+
+async function listArtifactSummary() {
+  const { artifacts, filteredArtifacts, hiddenSelftestArtifacts } = await selectedFailureArtifacts();
+  const groups = artifactFailureSummary(filteredArtifacts);
+  const limit = parsePositiveInteger(flags.limit, flags.json ? groups.length : 20);
+  const listedGroups = groups.slice(0, limit);
+  if (flags.json) {
+    console.log(JSON.stringify({
+      summary: {
+        groups: groups.length,
+        artifacts: filteredArtifacts.length,
+        totalArtifacts: artifacts.length,
+        hiddenSelftestArtifacts
+      },
+      groups: listedGroups
+    }, null, 2));
+    return;
+  }
+  if (groups.length === 0) {
+    console.log("No failure artifact patterns found.");
+    if (hiddenSelftestArtifacts > 0) {
+      console.log(`Hidden ${hiddenSelftestArtifacts} selftest artifact(s). Use --include-selftest to include them.`);
+    }
+    return;
+  }
+  for (const group of listedGroups) {
+    console.log(`${group.count}x ${group.message || "(no error line)"}`);
+    for (const example of group.examples) {
+      console.log(`  ${example.modifiedIso}  ${example.scenario || example.path}`);
+      console.log(`    artifact: ${example.path}`);
+    }
+  }
+  if (listedGroups.length < groups.length) {
+    console.log(`Showing ${listedGroups.length} of ${groups.length} failure pattern(s). Use --limit=${groups.length} to show all.`);
+  }
+  if (hiddenSelftestArtifacts > 0) {
+    console.log(`Hidden ${hiddenSelftestArtifacts} selftest artifact(s). Use --include-selftest to include them.`);
+  }
+}
+
+async function selectedFailureArtifacts() {
+  const artifacts = await failureArtifacts();
+  const hiddenSelftestArtifacts = flags["include-selftest"] ? 0 : artifacts.filter((artifact) => artifact.selftest).length;
+  const filteredArtifacts = artifacts
+    .filter((artifact) => flags["include-selftest"] || !artifact.selftest)
+    .filter((artifact) => artifactMatchesSearch(artifact, splitFlagValues(flags.scenario)));
+  return { artifacts, filteredArtifacts, hiddenSelftestArtifacts };
 }
 
 async function failureArtifacts() {
@@ -575,6 +623,24 @@ function artifactMatchesSearch(artifact, needles) {
     artifact.message
   ].join("\n").toLowerCase();
   return needles.some((needle) => haystack.includes(needle.toLowerCase()));
+}
+
+function artifactFailureSummary(artifacts) {
+  const groups = new Map();
+  for (const artifact of artifacts) {
+    const key = artifact.message || "(no error line)";
+    const group = groups.get(key) ?? { message: artifact.message, count: 0, examples: [] };
+    group.count += 1;
+    if (group.examples.length < 3) {
+      group.examples.push({
+        path: artifact.path,
+        modifiedIso: artifact.modifiedIso,
+        scenario: artifact.scenario
+      });
+    }
+    groups.set(key, group);
+  }
+  return [...groups.values()].sort((a, b) => b.count - a.count || (a.message || "").localeCompare(b.message || ""));
 }
 
 function artifactField(text, label) {
@@ -1365,6 +1431,14 @@ async function runSelfTest() {
       ["custom block"]
     ),
     "artifactMatchesSearch should match failure artifact messages"
+  );
+  assertSelf(
+    artifactFailureSummary([
+      { path: "a.txt", modifiedIso: "2026-01-02T00:00:00.000Z", scenario: "A", message: "same" },
+      { path: "b.txt", modifiedIso: "2026-01-01T00:00:00.000Z", scenario: "B", message: "same" },
+      { path: "c.txt", modifiedIso: "2026-01-03T00:00:00.000Z", scenario: "C", message: "other" }
+    ])[0].count === 2,
+    "artifactFailureSummary should group artifacts by first error line"
   );
   assertSelf(
     normalizeAreaToken("Core-Plugin") === "coreplugin",

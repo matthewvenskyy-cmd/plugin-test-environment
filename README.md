@@ -83,6 +83,14 @@ node src/harness.js list-artifacts --include-selftest
 node src/harness.js list-artifacts --json
 ```
 
+Summarize repeated failure artifact patterns:
+
+```powershell
+npm.cmd run list:artifact-summary
+node src/harness.js list-artifact-summary --scenario=mounted
+node src/harness.js list-artifact-summary --json
+```
+
 Clean synthetic selftest artifacts while keeping real scenario failure evidence:
 
 ```powershell
