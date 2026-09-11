@@ -193,7 +193,7 @@ Useful fields:
 
 Manual scenarios are skipped by default and can be run with `--scenario=<name>`. Expected-failure scenarios are useful for regressions the environment can already detect but the plugin has not fixed yet. Add `failurePattern` when a known-bad scenario has earlier assertions that should still catch new regressions. The suite fails if an expected-failure scenario unexpectedly starts passing, which is the cue to remove the `expectedFailure` marker.
 
-`npm.cmd run validate:config` checks scenario paths, duplicate scenario registrations, exported scenario names and `run` functions, expected-failure regexes, duplicate or overlong `spawnBot` usernames, and literal command references to unknown or overlong player names.
+`npm.cmd run validate:config` checks scenario paths, duplicate scenario registrations, exported scenario names and `run` functions, expected-failure regexes, duplicate or overlong `spawnBot` usernames, literal command references to unknown or overlong player names, and BCT/Corebreaker scenario helper usage.
 
 Scenario modules receive `ctx.waitForCondition(predicate, { timeoutMs, intervalMs, label })` for arbitrary polling, plus `ctx.waitForInventory(predicate, timeoutMs)` for the primary bot inventory. Shared scenario helpers also export `waitForCondition` for bot-side polling utilities, `queryBctDisplayCount` and `countBctItemsNear` for BCT display/item accounting, and `assertNoBctLeak` for cross-plugin custom-block item/display leak assertions.
 

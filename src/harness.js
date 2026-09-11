@@ -832,6 +832,7 @@ async function validateConfig(config) {
         message: "Scenario must export a run function."
       });
     }
+    issues.push(...scenarioQualityIssues(source, spec));
     const spawnedUsernames = scenarioSpawnBotUsernames(source);
     for (const username of duplicateValues(spawnedUsernames)) {
       issues.push({
@@ -905,6 +906,44 @@ async function validateConfig(config) {
   if (issues.some((issue) => issue.severity === "error")) {
     process.exitCode = 1;
   }
+}
+
+function scenarioQualityIssues(source, spec) {
+  const issues = [];
+  const scenarioPath = spec.path ?? "";
+  if (definesLocalBctDisplayCounter(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario defines local BCT display counting; use queryBctDisplayCount from helpers.js instead."
+    });
+  }
+  if (isBctCorebreakerDigScenario(source, spec) && !source.includes("assertNoBctLeak")) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "BCT/Corebreaker dig scenario should use assertNoBctLeak to guard item and display duplication."
+    });
+  }
+  return issues;
+}
+
+function definesLocalBctDisplayCounter(source) {
+  return /function\s+queryBctDisplays\s*\(/.test(source)
+    || /queryEntityCount\s*\([^)]*bigger_crafting_table_display/s.test(source);
+}
+
+function isBctCorebreakerDigScenario(source, spec) {
+  const text = [
+    spec.path,
+    extractScenarioName(source),
+    spec.reason,
+    source
+  ].join("\n").toLowerCase();
+  return text.includes("bct")
+    && text.includes("corebreaker")
+    && text.includes("placebiggercraftingtable")
+    && /\.\s*dig\s*\(/i.test(source);
 }
 
 async function scenarioListDetails(scenarios) {
@@ -1506,6 +1545,27 @@ async function runSelfTest() {
   assertSelf(
     parsePositiveInteger("3", 20) === 3 && parsePositiveInteger("0", 20) === 20,
     "parsePositiveInteger should parse positive integer flags with a fallback"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'export const name = "BCT Corebreaker"; await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK); await bot.dig(bot.blockAt(BCT_BLOCK), true);',
+      { path: "tests/scenarios/bct-corebreaker-example.js" }
+    ).some((issue) => issue.message.includes("assertNoBctLeak")),
+    "scenarioQualityIssues should warn when BCT/Corebreaker dig scenarios skip assertNoBctLeak"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'function queryBctDisplays(ctx) { return queryEntityCount(ctx, "@e[type=item_display,tag=bigger_crafting_table_display]"); }',
+      { path: "tests/scenarios/bct-local-display.js" }
+    ).some((issue) => issue.message.includes("queryBctDisplayCount")),
+    "scenarioQualityIssues should warn when scenarios define local BCT display counters"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK); await assertCannotDeposit(ctx, bot, corebreaker);',
+      { path: "tests/scenarios/core-bound-items-cannot-store-in-bct.js" }
+    ).length === 0,
+    "scenarioQualityIssues should not warn for non-dig BCT storage scenarios"
   );
   assertSelf(
     artifactMatchesSearch(
