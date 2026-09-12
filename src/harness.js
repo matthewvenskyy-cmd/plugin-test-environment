@@ -84,6 +84,9 @@ async function main() {
   }
   if (command === "smoke" || command === "test" || command === "scenarios") {
     assertScenarioSelectionIsExplicit(command, flags);
+    if (command === "test" || command === "scenarios") {
+      assertScenariosMatched(await selectedScenarios(config), flags);
+    }
     await setup(config);
     if (!flags["no-build"]) await buildProjects(config);
     if (command === "scenarios" && flags["fresh-scenarios"]) {
@@ -391,13 +394,13 @@ async function runBotSmoke(config, server) {
 
 async function runScenarios(config, server) {
   const scenarios = await selectedScenarios(config);
-  if (scenarios.length === 0) return;
+  assertScenariosMatched(scenarios, flags);
   await runScenarioBatch(config, server, scenarios);
 }
 
 async function runFreshScenarios(config) {
   const scenarios = await selectedScenarios(config);
-  if (scenarios.length === 0) return;
+  assertScenariosMatched(scenarios, flags);
   await runFreshScenarioList(config, scenarios);
 }
 
@@ -1438,6 +1441,16 @@ async function scenariosMatchingText(scenarios, needles) {
     .map(({ scenario }) => scenario);
 }
 
+function assertScenariosMatched(scenarios, options = flags) {
+  if (scenarios.length > 0) return;
+  const filters = [];
+  if (options.scenario) filters.push(`--scenario=${options.scenario}`);
+  if (options.area) filters.push(`--area=${options.area}`);
+  if (options.all) filters.push("--all");
+  const suffix = filters.length > 0 ? ` for ${filters.join(" ")}` : "";
+  throw new Error(`No scenarios matched${suffix}. Run list-scenarios with the same filters to inspect available matches.`);
+}
+
 function splitFlagValues(value) {
   if (!value) return [];
   return String(value).split(",").map((item) => item.trim()).filter(Boolean);
@@ -1648,6 +1661,20 @@ async function runSelfTest() {
   assertSelf(
     parsePositiveInteger("3", 20) === 3 && parsePositiveInteger("0", 20) === 20,
     "parsePositiveInteger should parse positive integer flags with a fallback"
+  );
+  assertSelf(
+    throwsWithMessage(
+      () => assertScenariosMatched([], { scenario: "missing-flow", area: "CorePlugin" }),
+      /No scenarios matched for --scenario=missing-flow --area=CorePlugin/
+    ),
+    "assertScenariosMatched should fail empty scenario selections with filter context"
+  );
+  assertSelf(
+    !throwsWithMessage(
+      () => assertScenariosMatched([{ path: "tests/scenarios/a.js" }], { scenario: "a" }),
+      /No scenarios matched/
+    ),
+    "assertScenariosMatched should allow non-empty scenario selections"
   );
   assertSelf(
     throwsWithMessage(
