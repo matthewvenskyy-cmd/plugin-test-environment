@@ -802,6 +802,7 @@ async function listAreas(config) {
 
 async function validateConfig(config) {
   const issues = [];
+  issues.push(...projectConfigIssues(config.projects ?? []));
   for (const scenarioPath of duplicateScenarioPaths(config.scenarios ?? [])) {
     issues.push({
       severity: "error",
@@ -914,6 +915,59 @@ async function validateConfig(config) {
   if (issues.some((issue) => issue.severity === "error")) {
     process.exitCode = 1;
   }
+}
+
+function projectConfigIssues(projects) {
+  const issues = [];
+  for (const name of duplicateValues(projects.map((project) => project.name).filter(Boolean))) {
+    issues.push({
+      severity: "error",
+      path: name,
+      message: "Project name is listed more than once in config."
+    });
+  }
+  for (const plugin of duplicateValues(projects.map((project) => project.plugin).filter(Boolean))) {
+    issues.push({
+      severity: "error",
+      path: plugin,
+      message: "Plugin name is listed more than once in config."
+    });
+  }
+  for (const project of projects) {
+    const label = project.name ?? project.plugin ?? "(unnamed project)";
+    if (!project.name) {
+      issues.push({ severity: "error", path: label, message: "Project is missing a name." });
+    }
+    if (!project.plugin) {
+      issues.push({ severity: "error", path: label, message: "Project is missing a plugin name." });
+    }
+    if (!["maven", "gradle"].includes(project.build)) {
+      issues.push({
+        severity: "error",
+        path: label,
+        message: `Project build must be "maven" or "gradle", got "${project.build ?? ""}".`
+      });
+    }
+    if (!project.jar) {
+      issues.push({ severity: "error", path: label, message: "Project is missing a jar glob." });
+    }
+    const projectPath = project.path ? path.resolve(root, project.path) : "";
+    if (!project.path) {
+      issues.push({ severity: "error", path: label, message: "Project is missing a path." });
+    } else if (!existsSync(projectPath)) {
+      issues.push({ severity: "error", path: label, message: `Project path does not exist: ${project.path}` });
+    }
+    for (const commandField of ["consoleCommands", "botCommands"]) {
+      if (project[commandField] && !Array.isArray(project[commandField])) {
+        issues.push({
+          severity: "error",
+          path: label,
+          message: `Project ${commandField} must be an array when present.`
+        });
+      }
+    }
+  }
+  return issues;
 }
 
 function scenarioQualityIssues(source, spec) {
@@ -1605,6 +1659,19 @@ async function runSelfTest() {
       { path: "tests/scenarios/core-bound-items-cannot-store-in-bct.js" }
     ).length === 0,
     "scenarioQualityIssues should not warn for non-dig BCT storage scenarios"
+  );
+  const projectIssues = projectConfigIssues([
+    { name: "Core-Plugin", plugin: "CorePlugin", path: ".", build: "maven", jar: "target/*.jar", consoleCommands: [], botCommands: [] },
+    { name: "Core-Plugin", plugin: "CorePlugin", path: "./missing-project", build: "ant", jar: "", consoleCommands: "version CorePlugin" }
+  ]);
+  assertSelf(
+    projectIssues.some((issue) => issue.message.includes("Project name is listed more than once"))
+      && projectIssues.some((issue) => issue.message.includes("Plugin name is listed more than once"))
+      && projectIssues.some((issue) => issue.message.includes("Project path does not exist"))
+      && projectIssues.some((issue) => issue.message.includes("Project build must be"))
+      && projectIssues.some((issue) => issue.message.includes("Project is missing a jar glob"))
+      && projectIssues.some((issue) => issue.message.includes("consoleCommands must be an array")),
+    "projectConfigIssues should catch invalid project config entries"
   );
   assertSelf(
     artifactMatchesSearch(
