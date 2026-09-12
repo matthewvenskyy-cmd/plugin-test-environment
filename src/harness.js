@@ -809,6 +809,14 @@ async function validateConfig(config) {
       message: "Scenario is listed more than once in config."
     });
   }
+  const scenarioFiles = await fg("tests/scenarios/*.js", { cwd: root, onlyFiles: true });
+  for (const scenarioPath of unregisteredScenarioPaths(config.scenarios ?? [], scenarioFiles)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario file is not listed in config and will not run by default."
+    });
+  }
   for (const scenario of config.scenarios ?? []) {
     const spec = normalizeScenarioSpec(scenario);
     const scenarioPath = spec.path ?? "";
@@ -1266,6 +1274,18 @@ function duplicateScenarioPaths(scenarios) {
   return [...duplicates.values()];
 }
 
+function unregisteredScenarioPaths(scenarios, scenarioFiles) {
+  const configuredPaths = new Set(
+    scenarios
+      .map((scenario) => normalizeScenarioPathKey(normalizeScenarioSpec(scenario).path ?? ""))
+      .filter(Boolean)
+  );
+  return scenarioFiles
+    .filter((scenarioPath) => path.basename(scenarioPath) !== "helpers.js")
+    .filter((scenarioPath) => !configuredPaths.has(normalizeScenarioPathKey(scenarioPath)))
+    .sort((a, b) => normalizeScenarioPathKey(a).localeCompare(normalizeScenarioPathKey(b)));
+}
+
 function normalizeScenarioPathKey(scenarioPath) {
   return String(scenarioPath ?? "").replace(/\\/g, "/").toLowerCase();
 }
@@ -1656,6 +1676,13 @@ async function runSelfTest() {
       "tests/scenarios/b.js"
     ]).join(",") === "tests/scenarios/a.js,tests\\scenarios\\b.js",
     "duplicateScenarioPaths should report repeated config scenario paths once"
+  );
+  assertSelf(
+    unregisteredScenarioPaths(
+      ["tests/scenarios/a.js", { path: "tests\\scenarios\\b.js" }],
+      ["tests/scenarios/a.js", "tests/scenarios/b.js", "tests/scenarios/c.js", "tests/scenarios/helpers.js"]
+    ).join(",") === "tests/scenarios/c.js",
+    "unregisteredScenarioPaths should ignore helpers and report scenario files missing from config"
   );
   assertSelf(
     scenarioCommandUsernames('await command("clear ScenarioBot", 250); await command("effect give HelperBot minecraft:slow_falling 30 1 true", 250);').join(",") === "ScenarioBot,HelperBot",
