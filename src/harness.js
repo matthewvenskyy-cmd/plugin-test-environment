@@ -83,6 +83,7 @@ async function main() {
     return;
   }
   if (command === "smoke" || command === "test" || command === "scenarios") {
+    assertScenarioSelectionIsExplicit(command, flags);
     await setup(config);
     if (!flags["no-build"]) await buildProjects(config);
     if (command === "scenarios" && flags["fresh-scenarios"]) {
@@ -128,6 +129,13 @@ function parseFlags(args) {
     }
   }
   return parsed;
+}
+
+function assertScenarioSelectionIsExplicit(commandName, options) {
+  if (!["test", "scenarios"].includes(commandName)) return;
+  if (!(options.plugin || options.project)) return;
+  if (options.scenario || options.area) return;
+  throw new Error(`${commandName} with --plugin/--project would copy only selected plugin jars but run the full scenario suite. Add --scenario or --area to select compatible scenarios, or use smoke for plugin-only startup checks.`);
 }
 
 function selectedProjects(config, selected = flags.plugin ?? flags.project) {
@@ -1640,6 +1648,20 @@ async function runSelfTest() {
   assertSelf(
     parsePositiveInteger("3", 20) === 3 && parsePositiveInteger("0", 20) === 20,
     "parsePositiveInteger should parse positive integer flags with a fallback"
+  );
+  assertSelf(
+    throwsWithMessage(
+      () => assertScenarioSelectionIsExplicit("scenarios", { plugin: "CorePlugin" }),
+      /Add --scenario or --area/
+    ),
+    "assertScenarioSelectionIsExplicit should reject project-filtered scenario suites without scenario filters"
+  );
+  assertSelf(
+    !throwsWithMessage(
+      () => assertScenarioSelectionIsExplicit("scenarios", { plugin: "CorePlugin", area: "CorePlugin" }),
+      /Add --scenario or --area/
+    ),
+    "assertScenarioSelectionIsExplicit should allow project-filtered scenario suites with area filters"
   );
   const projectFilterConfig = {
     projects: [

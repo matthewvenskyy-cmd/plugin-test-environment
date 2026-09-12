@@ -159,11 +159,13 @@ node src/harness.js test --no-build
 ## Run One Plugin
 
 ```powershell
-node src/harness.js test --plugin=ClassesPlugin
 node src/harness.js smoke --plugin=Core-Plugin
+node src/harness.js server --plugin=BiggerCraftingTable
+node src/harness.js scenarios --no-build --area=ClassesPlugin
+node src/harness.js scenarios --plugin=ClassesPlugin --area=ClassesPlugin
 ```
 
-The plugin selector accepts either the project folder name or the plugin name from `plugin.yml`, and fails fast when a requested plugin is not configured.
+The plugin selector accepts either the project folder name or the plugin name from `plugin.yml`, and fails fast when a requested plugin is not configured. `--plugin`/`--project` controls which jars are built and copied; scenario commands also need `--area` or `--scenario` when a plugin filter is present so they do not accidentally run the full suite against a partial plugin set.
 
 ## Start A Manual Test Server
 
