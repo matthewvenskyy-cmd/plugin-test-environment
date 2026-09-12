@@ -130,13 +130,22 @@ function parseFlags(args) {
   return parsed;
 }
 
-function selectedProjects(config) {
-  const selected = flags.plugin ?? flags.project;
+function selectedProjects(config, selected = flags.plugin ?? flags.project) {
   if (!selected) return config.projects;
   const names = String(selected).split(",").map((name) => name.trim().toLowerCase());
-  return config.projects.filter((project) => {
+  const projects = config.projects.filter((project) => {
     return names.includes(project.name.toLowerCase()) || names.includes(project.plugin.toLowerCase());
   });
+  const matchedNames = new Set(projects.flatMap((project) => [
+    project.name.toLowerCase(),
+    project.plugin.toLowerCase()
+  ]));
+  const unknown = names.filter((name) => !matchedNames.has(name));
+  if (unknown.length > 0) {
+    const available = config.projects.map((project) => `${project.name}/${project.plugin}`).join(", ");
+    throw new Error(`Unknown project filter(s): ${unknown.join(", ")}. Available projects: ${available}`);
+  }
+  return projects;
 }
 
 async function setup(config) {
@@ -1632,6 +1641,20 @@ async function runSelfTest() {
     parsePositiveInteger("3", 20) === 3 && parsePositiveInteger("0", 20) === 20,
     "parsePositiveInteger should parse positive integer flags with a fallback"
   );
+  const projectFilterConfig = {
+    projects: [
+      { name: "Core-Plugin", plugin: "CorePlugin" },
+      { name: "Bigger-Crafting-Table", plugin: "BiggerCraftingTable" }
+    ]
+  };
+  assertSelf(
+    selectedProjects(projectFilterConfig, "CorePlugin,bigger-crafting-table").length === 2,
+    "selectedProjects should match filters by project name or plugin name"
+  );
+  assertSelf(
+    throwsWithMessage(() => selectedProjects(projectFilterConfig, "MissingPlugin"), /Unknown project filter/),
+    "selectedProjects should reject unknown project filters"
+  );
   assertSelf(
     scenarioQualityIssues(
       'export const name = "BCT Corebreaker"; await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK); await bot.dig(bot.blockAt(BCT_BLOCK), true);',
@@ -1862,6 +1885,15 @@ function fakeBot() {
 
 function assertSelf(condition, message) {
   if (!condition) throw new Error(`Harness selftest failed: ${message}`);
+}
+
+function throwsWithMessage(action, pattern) {
+  try {
+    action();
+    return false;
+  } catch (error) {
+    return pattern.test(errorMessage(error));
+  }
 }
 
 async function createScenarioBot(config, username) {

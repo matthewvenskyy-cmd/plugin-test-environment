@@ -163,7 +163,7 @@ node src/harness.js test --plugin=ClassesPlugin
 node src/harness.js smoke --plugin=Core-Plugin
 ```
 
-The plugin selector accepts either the project folder name or the plugin name from `plugin.yml`.
+The plugin selector accepts either the project folder name or the plugin name from `plugin.yml`, and fails fast when a requested plugin is not configured.
 
 ## Start A Manual Test Server
 
