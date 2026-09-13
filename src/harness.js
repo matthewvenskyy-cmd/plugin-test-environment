@@ -822,8 +822,11 @@ async function listAreas(config) {
 
 async function validateConfig(config) {
   const issues = [];
-  issues.push(...projectConfigIssues(config.projects ?? []));
-  for (const scenarioPath of duplicateScenarioPaths(config.scenarios ?? [])) {
+  const projects = Array.isArray(config.projects) ? config.projects : [];
+  const scenarios = Array.isArray(config.scenarios) ? config.scenarios : [];
+  issues.push(...topLevelConfigIssues(config));
+  issues.push(...projectConfigIssues(projects));
+  for (const scenarioPath of duplicateScenarioPaths(scenarios)) {
     issues.push({
       severity: "error",
       path: scenarioPath,
@@ -831,14 +834,14 @@ async function validateConfig(config) {
     });
   }
   const scenarioFiles = await fg("tests/scenarios/*.js", { cwd: root, onlyFiles: true });
-  for (const scenarioPath of unregisteredScenarioPaths(config.scenarios ?? [], scenarioFiles)) {
+  for (const scenarioPath of unregisteredScenarioPaths(scenarios, scenarioFiles)) {
     issues.push({
       severity: "warning",
       path: scenarioPath,
       message: "Scenario file is not listed in config and will not run by default."
     });
   }
-  for (const scenario of config.scenarios ?? []) {
+  for (const scenario of scenarios) {
     const spec = normalizeScenarioSpec(scenario);
     const scenarioPath = spec.path ?? "";
     const absolutePath = path.resolve(root, scenarioPath);
@@ -935,6 +938,46 @@ async function validateConfig(config) {
   if (issues.some((issue) => issue.severity === "error")) {
     process.exitCode = 1;
   }
+}
+
+function topLevelConfigIssues(config) {
+  const issues = [];
+  for (const field of ["minecraftVersion", "paperProject", "userAgent"]) {
+    if (typeof config[field] !== "string" || config[field].trim() === "") {
+      issues.push({
+        severity: "error",
+        path: field,
+        message: `${field} must be a non-empty string.`
+      });
+    }
+  }
+  if (!Array.isArray(config.javaArgs)) {
+    issues.push({ severity: "error", path: "javaArgs", message: "javaArgs must be an array." });
+  }
+  if (!Array.isArray(config.projects)) {
+    issues.push({ severity: "error", path: "projects", message: "projects must be an array." });
+  }
+  if (!Array.isArray(config.scenarios)) {
+    issues.push({ severity: "error", path: "scenarios", message: "scenarios must be an array." });
+  }
+  if (!config.serverProperties || typeof config.serverProperties !== "object" || Array.isArray(config.serverProperties)) {
+    issues.push({ severity: "error", path: "serverProperties", message: "serverProperties must be an object." });
+  } else {
+    const port = Number(config.serverProperties["server-port"]);
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      issues.push({ severity: "error", path: "serverProperties.server-port", message: "server-port must be an integer from 1 to 65535." });
+    }
+  }
+  for (const field of ["scenarioTimeoutMs", "serverStartupTimeoutMs", "botTimeoutMs"]) {
+    if (!isPositiveInteger(config[field])) {
+      issues.push({
+        severity: "error",
+        path: field,
+        message: `${field} must be a positive integer.`
+      });
+    }
+  }
+  return issues;
 }
 
 function projectConfigIssues(projects) {
@@ -1458,7 +1501,11 @@ function splitFlagValues(value) {
 
 function parsePositiveInteger(value, fallback) {
   const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+  return isPositiveInteger(parsed) ? parsed : fallback;
+}
+
+function isPositiveInteger(value) {
+  return Number.isInteger(value) && value > 0;
 }
 
 function normalizeAreaToken(value) {
@@ -1661,6 +1708,29 @@ async function runSelfTest() {
   assertSelf(
     parsePositiveInteger("3", 20) === 3 && parsePositiveInteger("0", 20) === 20,
     "parsePositiveInteger should parse positive integer flags with a fallback"
+  );
+  assertSelf(isPositiveInteger(1) && !isPositiveInteger(0) && !isPositiveInteger(1.5), "isPositiveInteger should only accept positive integers");
+  const topLevelIssues = topLevelConfigIssues({
+    minecraftVersion: "",
+    paperProject: "paper",
+    userAgent: "test",
+    javaArgs: "-Xmx512M",
+    projects: {},
+    scenarios: {},
+    serverProperties: { "server-port": "99999" },
+    scenarioTimeoutMs: 0,
+    serverStartupTimeoutMs: 240000,
+    botTimeoutMs: -1
+  });
+  assertSelf(
+    topLevelIssues.some((issue) => issue.message.includes("minecraftVersion must be"))
+      && topLevelIssues.some((issue) => issue.message.includes("javaArgs must be an array"))
+      && topLevelIssues.some((issue) => issue.message.includes("projects must be an array"))
+      && topLevelIssues.some((issue) => issue.message.includes("scenarios must be an array"))
+      && topLevelIssues.some((issue) => issue.message.includes("server-port must be"))
+      && topLevelIssues.some((issue) => issue.message.includes("scenarioTimeoutMs must be"))
+      && topLevelIssues.some((issue) => issue.message.includes("botTimeoutMs must be")),
+    "topLevelConfigIssues should catch invalid global config fields"
   );
   assertSelf(
     throwsWithMessage(
