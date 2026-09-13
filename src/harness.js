@@ -84,8 +84,13 @@ async function main() {
   }
   if (command === "smoke" || command === "test" || command === "scenarios") {
     assertScenarioSelectionIsExplicit(command, flags);
+    const scenarios = command === "test" || command === "scenarios" ? await selectedScenarios(config) : [];
     if (command === "test" || command === "scenarios") {
-      assertScenariosMatched(await selectedScenarios(config), flags);
+      assertScenariosMatched(scenarios, flags);
+    }
+    if (flags["dry-run"]) {
+      console.log(runPlanSummary(config, command, scenarios).join("\n"));
+      return;
     }
     await setup(config);
     if (!flags["no-build"]) await buildProjects(config);
@@ -139,6 +144,20 @@ function assertScenarioSelectionIsExplicit(commandName, options) {
   if (!(options.plugin || options.project)) return;
   if (options.scenario || options.area) return;
   throw new Error(`${commandName} with --plugin/--project would copy only selected plugin jars but run the full scenario suite. Add --scenario or --area to select compatible scenarios, or use smoke for plugin-only startup checks.`);
+}
+
+function runPlanSummary(config, commandName, scenarios, options = flags) {
+  const projects = selectedProjects(config, options.plugin ?? options.project);
+  const lines = [
+    `Dry run: ${commandName}`,
+    `Build plugins: ${options["no-build"] ? "no" : "yes"}`,
+    `Projects (${projects.length}): ${projects.map((project) => `${project.name}/${project.plugin}`).join(", ") || "none"}`
+  ];
+  if (commandName === "test" || commandName === "scenarios") {
+    lines.push(`Scenarios: ${scenarioListSummary(scenarios)}`);
+    lines.push(`Fresh server per scenario: ${options["fresh-scenarios"] ? "yes" : "no"}`);
+  }
+  return lines;
 }
 
 function selectedProjects(config, selected = flags.plugin ?? flags.project) {
@@ -1809,6 +1828,17 @@ async function runSelfTest() {
   assertSelf(
     throwsWithMessage(() => selectedProjects(projectFilterConfig, "MissingPlugin"), /Unknown project filter/),
     "selectedProjects should reject unknown project filters"
+  );
+  assertSelf(
+    runPlanSummary(
+      projectFilterConfig,
+      "scenarios",
+      [{ path: "tests/scenarios/a.js" }, { path: "tests/scenarios/manual.js", manual: true }],
+      { plugin: "CorePlugin", "no-build": true, "fresh-scenarios": true }
+    ).join("\n").includes("Projects (1): Core-Plugin/CorePlugin")
+      && runPlanSummary(projectFilterConfig, "scenarios", [{ path: "tests/scenarios/a.js" }], { "no-build": true }).join("\n").includes("Build plugins: no")
+      && runPlanSummary(projectFilterConfig, "scenarios", [{ path: "tests/scenarios/a.js" }], { "fresh-scenarios": true }).join("\n").includes("Fresh server per scenario: yes"),
+    "runPlanSummary should describe selected projects, build mode, and scenario mode"
   );
   assertSelf(
     scenarioQualityIssues(

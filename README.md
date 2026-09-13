@@ -127,6 +127,12 @@ node src/harness.js scenarios --no-build --scenario="preserves contents"
 
 Scenario runs fail fast when filters match nothing. Use `list-scenarios` with the same `--area` or `--scenario` filters to inspect matches before starting Paper.
 
+Add `--dry-run` to `smoke`, `test`, or `scenarios` to see the selected plugin jars and scenario count without downloading Paper, building jars, or starting the server:
+
+```powershell
+node src/harness.js scenarios --plugin=CorePlugin --area=CorePlugin --dry-run
+```
+
 Run matching scenarios with a fresh disposable Paper server for each scenario. This is slower, but useful when an ordered scenario run exposes state leakage or when you want the cleanest possible plugin-interaction signal:
 
 ```powershell
