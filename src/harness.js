@@ -2020,6 +2020,12 @@ async function runSelfTest() {
     (await fakeContext.commandUntil("synthetic command", /Command result: ok/, { timeoutMs: 50, intervalMs: 1 })).includes("synthetic command"),
     "scenario context commandUntil should return command output once a pattern appears"
   );
+  const globalPattern = /Command result: ok/g;
+  assertSelf(
+    (await fakeContext.commandUntil("second synthetic command", globalPattern, { timeoutMs: 50, intervalMs: 1 })).includes("second synthetic command")
+      && (await fakeContext.commandUntil("third synthetic command", globalPattern, { timeoutMs: 50, intervalMs: 1 })).includes("third synthetic command"),
+    "scenario context commandUntil should handle reusable global regex patterns"
+  );
   assertSelf(
     (await fakeContext.waitForCondition(() => "context value", { timeoutMs: 50, intervalMs: 1 })) === "context value"
       && (await fakeContext.waitForInventory((items) => items[0]?.name, 50)) === "diamond",
@@ -2122,8 +2128,13 @@ function throwsWithMessage(action, pattern) {
     action();
     return false;
   } catch (error) {
-    return pattern.test(errorMessage(error));
+    return patternMatches(pattern, errorMessage(error));
   }
+}
+
+function patternMatches(pattern, value) {
+  pattern.lastIndex = 0;
+  return pattern.test(value);
 }
 
 async function createScenarioBot(config, username) {
@@ -2158,7 +2169,7 @@ function createScenarioContext(config, server, bot, name, extraBots) {
       send(server, commandText);
       return waitForCondition(() => {
         const output = server.lines.join("").slice(before.length);
-        return pattern.test(output) ? output : null;
+        return patternMatches(pattern, output) ? output : null;
       }, {
         timeoutMs,
         intervalMs,

@@ -216,7 +216,10 @@ export async function queryEntityCount(ctx, selector) {
 }
 
 export async function serverBlockIs(ctx, position, blockName) {
-  const output = await ctx.command(`execute if block ${position.x} ${position.y} ${position.z} minecraft:${blockName}`, 250);
+  const output = await runCommandUntil(ctx, `execute if block ${position.x} ${position.y} ${position.z} minecraft:${blockName}`, /Test passed|Test failed/i, {
+    timeoutMs: 1000,
+    label: `server block ${position.x} ${position.y} ${position.z} is ${blockName}`
+  });
   return /Test passed/.test(output);
 }
 
