@@ -207,7 +207,10 @@ export async function queryEntityCount(ctx, selector) {
   const objective = "scenario_count";
   await ctx.command(`scoreboard objectives add ${objective} dummy`, 100);
   await ctx.command(`execute store result score item_count ${objective} if entity ${selector}`, 100);
-  const output = await ctx.command(`scoreboard players get item_count ${objective}`, 250);
+  const output = await runCommandUntil(ctx, `scoreboard players get item_count ${objective}`, /item_count has \d+ \[/, {
+    timeoutMs: 1000,
+    label: `entity count for ${selector}`
+  });
   const match = output.match(/item_count has (\d+) \[/);
   return match ? Number(match[1]) : 0;
 }
@@ -218,8 +221,18 @@ export async function serverBlockIs(ctx, position, blockName) {
 }
 
 export async function selectedItemHasNoDamage(ctx, username) {
-  const output = await ctx.command(`data get entity ${username} SelectedItem.components.minecraft:damage`, 500);
+  const output = await runCommandUntil(ctx, `data get entity ${username} SelectedItem.components.minecraft:damage`, /No element matching|Found no elements|Unknown path|nothing found|has the following entity data/i, {
+    timeoutMs: 1500,
+    label: `${username} selected item damage`
+  });
   return /No element matching|Found no elements|Unknown path|nothing found/i.test(output);
+}
+
+async function runCommandUntil(ctx, commandText, pattern, options) {
+  if (ctx.commandUntil) {
+    return ctx.commandUntil(commandText, pattern, options);
+  }
+  return ctx.command(commandText, options?.timeoutMs ?? 500);
 }
 
 export function displayText(item) {

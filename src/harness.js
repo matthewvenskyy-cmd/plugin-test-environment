@@ -1681,7 +1681,8 @@ async function waitForCondition(predicate, options = {}) {
   let lastError = null;
   while (Date.now() - started < timeoutMs) {
     try {
-      if (await predicate()) return;
+      const value = await predicate();
+      if (value) return value;
     } catch (error) {
       lastError = error;
     }
@@ -1984,11 +1985,11 @@ async function runSelfTest() {
     "scenarioCommandUsernames should ignore prose and parse command argument order"
   );
   let waitAttempts = 0;
-  await waitForCondition(() => {
+  const waitedValue = await waitForCondition(() => {
     waitAttempts += 1;
-    return waitAttempts === 2;
+    return waitAttempts === 2 ? "ready" : null;
   }, { timeoutMs: 1000, intervalMs: 1, label: "synthetic condition" });
-  assertSelf(waitAttempts === 2, "waitForCondition should poll until the predicate passes");
+  assertSelf(waitAttempts === 2 && waitedValue === "ready", "waitForCondition should poll until the predicate passes and return its value");
   let waitTimedOut = false;
   try {
     await waitForCondition(() => false, { timeoutMs: 5, intervalMs: 1, label: "never true" });
@@ -1996,6 +1997,34 @@ async function runSelfTest() {
     waitTimedOut = errorMessage(error).includes("never true");
   }
   assertSelf(waitTimedOut, "waitForCondition should throw readable timeout errors");
+  const fakeServer = {
+    lines: [],
+    child: {
+      killed: false,
+      stdin: {
+        writable: true,
+        write(text) {
+          fakeServer.lines.push(`Ran ${text.trim()}\nCommand result: ok\n`);
+        }
+      }
+    }
+  };
+  const fakeContext = createScenarioContext(
+    { minecraftVersion: "1.21.11", serverProperties: { "server-port": 25566 } },
+    fakeServer,
+    { inventory: { items: () => [{ name: "diamond", count: 1 }] } },
+    "Fake scenario",
+    []
+  );
+  assertSelf(
+    (await fakeContext.commandUntil("synthetic command", /Command result: ok/, { timeoutMs: 50, intervalMs: 1 })).includes("synthetic command"),
+    "scenario context commandUntil should return command output once a pattern appears"
+  );
+  assertSelf(
+    (await fakeContext.waitForCondition(() => "context value", { timeoutMs: 50, intervalMs: 1 })) === "context value"
+      && (await fakeContext.waitForInventory((items) => items[0]?.name, 50)) === "diamond",
+    "scenario context wait helpers should return matched values"
+  );
 
   const xmlResults = [
     scenarioResult({ path: "tests/scenarios/pass.js", area: "CorePlugin" }, "Pass <case>", "[1/2] pass", Date.now() - 250, "passed"),
@@ -2122,6 +2151,20 @@ function createScenarioContext(config, server, bot, name, extraBots) {
       await delay(waitMs);
       return server.lines.join("").slice(before.length);
     },
+    commandUntil: async (commandText, pattern, options = {}) => {
+      const timeoutMs = options.timeoutMs ?? 5000;
+      const intervalMs = options.intervalMs ?? 100;
+      const before = server.lines.join("");
+      send(server, commandText);
+      return waitForCondition(() => {
+        const output = server.lines.join("").slice(before.length);
+        return pattern.test(output) ? output : null;
+      }, {
+        timeoutMs,
+        intervalMs,
+        label: options.label ?? `command output matching ${pattern}`
+      });
+    },
     chat: async (message, waitMs = 500) => {
       bot.chat(message);
       await delay(waitMs);
@@ -2137,13 +2180,13 @@ function createScenarioContext(config, server, bot, name, extraBots) {
     },
     wait: delay,
     waitForCondition: async (predicate, options = {}) => {
-      await waitForCondition(predicate, {
+      return waitForCondition(predicate, {
         label: `condition in ${name}`,
         ...options
       });
     },
     waitForInventory: async (predicate, timeoutMs = 5000) => {
-      await waitForCondition(() => predicate(bot.inventory.items()), {
+      return waitForCondition(() => predicate(bot.inventory.items()), {
         timeoutMs,
         label: `inventory condition in ${name}`
       });
