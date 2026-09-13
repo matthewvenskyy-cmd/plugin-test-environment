@@ -843,6 +843,7 @@ async function validateConfig(config) {
   }
   for (const scenario of scenarios) {
     const spec = normalizeScenarioSpec(scenario);
+    issues.push(...scenarioSpecConfigIssues(spec));
     const scenarioPath = spec.path ?? "";
     const absolutePath = path.resolve(root, scenarioPath);
     if (!scenarioPath || !existsSync(absolutePath)) {
@@ -1029,6 +1030,41 @@ function projectConfigIssues(projects) {
         });
       }
     }
+  }
+  return issues;
+}
+
+function scenarioSpecConfigIssues(spec) {
+  const issues = [];
+  const allowedKeys = new Set(["path", "manual", "expectedFailure", "failurePattern", "reason", "area"]);
+  const label = spec?.path ?? "(scenario)";
+  if (!spec || typeof spec !== "object" || Array.isArray(spec)) {
+    return [{ severity: "error", path: label, message: "Scenario entry must be a path string or object." }];
+  }
+  for (const key of Object.keys(spec)) {
+    if (!allowedKeys.has(key)) {
+      issues.push({
+        severity: "warning",
+        path: label,
+        message: `Scenario config key "${key}" is not recognized.`
+      });
+    }
+  }
+  if (typeof spec.path !== "string" || spec.path.trim() === "") {
+    issues.push({ severity: "error", path: label, message: "Scenario path must be a non-empty string." });
+  }
+  if (spec.manual && spec.expectedFailure) {
+    issues.push({ severity: "error", path: label, message: "Scenario cannot be both manual and expectedFailure." });
+  }
+  if ((spec.manual || spec.expectedFailure) && typeof spec.reason !== "string") {
+    issues.push({
+      severity: "warning",
+      path: label,
+      message: "Manual and expected-failure scenarios should include a reason."
+    });
+  }
+  if (spec.area && typeof spec.area !== "string") {
+    issues.push({ severity: "error", path: label, message: "Scenario area must be a string when present." });
   }
   return issues;
 }
@@ -1814,6 +1850,22 @@ async function runSelfTest() {
       && projectIssues.some((issue) => issue.message.includes("Project is missing a jar glob"))
       && projectIssues.some((issue) => issue.message.includes("consoleCommands must be an array")),
     "projectConfigIssues should catch invalid project config entries"
+  );
+  const scenarioSpecIssues = scenarioSpecConfigIssues({
+    path: "",
+    manual: true,
+    expectedFailure: true,
+    expectedFailures: true,
+    area: ["CorePlugin"]
+  });
+  assertSelf(
+    scenarioSpecConfigIssues(42).some((issue) => issue.message.includes("path string or object"))
+      && scenarioSpecIssues.some((issue) => issue.message.includes("not recognized"))
+      && scenarioSpecIssues.some((issue) => issue.message.includes("path must be"))
+      && scenarioSpecIssues.some((issue) => issue.message.includes("both manual and expectedFailure"))
+      && scenarioSpecIssues.some((issue) => issue.message.includes("include a reason"))
+      && scenarioSpecIssues.some((issue) => issue.message.includes("area must be")),
+    "scenarioSpecConfigIssues should catch malformed scenario config entries"
   );
   assertSelf(
     artifactMatchesSearch(
