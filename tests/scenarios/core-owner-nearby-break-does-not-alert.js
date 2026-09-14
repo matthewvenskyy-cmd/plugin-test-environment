@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { placeCoreBlock, serverBlockIs, waitForBlock, waitForInventoryItem } from "./helpers.js";
+import { placeCoreBlock, serverBlockIs, waitForBlock, waitForInventoryItem, waitForNoChat } from "./helpers.js";
 
 export const name = "Core owner nearby break does not alert";
 
@@ -32,10 +32,11 @@ export async function run(ctx) {
     await owner.equip(pickaxe, "hand");
 
     const target = await waitForBlock(owner, BREAK_TARGET, "stone", "near-core owner break target");
-    const noAlert = waitForNoChat(owner, /Block broken near your core at/i, 2500);
-    await owner.lookAt(BREAK_TARGET.offset(0.5, 0.5, 0.5), true);
-    await owner.dig(target, true);
-    assert(await noAlert, "owner should not receive a nearby-core alert for breaking near their own core");
+    const noAlert = await waitForNoChat(owner, async () => {
+      await owner.lookAt(BREAK_TARGET.offset(0.5, 0.5, 0.5), true);
+      await owner.dig(target, true);
+    }, /Block broken near your core at/i, 2500);
+    assert(noAlert, "owner should not receive a nearby-core alert for breaking near their own core");
     assert(await serverBlockIs(ctx, BREAK_TARGET, "air"), "owner nearby non-core block should still break normally");
     assert(await serverBlockIs(ctx, CORE_BLOCK, "beacon"), "owner nearby block break should not modify the core");
   } finally {
@@ -44,23 +45,4 @@ export async function run(ctx) {
     await command("fill 147 79 -1 150 82 2 minecraft:air", 250);
     await command("forceload remove 148 0", 250);
   }
-}
-
-function waitForNoChat(bot, pattern, timeoutMs = 1500) {
-  return new Promise((resolve) => {
-    const timeout = setTimeout(() => {
-      cleanup();
-      resolve(true);
-    }, timeoutMs);
-    const onMessage = (message) => {
-      if (!pattern.test(message.toString())) return;
-      cleanup();
-      resolve(false);
-    };
-    const cleanup = () => {
-      clearTimeout(timeout);
-      bot.off("message", onMessage);
-    };
-    bot.on("message", onMessage);
-  });
 }

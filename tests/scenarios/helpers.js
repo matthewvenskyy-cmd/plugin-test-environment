@@ -147,6 +147,31 @@ export function waitForChat(bot, action, pattern, timeoutMs = 5000) {
   });
 }
 
+export function waitForNoChat(bot, action, pattern, timeoutMs = 1500) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      cleanup();
+      resolve(true);
+    }, timeoutMs);
+    const onMessage = (message) => {
+      if (!patternMatches(pattern, message.toString())) return;
+      cleanup();
+      resolve(false);
+    };
+    const cleanup = () => {
+      clearTimeout(timeout);
+      bot.off("message", onMessage);
+    };
+    bot.on("message", onMessage);
+    Promise.resolve()
+      .then(action)
+      .catch((error) => {
+        cleanup();
+        reject(error);
+      });
+  });
+}
+
 export function waitForEvent(emitter, eventName, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
