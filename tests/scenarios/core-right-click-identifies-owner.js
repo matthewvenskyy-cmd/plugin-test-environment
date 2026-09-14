@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { placeCoreBlock, serverBlockIs, waitForChat } from "./helpers.js";
+import { clearDroppedItems, placeCoreBlock, serverBlockIs, waitForChat } from "./helpers.js";
 
 export const name = "Core right-click identifies owner";
 
@@ -14,7 +14,7 @@ export async function run(ctx) {
   const visitor = await spawnBot("CoreVisitor");
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("forceload add 184 1", 250);
     await command(`setblock ${OWNER_FLOOR.x} ${OWNER_FLOOR.y} ${OWNER_FLOOR.z} minecraft:stone`, 250);
     await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:stone`, 250);
@@ -45,7 +45,7 @@ export async function run(ctx) {
 
     assert(await serverBlockIs(ctx, CORE_BLOCK, "beacon"), "right-clicking a core should not modify the block");
   } finally {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
     await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:air`, 250);
     await command(`setblock ${OWNER_FLOOR.x} ${OWNER_FLOOR.y} ${OWNER_FLOOR.z} minecraft:air`, 250);

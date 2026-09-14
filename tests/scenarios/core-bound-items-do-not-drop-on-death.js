@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearDroppedItems,
   countMatchingItems,
   isCoreItem,
   isCorebreakerItem,
@@ -18,7 +19,7 @@ export async function run(ctx) {
   const bot = await spawnBot("BoundDeath");
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command(`setblock ${FLOOR.x} ${FLOOR.y} ${FLOOR.z} minecraft:stone`, 250);
     await command("gamemode creative BoundDeath", 250);
     await command(`tp BoundDeath ${DEATH_POSITION.x} ${DEATH_POSITION.y} ${DEATH_POSITION.z} 0 0`, 500);
@@ -28,7 +29,7 @@ export async function run(ctx) {
     assert(countMatchingItems(bot, isCoreItem) > 0, "bound core item should be present before death");
     assert(countMatchingItems(bot, isCorebreakerItem) > 0, "Corebreaker should be present before death");
 
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     const respawned = waitForEvent(bot, "respawn", 8000);
     await command("kill BoundDeath", 500);
     await respawned;
@@ -39,7 +40,7 @@ export async function run(ctx) {
     await waitForInventoryItem(bot, isCoreItem, "restored bound core item after death");
     await waitForInventoryItem(bot, isCorebreakerItem, "restored Corebreaker after death");
   } finally {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("clear BoundDeath", 250);
     await command(`setblock ${FLOOR.x} ${FLOOR.y} ${FLOOR.z} minecraft:air`, 250);
   }

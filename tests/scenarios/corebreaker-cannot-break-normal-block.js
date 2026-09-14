@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearDroppedItems,
   countMatchingItems,
   isCorebreakerItem,
   queryCorebreakerCharges,
@@ -20,7 +21,7 @@ export async function run(ctx) {
   const breaker = await spawnBot("CoreNormal", { op: false });
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("forceload add 174 1", 250);
     await command("deop CoreNormal", 250);
     await command(`setblock ${PLAYER_FLOOR.x} ${PLAYER_FLOOR.y} ${PLAYER_FLOOR.z} minecraft:stone`, 250);
@@ -55,7 +56,7 @@ export async function run(ctx) {
     assert(await queryCorebreakerCharges(breaker) === startingCharges, "denied normal-block break should not consume a Corebreaker charge");
     assert(await selectedItemHasNoDamage(ctx, "CoreNormal"), "denied normal-block break should not damage the Corebreaker");
   } finally {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command(`setblock ${TEST_BLOCK.x} ${TEST_BLOCK.y} ${TEST_BLOCK.z} minecraft:air`, 250);
     await command(`setblock ${FLOOR_BLOCK.x} ${FLOOR_BLOCK.y} ${FLOOR_BLOCK.z} minecraft:air`, 250);
     await command(`setblock ${PLAYER_FLOOR.x} ${PLAYER_FLOOR.y} ${PLAYER_FLOOR.z} minecraft:air`, 250);

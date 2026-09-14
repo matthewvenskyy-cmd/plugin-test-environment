@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCorebreakerItem, placeCoreBlock, queryCorebreakerCharges, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { clearDroppedItems, isCorebreakerItem, placeCoreBlock, queryCorebreakerCharges, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Corebreaker earned charge breaks player core";
 
@@ -21,7 +21,7 @@ export async function run(ctx) {
 
   await command("gamerule keepInventory true", 250);
   await command("gamerule naturalRegeneration false", 250);
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command("deop EarnBreaker", 250);
   await command("fill 77 79 -2 81 79 2 minecraft:stone", 250);
   await command(`setblock ${FIRST_CORE.x} ${FIRST_CORE.y} ${FIRST_CORE.z} minecraft:air`, 250);
@@ -59,7 +59,7 @@ export async function run(ctx) {
 
   await command("gamerule keepInventory false", 250);
   await command("gamerule naturalRegeneration true", 250);
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command("clear EarnBreaker", 250);
   await command("clear EarnVictim", 250);
   await command("fill 77 79 -2 81 82 2 minecraft:air", 250);

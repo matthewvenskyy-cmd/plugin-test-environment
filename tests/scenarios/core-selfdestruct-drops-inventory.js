@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCoreItem, placeCoreBlock, queryDroppedItemEntityCount, serverBlockIs, waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { clearDroppedItems, isCoreItem, placeCoreBlock, queryDroppedItemEntityCount, serverBlockIs, waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Core selfdestruct drops owner inventory";
 
@@ -12,7 +12,7 @@ export async function run(ctx) {
   const owner = await spawnBot("SelfDropOwner");
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("forceload add 136 0", 250);
     await command("fill 135 79 -1 137 79 2 minecraft:stone", 250);
     await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
@@ -40,7 +40,7 @@ export async function run(ctx) {
     assert(droppedItems >= 1, `selfdestruct should drop owner inventory near the death location; found ${droppedItems} item entities`);
     await waitForInventoryItem(owner, isCoreItem, "restored core item after selfdestruct");
   } finally {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("clear SelfDropOwner", 250);
     await command("fill 135 79 -1 137 82 2 minecraft:air", 250);
     await command("forceload remove 136 0", 250);

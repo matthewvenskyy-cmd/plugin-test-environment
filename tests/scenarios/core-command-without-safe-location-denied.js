@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { placeCoreBlock, serverBlockIs, waitForChat } from "./helpers.js";
+import { clearDroppedItems, placeCoreBlock, serverBlockIs, waitForChat } from "./helpers.js";
 
 export const name = "Core command without safe location is denied";
 
@@ -13,7 +13,7 @@ export async function run(ctx) {
   const owner = await spawnBot("CoreNoSafe");
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("forceload add 214 1", 250);
     await command("forceload add 230 0", 250);
     await command("fill 211 79 -2 217 79 4 minecraft:stone", 250);
@@ -45,7 +45,7 @@ export async function run(ctx) {
     await waitForChat(owner, () => owner.chat("/selfdestruct"), /core selfdestructed/i);
     await wait(1000);
   } finally {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("fill 211 77 -2 217 84 4 minecraft:air", 250);
     await command(`setblock ${AWAY_BLOCK.x} ${AWAY_BLOCK.y} ${AWAY_BLOCK.z} minecraft:air`, 250);
     await command("forceload remove 214 1", 250);

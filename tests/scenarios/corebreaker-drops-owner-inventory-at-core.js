@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCorebreakerItem, placeCoreBlock, queryDroppedItemEntityCount, serverBlockIs, waitForBlock, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { clearDroppedItems, isCorebreakerItem, placeCoreBlock, queryDroppedItemEntityCount, serverBlockIs, waitForBlock, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Corebreaker drops owner inventory at core";
 
@@ -14,7 +14,7 @@ export async function run(ctx) {
 
   try {
     await command("gamerule keepInventory false", 250);
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("forceload add 132 0", 250);
     await command("fill 131 79 -1 133 79 2 minecraft:stone", 250);
     await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
@@ -50,7 +50,7 @@ export async function run(ctx) {
     const droppedItems = await queryDroppedItemEntityCount(ctx, DROP_CENTER, 2.5);
     assert(droppedItems >= 1, `owner inventory should drop at the broken core location; found ${droppedItems} item entities`);
   } finally {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("clear CoreDropOwner", 250);
     await command("clear CoreDropBreaker", 250);
     await command("fill 131 79 -1 133 82 2 minecraft:air", 250);

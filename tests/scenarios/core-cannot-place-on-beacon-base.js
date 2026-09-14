@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { countMatchingItems, isCoreItem, serverBlockIs, waitForInventoryItem } from "./helpers.js";
+import { clearDroppedItems, countMatchingItems, isCoreItem, serverBlockIs, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Core cannot be placed on beacon base";
 
@@ -11,7 +11,7 @@ export async function run(ctx) {
   const { assert, command, wait, spawnBot } = ctx;
   const owner = await spawnBot("BeaconBaseOwner");
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command(`setblock ${FLOOR_BLOCK.x} ${FLOOR_BLOCK.y} ${FLOOR_BLOCK.z} minecraft:stone`, 250);
   await command(`setblock ${BASE_BLOCK.x} ${BASE_BLOCK.y} ${BASE_BLOCK.z} minecraft:diamond_block`, 250);
   await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
@@ -37,7 +37,7 @@ export async function run(ctx) {
   assert(await serverBlockIs(ctx, CORE_BLOCK, "air"), "core placement on a beacon base should be cancelled");
   assert(countMatchingItems(owner, isCoreItem) === startingCoreItems, "cancelled core placement should keep the core item");
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
   await command(`setblock ${BASE_BLOCK.x} ${BASE_BLOCK.y} ${BASE_BLOCK.z} minecraft:air`, 250);
   await command(`setblock ${FLOOR_BLOCK.x} ${FLOOR_BLOCK.y} ${FLOOR_BLOCK.z} minecraft:air`, 250);

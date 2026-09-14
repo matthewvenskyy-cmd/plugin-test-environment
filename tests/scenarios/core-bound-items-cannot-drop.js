@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearDroppedItems,
   countMatchingItems,
   isCoreItem,
   isCorebreakerItem,
@@ -16,7 +17,7 @@ export async function run(ctx) {
   const { assert, command, wait, spawnBot } = ctx;
   const bot = await spawnBot("BoundItemTester");
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command(`setblock ${FLOOR.x} ${FLOOR.y} ${FLOOR.z} minecraft:stone`, 250);
   await command("gamemode creative BoundItemTester", 250);
   await command(`tp BoundItemTester ${TEST_POSITION.x} ${TEST_POSITION.y} ${TEST_POSITION.z} 0 0`, 500);
@@ -37,7 +38,7 @@ export async function run(ctx) {
   assert(countMatchingItems(bot, isCorebreakerItem) === startingCorebreakers, "Corebreaker should stay in inventory after drop attempt");
   assert(await queryDroppedItemEntityCount(ctx, TEST_POSITION, 4) === 0, "Corebreaker drop attempt should not create an item entity");
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command(`setblock ${FLOOR.x} ${FLOOR.y} ${FLOOR.z} minecraft:air`, 250);
 }
 

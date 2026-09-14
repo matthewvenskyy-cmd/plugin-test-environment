@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearDroppedItems,
   countMatchingItems,
   isCoreItem,
   serverBlockIs,
@@ -19,7 +20,7 @@ export async function run(ctx) {
   const owner = await spawnBot("SecondCore");
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("forceload add 155 1", 250);
     await command("fill 153 79 0 157 79 2 minecraft:stone", 250);
     await command("fill 153 80 0 157 82 2 minecraft:air", 250);
@@ -59,7 +60,7 @@ export async function run(ctx) {
     assert(await serverBlockIs(ctx, SECOND_CORE, "air"), "denied second placement should leave the second target empty");
     assert(countMatchingItems(owner, isCoreItem) === 1, "denied second placement should keep the duplicate core item");
   } finally {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("fill 153 79 0 157 82 2 minecraft:air", 250);
     await command("forceload remove 155 1", 250);
   }

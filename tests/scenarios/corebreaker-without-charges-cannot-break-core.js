@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearDroppedItems,
   countMatchingItems,
   isCorebreakerItem,
   placeCoreBlock,
@@ -23,7 +24,7 @@ export async function run(ctx) {
   const secondOwner = await spawnBot("ChargeVictimTwo");
   const breaker = await spawnBot("NoChargeBreaker", { op: false });
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command(`setblock ${OWNER_FLOOR.x} ${OWNER_FLOOR.y} ${OWNER_FLOOR.z} minecraft:stone`, 250);
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:stone`, 250);
   await command(`setblock ${SECOND_OWNER_FLOOR.x} ${SECOND_OWNER_FLOOR.y} ${SECOND_OWNER_FLOOR.z} minecraft:stone`, 250);
@@ -58,7 +59,7 @@ export async function run(ctx) {
   assert(await queryCorebreakerCharges(breaker) === 0, "exhausted Corebreaker denial should keep charges at zero");
   assert(countMatchingItems(breaker, isCorebreakerItem) === startingCorebreakers, "exhausted Corebreaker denial should keep the Corebreaker item");
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
   await command(`setblock ${SECOND_CORE_BLOCK.x} ${SECOND_CORE_BLOCK.y} ${SECOND_CORE_BLOCK.z} minecraft:air`, 250);
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:air`, 250);

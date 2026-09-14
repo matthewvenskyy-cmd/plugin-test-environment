@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { placeCoreBlock, serverBlockIs, waitForChat } from "./helpers.js";
+import { clearDroppedItems, placeCoreBlock, serverBlockIs, waitForChat } from "./helpers.js";
 
 export const name = "Core command teleports to placed core";
 
@@ -12,7 +12,7 @@ export async function run(ctx) {
   const { assert, command, wait, spawnBot } = ctx;
   const owner = await spawnBot("CoreTeleport");
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command("fill 40 79 -1 44 79 3 minecraft:stone", 250);
   await command("fill 40 80 -1 44 82 3 minecraft:air", 250);
   await command(`setblock ${AWAY_BLOCK.x} ${AWAY_BLOCK.y} ${AWAY_BLOCK.z} minecraft:stone`, 250);
@@ -38,7 +38,7 @@ export async function run(ctx) {
   assert(owner.entity.position.distanceTo(CORE_BLOCK.offset(0.5, 0, 0.5)) <= 4, "/core should move the player near their placed core");
   assert(await serverBlockIs(ctx, CORE_BLOCK, "beacon"), "/core teleport should not modify the placed core block");
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command("fill 40 79 -1 44 82 3 minecraft:air", 250);
   await command(`setblock ${AWAY_BLOCK.x} ${AWAY_BLOCK.y} ${AWAY_BLOCK.z} minecraft:air`, 250);
 }

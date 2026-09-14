@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { placeCoreBlock, serverBlockIs, waitForChat } from "./helpers.js";
+import { clearDroppedItems, placeCoreBlock, serverBlockIs, waitForChat } from "./helpers.js";
 
 export const name = "Core owner is alerted when nearby blocks break";
 
@@ -14,7 +14,7 @@ export async function run(ctx) {
   const owner = await spawnBot("AlertOwner");
   const breaker = await spawnBot("AlertBreaker", { op: false });
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command(`setblock ${OWNER_FLOOR.x} ${OWNER_FLOOR.y} ${OWNER_FLOOR.z} minecraft:stone`, 250);
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:stone`, 250);
   await command(`setblock ${BREAKER_FLOOR.x} ${BREAKER_FLOOR.y} ${BREAKER_FLOOR.z} minecraft:stone`, 250);
@@ -49,7 +49,7 @@ export async function run(ctx) {
   assert(await serverBlockIs(ctx, CORE_BLOCK, "beacon"), "nearby block break should not modify the core");
 
   await command("clear AlertBreaker minecraft:diamond_pickaxe", 250);
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command(`setblock ${BREAK_TARGET.x} ${BREAK_TARGET.y} ${BREAK_TARGET.z} minecraft:air`, 250);
   await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:air`, 250);

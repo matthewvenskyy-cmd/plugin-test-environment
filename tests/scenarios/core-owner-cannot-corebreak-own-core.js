@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { countMatchingItems, isCorebreakerItem, placeCoreBlock, queryCorebreakerCharges } from "./helpers.js";
+import { clearDroppedItems, countMatchingItems, isCorebreakerItem, placeCoreBlock, queryCorebreakerCharges } from "./helpers.js";
 
 export const name = "Core owner cannot Corebreak own core";
 
@@ -11,7 +11,7 @@ const BREAK_FLOOR = new Vec3(7, 79, 1);
 export async function run(ctx) {
   const { bot, assert, command, wait } = ctx;
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command(`setblock ${OWNER_FLOOR.x} ${OWNER_FLOOR.y} ${OWNER_FLOOR.z} minecraft:stone`, 250);
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:stone`, 250);
   await command(`setblock ${BREAK_FLOOR.x} ${BREAK_FLOOR.y} ${BREAK_FLOOR.z} minecraft:stone`, 250);

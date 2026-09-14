@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { placeCoreBlock, serverBlockIs, waitForBlock, waitForInventoryItem, waitForNoChat } from "./helpers.js";
+import { clearDroppedItems, placeCoreBlock, serverBlockIs, waitForBlock, waitForInventoryItem, waitForNoChat } from "./helpers.js";
 
 export const name = "Core owner nearby break does not alert";
 
@@ -12,7 +12,7 @@ export async function run(ctx) {
   const owner = await spawnBot("OwnBreakOwner");
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("forceload add 148 0", 250);
     await command("fill 147 79 -1 150 79 2 minecraft:stone", 250);
     await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
@@ -41,7 +41,7 @@ export async function run(ctx) {
     assert(await serverBlockIs(ctx, CORE_BLOCK, "beacon"), "owner nearby block break should not modify the core");
   } finally {
     await command("clear OwnBreakOwner", 250);
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("fill 147 79 -1 150 82 2 minecraft:air", 250);
     await command("forceload remove 148 0", 250);
   }

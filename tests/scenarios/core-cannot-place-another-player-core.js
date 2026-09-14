@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearDroppedItems,
   countMatchingItems,
   isCoreItem,
   serverBlockIs,
@@ -18,7 +19,7 @@ export async function run(ctx) {
   const thief = await spawnBot("CoreWrongOwner");
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("forceload add 164 1", 250);
     await command("fill 163 79 0 165 79 2 minecraft:stone", 250);
     await command("fill 163 80 0 165 82 2 minecraft:air", 250);
@@ -58,7 +59,7 @@ export async function run(ctx) {
     assert(await serverBlockIs(ctx, CORE_BLOCK, "air"), "denied wrong-owner placement should leave the target empty");
     assert(countMatchingItems(thief, isCoreItem) === 1, "denied wrong-owner placement should keep the copied core item");
   } finally {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("fill 163 79 0 165 82 2 minecraft:air", 250);
     await command("forceload remove 164 1", 250);
   }

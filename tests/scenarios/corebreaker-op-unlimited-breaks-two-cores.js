@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCorebreakerItem, placeCoreBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { clearDroppedItems, isCorebreakerItem, placeCoreBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Op Corebreaker has unlimited core breaks";
 
@@ -17,7 +17,7 @@ export async function run(ctx) {
   const secondOwner = await spawnBot("UnlimitedTwo");
   const breaker = await spawnBot("UnlimitedBreak");
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command("fill 83 79 0 87 79 1 minecraft:stone", 250);
   await command(`setblock ${FIRST_CORE.x} ${FIRST_CORE.y} ${FIRST_CORE.z} minecraft:air`, 250);
   await command(`setblock ${SECOND_CORE.x} ${SECOND_CORE.y} ${SECOND_CORE.z} minecraft:air`, 250);
@@ -51,7 +51,7 @@ export async function run(ctx) {
   const unlimitedAfter = await waitForChat(breaker, () => breaker.chat("/kills"), /Corebreaker charges: Unlimited/i);
   assert(unlimitedAfter, "op breaker should still report unlimited Corebreaker charges after multiple breaks");
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command("clear UnlimitedBreak", 250);
   await command("fill 83 79 0 87 82 1 minecraft:air", 250);
 }
