@@ -129,7 +129,7 @@ export function waitForChat(bot, action, pattern, timeoutMs = 5000) {
     }, timeoutMs);
     const onMessage = (message) => {
       const text = message.toString();
-      if (!pattern.test(text)) return;
+      if (!patternMatches(pattern, text)) return;
       cleanup();
       resolve(text);
     };
@@ -138,7 +138,12 @@ export function waitForChat(bot, action, pattern, timeoutMs = 5000) {
       bot.off("message", onMessage);
     };
     bot.on("message", onMessage);
-    action();
+    Promise.resolve()
+      .then(action)
+      .catch((error) => {
+        cleanup();
+        reject(error);
+      });
   });
 }
 
@@ -220,7 +225,7 @@ export async function serverBlockIs(ctx, position, blockName) {
     timeoutMs: 1000,
     label: `server block ${position.x} ${position.y} ${position.z} is ${blockName}`
   });
-  return /Test passed/.test(output);
+  return patternMatches(/Test passed/, output);
 }
 
 export async function selectedItemHasNoDamage(ctx, username) {
@@ -228,7 +233,7 @@ export async function selectedItemHasNoDamage(ctx, username) {
     timeoutMs: 1500,
     label: `${username} selected item damage`
   });
-  return /No element matching|Found no elements|Unknown path|nothing found/i.test(output);
+  return patternMatches(/No element matching|Found no elements|Unknown path|nothing found/i, output);
 }
 
 async function runCommandUntil(ctx, commandText, pattern, options) {
@@ -236,6 +241,11 @@ async function runCommandUntil(ctx, commandText, pattern, options) {
     return ctx.commandUntil(commandText, pattern, options);
   }
   return ctx.command(commandText, options?.timeoutMs ?? 500);
+}
+
+function patternMatches(pattern, value) {
+  pattern.lastIndex = 0;
+  return pattern.test(value);
 }
 
 export function displayText(item) {
