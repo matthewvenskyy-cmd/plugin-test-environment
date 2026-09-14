@@ -1105,6 +1105,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario manually clears BCT items/displays; use clearBctArtifacts from helpers.js instead."
     });
   }
+  if (definesLocalChatPollingHelper(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario defines local chat polling; use waitForChat or waitForNoChat from helpers.js instead."
+    });
+  }
   if (isBctCorebreakerDigScenario(source, spec) && !source.includes("assertNoBctLeak")) {
     issues.push({
       severity: "warning",
@@ -1123,6 +1130,11 @@ function definesLocalBctDisplayCounter(source) {
 function definesManualBctArtifactCleanup(source) {
   return /kill\s+@e\[type=item\]/.test(source)
     && /kill\s+@e\[type=item_display,tag=bigger_crafting_table_display\]/.test(source);
+}
+
+function definesLocalChatPollingHelper(source) {
+  return /function\s+(?:waitForNoChat|seesChat)\s*\(/.test(source)
+    || /bot\.on\("message",\s*onMessage\)/.test(source);
 }
 
 function isBctCorebreakerDigScenario(source, spec) {
@@ -1861,6 +1873,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/bct-manual-cleanup.js" }
     ).some((issue) => issue.message.includes("clearBctArtifacts")),
     "scenarioQualityIssues should warn when scenarios manually clear BCT artifacts"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'function waitForNoChat(bot, pattern) { const onMessage = () => {}; bot.on("message", onMessage); }',
+      { path: "tests/scenarios/local-chat-helper.js" }
+    ).some((issue) => issue.message.includes("waitForChat or waitForNoChat")),
+    "scenarioQualityIssues should warn when scenarios define local chat polling helpers"
   );
   assertSelf(
     scenarioQualityIssues(
