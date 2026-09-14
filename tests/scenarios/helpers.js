@@ -28,8 +28,12 @@ export function countItemsByName(bot, itemName) {
     .reduce((total, item) => total + item.count, 0);
 }
 
-export async function clearBctArtifacts(ctx) {
+export async function clearDroppedItems(ctx) {
   await ctx.command("kill @e[type=item]", 250);
+}
+
+export async function clearBctArtifacts(ctx) {
+  await clearDroppedItems(ctx);
   await ctx.command("kill @e[type=item_display,tag=bigger_crafting_table_display]", 250);
 }
 

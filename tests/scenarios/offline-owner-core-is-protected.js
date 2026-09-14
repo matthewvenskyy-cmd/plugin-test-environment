@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { isCorebreakerItem, placeCoreBlock, waitForInventoryItem } from "./helpers.js";
+import { clearDroppedItems, isCorebreakerItem, placeCoreBlock, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Offline owner's core is protected from Corebreaker";
 
@@ -12,7 +12,7 @@ export async function run(ctx) {
   const { bot: breaker, assert, command, wait, spawnBot } = ctx;
   const owner = await spawnBot("OffCoreOwner");
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command(`setblock ${OWNER_FLOOR.x} ${OWNER_FLOOR.y} ${OWNER_FLOOR.z} minecraft:stone`, 250);
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:stone`, 250);
   await command(`setblock ${BREAKER_FLOOR.x} ${BREAKER_FLOOR.y} ${BREAKER_FLOOR.z} minecraft:stone`, 250);
@@ -45,7 +45,7 @@ export async function run(ctx) {
 
   assert(breaker.blockAt(CORE_BLOCK)?.name === "beacon", "offline owner's core should remain protected");
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:air`, 250);
   await command(`setblock ${OWNER_FLOOR.x} ${OWNER_FLOOR.y} ${OWNER_FLOOR.z} minecraft:air`, 250);

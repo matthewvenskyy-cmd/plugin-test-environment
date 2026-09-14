@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { countItemsByName, placeCoreBlock, selectedItemHasNoDamage } from "./helpers.js";
+import { clearDroppedItems, countItemsByName, placeCoreBlock, selectedItemHasNoDamage } from "./helpers.js";
 
 export const name = "Non-Corebreaker cannot break another player's core";
 
@@ -12,7 +12,7 @@ export async function run(ctx) {
   const { bot: breaker, assert, command, wait, waitForInventory, spawnBot } = ctx;
   const owner = await spawnBot("PlainToolOwner");
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command(`setblock ${OWNER_FLOOR.x} ${OWNER_FLOOR.y} ${OWNER_FLOOR.z} minecraft:stone`, 250);
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:stone`, 250);
   await command(`setblock ${BREAKER_FLOOR.x} ${BREAKER_FLOOR.y} ${BREAKER_FLOOR.z} minecraft:stone`, 250);
