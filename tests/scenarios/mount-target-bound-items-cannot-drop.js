@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearDroppedItems,
   countMatchingItems,
   isCoreItem,
   isCorebreakerItem,
@@ -21,7 +22,7 @@ export async function run(ctx) {
   const target = await spawnBot("MtTgtNoDrop", { op: false });
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("deop MtTgtNoDropR", 250);
     await command("deop MtTgtNoDrop", 250);
     await command("fill 87 79 -3 89 79 2 minecraft:stone", 250);
@@ -63,7 +64,7 @@ export async function run(ctx) {
   } finally {
     rider.chat("/unmount");
     await wait(500);
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("fill 87 79 -3 89 79 2 minecraft:air", 250);
   }
 }

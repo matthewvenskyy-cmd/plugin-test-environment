@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearDroppedItems,
   isCorebreakerItem,
   placeCoreBlock,
   queryCorebreakerCharges,
@@ -34,7 +35,7 @@ export async function run(ctx) {
     await command("gamerule keepInventory true", 250);
     await command("gamerule naturalRegeneration false", 250);
     await command("difficulty normal", 250);
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("deop MTEarnRider", 250);
     await command("deop MTEarnBreaker", 250);
     await command("clear MTEarnRider", 250);
@@ -104,7 +105,7 @@ export async function run(ctx) {
     await command("gamerule keepInventory false", 250);
     await command("gamerule naturalRegeneration true", 250);
     await command("difficulty peaceful", 250);
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("clear MTEarnOwnOne", 250);
     await command("clear MTEarnOwnTwo", 250);
     await command("clear MTEarnRider", 250);

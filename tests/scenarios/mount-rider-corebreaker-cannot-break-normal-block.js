@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearDroppedItems,
   countMatchingItems,
   isCorebreakerItem,
   queryCorebreakerCharges,
@@ -22,7 +23,7 @@ export async function run(ctx) {
   const seat = await spawnBot("MCoreSeat", { op: false });
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("forceload add 224 1", 250);
     await command("deop MCorebreak", 250);
     await command("deop MCoreSeat", 250);
@@ -75,7 +76,7 @@ export async function run(ctx) {
   } finally {
     rider.chat("/unmount");
     await wait(500);
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command(`setblock ${TEST_BLOCK.x} ${TEST_BLOCK.y} ${TEST_BLOCK.z} minecraft:air`, 250);
     await command("fill 223 79 -3 225 79 2 minecraft:air", 500);
     await command("forceload remove 224 1", 250);

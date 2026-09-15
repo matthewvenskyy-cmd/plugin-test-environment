@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { queryCorebreakerCharges, waitForBlock, waitForChat, waitForEvent } from "./helpers.js";
+import { clearDroppedItems, queryCorebreakerCharges, waitForBlock, waitForChat, waitForEvent } from "./helpers.js";
 
 export const name = "Mounted target duplicate kill does not add Corebreaker charge";
 
@@ -17,7 +17,7 @@ export async function run(ctx) {
     await command("gamerule keepInventory true", 250);
     await command("gamerule naturalRegeneration false", 250);
     await command("difficulty normal", 250);
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("deop MTDupRider", 250);
     await command("deop MTDupKiller", 250);
     await command("clear MTDupRider", 250);
@@ -62,7 +62,7 @@ export async function run(ctx) {
     await command("gamerule keepInventory false", 250);
     await command("gamerule naturalRegeneration true", 250);
     await command("difficulty peaceful", 250);
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("clear MTDupRider", 250);
     await command("clear MTDupKiller", 250);
     await command("clear MTDupVictim", 250);

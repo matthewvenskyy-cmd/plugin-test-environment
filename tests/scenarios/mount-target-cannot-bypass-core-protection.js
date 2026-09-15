@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearDroppedItems,
   countItemsByName,
   placeCoreBlock,
   selectedItemHasNoDamage,
@@ -22,7 +23,7 @@ export async function run(ctx) {
   const target = await spawnBot("MtTgtProt");
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("fill 93 79 -3 96 79 2 minecraft:stone", 250);
     await command("fill 93 80 -3 96 82 2 minecraft:air", 250);
     await command("gamemode creative MtTgtProtOwn", 250);
@@ -75,7 +76,7 @@ export async function run(ctx) {
   } finally {
     rider.chat("/unmount");
     await wait(500);
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("clear MtTgtProt minecraft:diamond_pickaxe", 250);
     await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
     await command("fill 93 79 -3 96 82 2 minecraft:air", 250);

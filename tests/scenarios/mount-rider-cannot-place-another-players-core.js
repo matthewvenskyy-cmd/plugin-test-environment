@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearDroppedItems,
   countMatchingItems,
   isCoreItem,
   serverBlockIs,
@@ -22,7 +23,7 @@ export async function run(ctx) {
   const seat = await spawnBot("MountCoreSit", { op: false });
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("forceload add 240 1", 250);
     await command("deop MountCoreCopy", 250);
     await command("deop MountCoreSit", 250);
@@ -80,7 +81,7 @@ export async function run(ctx) {
   } finally {
     rider.chat("/unmount");
     await wait(500);
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("fill 239 79 -3 242 82 2 minecraft:air", 500);
     await command("forceload remove 240 1", 250);
   }

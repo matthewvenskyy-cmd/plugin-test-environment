@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearDroppedItems,
   countMatchingItems,
   isCorebreakerItem,
   placeCoreBlock,
@@ -29,7 +30,7 @@ export async function run(ctx) {
   const seat = await spawnBot("MNoChargeSeat", { op: false });
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("deop MNoChargeBrk", 250);
     await command("deop MNoChargeSeat", 250);
     await command("clear MNoChargeSeat", 250);
@@ -90,7 +91,7 @@ export async function run(ctx) {
   } finally {
     rider.chat("/unmount");
     await wait(500);
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("clear MNoChargeOwn", 250);
     await command("clear MNoChargeTwo", 250);
     await command("clear MNoChargeBrk", 250);

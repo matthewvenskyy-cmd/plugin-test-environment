@@ -1,4 +1,4 @@
-import { waitForChat, waitForEvent } from "./helpers.js";
+import { clearDroppedItems, waitForChat, waitForEvent } from "./helpers.js";
 
 export const name = "MountPlugin target death releases rider";
 
@@ -9,7 +9,7 @@ export async function run(ctx) {
   const nextTarget = await spawnBot("MountDeathNext");
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("forceload add 280 0", 250);
     await command("fill 279 79 -3 282 79 3 minecraft:stone", 500);
     await command("gamemode creative MountDeathRide", 250);
@@ -43,7 +43,7 @@ export async function run(ctx) {
   } finally {
     rider.chat("/unmount");
     await wait(500);
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("clear MountDeathSeat", 250);
     await command("fill 279 79 -3 282 79 3 minecraft:air", 500);
     await command("forceload remove 280 0", 250);

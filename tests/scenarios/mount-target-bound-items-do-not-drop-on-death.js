@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  clearDroppedItems,
   countMatchingItems,
   isCoreItem,
   isCorebreakerItem,
@@ -22,7 +23,7 @@ export async function run(ctx) {
   const target = await spawnBot("MtTgtDrop", { op: false });
 
   try {
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("forceload add 296 0", 250);
     await command("deop MtTgtDropRide", 250);
     await command("deop MtTgtDrop", 250);
@@ -51,7 +52,7 @@ export async function run(ctx) {
     assert(mounted, "rider should mount the target player before target bound item death-drop check");
     await wait(500);
 
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     const respawned = waitForEvent(target, "respawn", 8000);
     await command("kill MtTgtDrop", 500);
     await respawned;
@@ -68,7 +69,7 @@ export async function run(ctx) {
   } finally {
     rider.chat("/unmount");
     await wait(500);
-    await command("kill @e[type=item]", 250);
+    await clearDroppedItems(ctx);
     await command("clear MtTgtDrop", 250);
     await command("fill 295 79 -3 297 79 2 minecraft:air", 500);
     await command("forceload remove 296 0", 250);

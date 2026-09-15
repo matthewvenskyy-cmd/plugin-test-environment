@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { countItemsByName, placeCoreBlock, selectedItemHasNoDamage, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { clearDroppedItems, countItemsByName, placeCoreBlock, selectedItemHasNoDamage, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted rider cannot bypass core protection";
 
@@ -12,7 +12,7 @@ export async function run(ctx) {
   const rider = await spawnBot("MountCoreRider");
   const mount = await spawnBot("MountCoreSeat");
 
-  await command("kill @e[type=item]", 250);
+  await clearDroppedItems(ctx);
   await command("fill 29 79 -2 32 79 2 minecraft:stone", 250);
   await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
 
