@@ -1105,6 +1105,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario manually clears BCT items/displays; use clearBctArtifacts from helpers.js instead."
     });
   }
+  if (definesManualDroppedItemCleanup(source, spec)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario manually clears dropped items; use clearDroppedItems from helpers.js instead."
+    });
+  }
   if (definesLocalChatPollingHelper(source)) {
     issues.push({
       severity: "warning",
@@ -1125,6 +1132,12 @@ function scenarioQualityIssues(source, spec) {
 function definesLocalBctDisplayCounter(source) {
   return /function\s+queryBctDisplays\s*\(/.test(source)
     || /queryEntityCount\s*\([^)]*bigger_crafting_table_display/s.test(source);
+}
+
+function definesManualDroppedItemCleanup(source, spec) {
+  if (path.basename(spec.path ?? "") === "helpers.js") return false;
+  return /command\s*\(\s*["']kill @e\[type=item\]["']\s*,\s*250\s*\)/.test(source)
+    || /ctx\.command\s*\(\s*["']kill @e\[type=item\]["']\s*,\s*250\s*\)/.test(source);
 }
 
 function definesManualBctArtifactCleanup(source) {
@@ -1873,6 +1886,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/bct-manual-cleanup.js" }
     ).some((issue) => issue.message.includes("clearBctArtifacts")),
     "scenarioQualityIssues should warn when scenarios manually clear BCT artifacts"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'await command("kill @e[type=item]", 250);',
+      { path: "tests/scenarios/manual-dropped-item-cleanup.js" }
+    ).some((issue) => issue.message.includes("clearDroppedItems")),
+    "scenarioQualityIssues should warn when scenarios manually clear dropped items"
   );
   assertSelf(
     scenarioQualityIssues(
