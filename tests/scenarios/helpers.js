@@ -73,6 +73,13 @@ export async function waitForBlock(bot, position, blockName, label, timeoutMs = 
   );
 }
 
+export async function waitForServerBlock(ctx, position, blockName, label, timeoutMs = 5000) {
+  return waitForCondition(
+    async () => await serverBlockIs(ctx, position, blockName),
+    { timeoutMs, label }
+  );
+}
+
 export async function placeBiggerCraftingTable(ctx, bot, bctPosition, supportPosition, options = {}) {
   const { assert, wait } = ctx;
   const settleMs = options.settleMs ?? 1000;
@@ -87,15 +94,17 @@ export async function placeBiggerCraftingTable(ctx, bot, bctPosition, supportPos
   try {
     await bot.placeBlock(support, new Vec3(0, 1, 0));
   } catch (error) {
-    await wait(750);
-    if (bot.blockAt(bctPosition)?.name !== "crafter") {
+    try {
+      await waitForServerBlock(ctx, bctPosition, "crafter", "BCT block after placement retry", 3000);
+    } catch {
       throw error;
     }
   }
+  await waitForServerBlock(ctx, bctPosition, "crafter", "BCT block after placement", 3000);
   await wait(settleMs);
 
   const placed = bot.blockAt(bctPosition);
-  assert(placed?.name === "crafter", "BCT block was not placed");
+  assert(await serverBlockIs(ctx, bctPosition, "crafter"), "BCT block was not placed");
   return placed;
 }
 
@@ -223,6 +232,27 @@ export async function countBctItemsNear(ctx, position, holders = [], radius = 3)
   return holders.reduce((total, bot) => total + countBctItems(bot), dropped);
 }
 
+export async function waitForBctDisplayCount(ctx, position, expectedCount, options = {}) {
+  return waitForEntityCount(ctx, `@e[type=item_display,tag=bigger_crafting_table_display,x=${position.x + 0.5},y=${position.y + 0.5},z=${position.z + 0.5},distance=..${options.radius ?? 1.5}]`, expectedCount, {
+    timeoutMs: options.timeoutMs ?? 5000,
+    label: options.label ?? `BCT display count ${expectedCount}`
+  });
+}
+
+export async function waitForBctItemsNear(ctx, position, holders = [], expectedCount = 1, options = {}) {
+  return waitForCondition(
+    async () => {
+      const count = await countBctItemsNear(ctx, position, holders, options.radius ?? 3);
+      return count === expectedCount ? { count } : null;
+    },
+    {
+      timeoutMs: options.timeoutMs ?? 5000,
+      intervalMs: options.intervalMs ?? 100,
+      label: options.label ?? `BCT item count ${expectedCount}`
+    }
+  );
+}
+
 export async function assertNoBctLeak(ctx, options) {
   const {
     position,
@@ -247,6 +277,20 @@ export async function queryEntityCount(ctx, selector) {
   });
   const match = output.match(/item_count has (\d+) \[/);
   return match ? Number(match[1]) : 0;
+}
+
+export async function waitForEntityCount(ctx, selector, expectedCount, options = {}) {
+  return waitForCondition(
+    async () => {
+      const count = await queryEntityCount(ctx, selector);
+      return count === expectedCount ? { count } : null;
+    },
+    {
+      timeoutMs: options.timeoutMs ?? 5000,
+      intervalMs: options.intervalMs ?? 100,
+      label: options.label ?? `entity count ${expectedCount} for ${selector}`
+    }
+  );
 }
 
 export async function serverBlockIs(ctx, position, blockName) {

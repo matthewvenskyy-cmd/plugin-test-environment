@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { clearBctArtifacts, countBctItemsNear, countItemsByName, placeBiggerCraftingTable, serverBlockIs } from "./helpers.js";
+import { clearBctArtifacts, countBctItemsNear, countItemsByName, placeBiggerCraftingTable, serverBlockIs, waitForBctItemsNear, waitForServerBlock } from "./helpers.js";
 
 export const name = "BCT normal break returns one item";
 
@@ -8,7 +8,7 @@ const SUPPORT_BLOCK = new Vec3(2, 79, 1);
 const FLOOR_BLOCK = new Vec3(2, 79, 0);
 
 export async function run(ctx) {
-  const { bot, assert, command, wait } = ctx;
+  const { bot, assert, command } = ctx;
 
   await clearBctArtifacts(ctx);
   await command(`setblock ${FLOOR_BLOCK.x} ${FLOOR_BLOCK.y} ${FLOOR_BLOCK.z} minecraft:stone`, 250);
@@ -28,16 +28,21 @@ export async function run(ctx) {
   assert(pickaxe, "diamond pickaxe was not available for normal break");
   await bot.equip(pickaxe, "hand");
 
-  const target = bot.blockAt(BCT_BLOCK);
   for (let attempt = 0; attempt < 3 && !(await serverBlockIs(ctx, BCT_BLOCK, "air")); attempt++) {
     await bot.lookAt(BCT_BLOCK.offset(0.5, 0.5, 0.5), true);
     await bot.dig(bot.blockAt(BCT_BLOCK), true);
-    await wait(1500);
+    try {
+      await waitForServerBlock(ctx, BCT_BLOCK, "air", "normal BCT break removes block", 2000);
+    } catch (error) {
+      if (attempt === 2) throw error;
+    }
   }
 
   assert(await serverBlockIs(ctx, BCT_BLOCK, "air"), "normal BCT break should remove the block on the server");
   await command("tp ScenarioBot 2.5 80 1.5 0 0", 1000);
-  await wait(1000);
+  await waitForBctItemsNear(ctx, BCT_BLOCK, [bot], 1, {
+    label: "normal BCT break returns one BCT item"
+  });
   const returnedBctCount = await countBctItemsNear(ctx, BCT_BLOCK, [bot]);
   assert(returnedBctCount === 1, `normal BCT break should leave exactly one BCT item, found ${returnedBctCount}`);
 

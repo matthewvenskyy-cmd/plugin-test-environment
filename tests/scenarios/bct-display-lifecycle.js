@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { clearBctArtifacts, placeBiggerCraftingTable, queryBctDisplayCount, serverBlockIs, waitForInventoryItem } from "./helpers.js";
+import { clearBctArtifacts, placeBiggerCraftingTable, serverBlockIs, waitForBctDisplayCount, waitForInventoryItem, waitForServerBlock } from "./helpers.js";
 
 export const name = "BCT display lifecycle follows block";
 
@@ -8,7 +8,7 @@ const SUPPORT_BLOCK = new Vec3(22, 79, 1);
 const FLOOR_BLOCK = new Vec3(22, 79, 0);
 
 export async function run(ctx) {
-  const { assert, command, wait, spawnBot } = ctx;
+  const { assert, command, spawnBot } = ctx;
   const bot = await spawnBot("BctDisplayBot");
 
   await clearBctArtifacts(ctx);
@@ -21,7 +21,9 @@ export async function run(ctx) {
   await command("gamemode survival BctDisplayBot", 250);
 
   await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK, { settleMs: 1250 });
-  assert(await queryBctDisplayCount(ctx, BCT_BLOCK) === 1, "placing a BCT should create exactly one display entity");
+  await waitForBctDisplayCount(ctx, BCT_BLOCK, 1, {
+    label: "placed BCT display entity"
+  });
 
   await command("give BctDisplayBot minecraft:diamond_pickaxe", 500);
   const pickaxe = await waitForInventoryItem(bot, (item) => item?.name === "diamond_pickaxe", "diamond pickaxe");
@@ -30,11 +32,17 @@ export async function run(ctx) {
   for (let attempt = 0; attempt < 3 && !(await serverBlockIs(ctx, BCT_BLOCK, "air")); attempt++) {
     await bot.lookAt(BCT_BLOCK.offset(0.5, 0.5, 0.5), true);
     await bot.dig(bot.blockAt(BCT_BLOCK), true);
-    await wait(1500);
+    try {
+      await waitForServerBlock(ctx, BCT_BLOCK, "air", "normal BCT break removes block", 2000);
+    } catch (error) {
+      if (attempt === 2) throw error;
+    }
   }
 
   assert(await serverBlockIs(ctx, BCT_BLOCK, "air"), "normal BCT break should remove the block");
-  assert(await queryBctDisplayCount(ctx, BCT_BLOCK) === 0, "breaking a BCT should remove its display entity");
+  await waitForBctDisplayCount(ctx, BCT_BLOCK, 0, {
+    label: "removed BCT display entity"
+  });
 
   await clearBctArtifacts(ctx);
   await command("clear BctDisplayBot minecraft:crafter", 250);
