@@ -80,6 +80,30 @@ export async function waitForServerBlock(ctx, position, blockName, label, timeou
   );
 }
 
+export async function digUntilServerBlock(ctx, bot, position, blockName, options = {}) {
+  const attempts = options.attempts ?? 3;
+  const timeoutMs = options.timeoutMs ?? 2000;
+  const label = options.label ?? `dig at ${position.x} ${position.y} ${position.z} until ${blockName}`;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    if (await serverBlockIs(ctx, position, blockName)) return true;
+
+    const target = bot.blockAt(position);
+    ctx.assert(target, `${label}: Mineflayer could not see the target block`);
+    await bot.lookAt(position.offset(0.5, 0.5, 0.5), true);
+    await bot.dig(target, true);
+
+    try {
+      await waitForServerBlock(ctx, position, blockName, label, timeoutMs);
+      return true;
+    } catch (error) {
+      if (attempt === attempts) throw error;
+    }
+  }
+
+  return false;
+}
+
 export async function placeBiggerCraftingTable(ctx, bot, bctPosition, supportPosition, options = {}) {
   const { assert, wait } = ctx;
   const settleMs = options.settleMs ?? 1000;

@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { clearBctArtifacts, placeBiggerCraftingTable, serverBlockIs, waitForBctDisplayCount, waitForInventoryItem, waitForServerBlock } from "./helpers.js";
+import { clearBctArtifacts, digUntilServerBlock, placeBiggerCraftingTable, waitForBctDisplayCount, waitForInventoryItem } from "./helpers.js";
 
 export const name = "BCT display lifecycle follows block";
 
@@ -29,17 +29,10 @@ export async function run(ctx) {
   const pickaxe = await waitForInventoryItem(bot, (item) => item?.name === "diamond_pickaxe", "diamond pickaxe");
   await bot.equip(pickaxe, "hand");
 
-  for (let attempt = 0; attempt < 3 && !(await serverBlockIs(ctx, BCT_BLOCK, "air")); attempt++) {
-    await bot.lookAt(BCT_BLOCK.offset(0.5, 0.5, 0.5), true);
-    await bot.dig(bot.blockAt(BCT_BLOCK), true);
-    try {
-      await waitForServerBlock(ctx, BCT_BLOCK, "air", "normal BCT break removes block", 2000);
-    } catch (error) {
-      if (attempt === 2) throw error;
-    }
-  }
-
-  assert(await serverBlockIs(ctx, BCT_BLOCK, "air"), "normal BCT break should remove the block");
+  const removed = await digUntilServerBlock(ctx, bot, BCT_BLOCK, "air", {
+    label: "normal BCT break removes block"
+  });
+  assert(removed, "normal BCT break should remove the block");
   await waitForBctDisplayCount(ctx, BCT_BLOCK, 0, {
     label: "removed BCT display entity"
   });

@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { clearBctArtifacts, countBctItemsNear, countItemsByName, placeBiggerCraftingTable, serverBlockIs, waitForBctItemsNear, waitForServerBlock } from "./helpers.js";
+import { clearBctArtifacts, countBctItemsNear, countItemsByName, digUntilServerBlock, placeBiggerCraftingTable, waitForBctItemsNear } from "./helpers.js";
 
 export const name = "BCT normal break returns one item";
 
@@ -28,17 +28,10 @@ export async function run(ctx) {
   assert(pickaxe, "diamond pickaxe was not available for normal break");
   await bot.equip(pickaxe, "hand");
 
-  for (let attempt = 0; attempt < 3 && !(await serverBlockIs(ctx, BCT_BLOCK, "air")); attempt++) {
-    await bot.lookAt(BCT_BLOCK.offset(0.5, 0.5, 0.5), true);
-    await bot.dig(bot.blockAt(BCT_BLOCK), true);
-    try {
-      await waitForServerBlock(ctx, BCT_BLOCK, "air", "normal BCT break removes block", 2000);
-    } catch (error) {
-      if (attempt === 2) throw error;
-    }
-  }
-
-  assert(await serverBlockIs(ctx, BCT_BLOCK, "air"), "normal BCT break should remove the block on the server");
+  const removed = await digUntilServerBlock(ctx, bot, BCT_BLOCK, "air", {
+    label: "normal BCT break removes block"
+  });
+  assert(removed, "normal BCT break should remove the block on the server");
   await command("tp ScenarioBot 2.5 80 1.5 0 0", 1000);
   await waitForBctItemsNear(ctx, BCT_BLOCK, [bot], 1, {
     label: "normal BCT break returns one BCT item"
