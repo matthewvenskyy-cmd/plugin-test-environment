@@ -1,6 +1,6 @@
 import { Vec3 } from "vec3";
 import {
-  assertNoBctLeak,
+  assertBctStateStable,
   clearBctArtifacts,
   isCorebreakerItem,
   placeBiggerCraftingTable,
@@ -40,6 +40,7 @@ export async function run(ctx) {
     await command("tp ScenarioBot 461 80 0 0 0", 500);
     await command("tp MTBctContentsR 462 80 -2 0 0", 500);
     await command("tp MTBctContents 462 80 2 180 0", 500);
+    await Promise.all([bot.waitForChunksToLoad(), rider.waitForChunksToLoad(), target.waitForChunksToLoad()]);
     await waitForBlock(bot, PLACER_FLOOR, "stone", "mounted target BCT contents placer floor block");
     await waitForBlock(bot, SUPPORT_BLOCK, "stone", "mounted target BCT contents support block");
     await waitForBlock(rider, RIDER_FLOOR, "stone", "mounted target BCT contents rider floor block");
@@ -49,8 +50,6 @@ export async function run(ctx) {
     await command("gamemode survival MTBctContents", 250);
     await command("effect give MTBctContentsR minecraft:slow_falling 30 1 true", 250);
     await command("effect give MTBctContents minecraft:slow_falling 30 1 true", 250);
-    await rider.waitForChunksToLoad();
-    await target.waitForChunksToLoad();
     await wait(500);
 
     await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK);
@@ -84,13 +83,11 @@ export async function run(ctx) {
     } catch {
       // State assertions below capture the BCT/Corebreaker contract.
     }
-    await wait(1000);
-
-    assert(target.blockAt(BCT_BLOCK)?.name === "crafter", "ridden target Corebreaker should not remove a BCT with contents");
-    await assertNoBctLeak(ctx, {
+    await assertBctStateStable(ctx, {
       position: BCT_BLOCK,
       holders: [bot, rider, target],
-      label: "ridden target Corebreaker contents attempt"
+      label: "ridden target Corebreaker contents attempt",
+      durationMs: 1000
     });
     assert(await selectedItemHasNoDamage(ctx, "MTBctContents"), "ridden target Corebreaker contents attempt should not damage the Corebreaker");
 

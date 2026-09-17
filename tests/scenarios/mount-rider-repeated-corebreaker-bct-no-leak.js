@@ -1,6 +1,6 @@
 import { Vec3 } from "vec3";
 import {
-  assertNoBctLeak,
+  assertBctStateStable,
   clearBctArtifacts,
   countBctItems,
   countMatchingItems,
@@ -42,6 +42,7 @@ export async function run(ctx) {
     await command("tp ScenarioBot 449 80 0 0 0", 500);
     await command("tp MRBctRepeat 450 80 -2 0 0", 500);
     await command("tp MRBctRepeatSeat 450 80 2 180 0", 500);
+    await Promise.all([bot.waitForChunksToLoad(), rider.waitForChunksToLoad(), seat.waitForChunksToLoad()]);
     await waitForBlock(bot, PLACER_FLOOR, "stone", "mounted rider repeated BCT placer floor block");
     await waitForBlock(bot, SUPPORT_BLOCK, "stone", "mounted rider repeated BCT support block");
     await waitForBlock(rider, RIDER_FLOOR, "stone", "mounted rider repeated BCT rider floor block");
@@ -51,8 +52,6 @@ export async function run(ctx) {
     await command("gamemode survival MRBctRepeatSeat", 250);
     await command("effect give MRBctRepeat minecraft:slow_falling 30 1 true", 250);
     await command("effect give MRBctRepeatSeat minecraft:slow_falling 30 1 true", 250);
-    await rider.waitForChunksToLoad();
-    await seat.waitForChunksToLoad();
     await wait(500);
 
     await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK);
@@ -85,13 +84,11 @@ export async function run(ctx) {
       } catch {
         // The state assertions below are the important cross-plugin contract.
       }
-      await wait(1000);
-
-      assert(rider.blockAt(BCT_BLOCK)?.name === "crafter", `attempt ${attempt} should leave the BCT block placed`);
-      await assertNoBctLeak(ctx, {
+      await assertBctStateStable(ctx, {
         position: BCT_BLOCK,
         holders: [bot, rider, seat],
-        label: `attempt ${attempt}`
+        label: `attempt ${attempt}`,
+        durationMs: 1000
       });
       assert(countMatchingItems(rider, isCorebreakerItem) === startingCorebreakers, `attempt ${attempt} should keep the Corebreaker item`);
       assert(await queryCorebreakerCharges(rider) === startingCharges, `attempt ${attempt} should not consume a Corebreaker charge`);

@@ -1,6 +1,6 @@
 import { Vec3 } from "vec3";
 import {
-  assertNoBctLeak,
+  assertBctStateStable,
   clearBctArtifacts,
   countBctItems,
   countMatchingItems,
@@ -40,6 +40,7 @@ export async function run(ctx) {
     await command("tp ScenarioBot 95 80 0 0 0", 500);
     await command("tp MtTgtBctR 96 80 -2 0 0", 500);
     await command("tp MtTgtBct 96 80 2 180 0", 500);
+    await Promise.all([bot.waitForChunksToLoad(), rider.waitForChunksToLoad(), target.waitForChunksToLoad()]);
     await waitForBlock(bot, SUPPORT_BLOCK, "stone", "BCT support block");
     await waitForBlock(rider, RIDER_FLOOR, "stone", "mounted target BCT rider floor block");
     await waitForBlock(target, TARGET_FLOOR, "stone", "mounted target BCT floor block");
@@ -48,8 +49,6 @@ export async function run(ctx) {
     await command("gamemode survival MtTgtBct", 250);
     await command("effect give MtTgtBctR minecraft:slow_falling 30 1 true", 250);
     await command("effect give MtTgtBct minecraft:slow_falling 30 1 true", 250);
-    await rider.waitForChunksToLoad();
-    await target.waitForChunksToLoad();
     await command("tp MtTgtBctR 96 80 -2 0 0", 500);
     await command("tp MtTgtBct 96 80 2 180 0", 500);
     await wait(250);
@@ -79,13 +78,11 @@ export async function run(ctx) {
       }
     }, /Corebreakers can only break player cores/i);
     assert(denied, "ridden target Corebreaker use on BCT should be denied");
-    await wait(1000);
-
-    assert(target.blockAt(BCT_BLOCK)?.name === "crafter", "ridden target Corebreaker should not remove the BCT");
-    await assertNoBctLeak(ctx, {
+    await assertBctStateStable(ctx, {
       position: BCT_BLOCK,
       holders: [bot, rider, target],
-      label: "ridden target Corebreaker attempt"
+      label: "ridden target Corebreaker attempt",
+      durationMs: 1000
     });
     assert(countMatchingItems(target, isCorebreakerItem) === startingCorebreakers, "ridden target denied BCT break should keep the Corebreaker item");
     assert(await queryCorebreakerCharges(target) === startingCharges, "ridden target denied BCT break should not consume a Corebreaker charge");

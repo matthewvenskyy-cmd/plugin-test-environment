@@ -1,6 +1,6 @@
 import { Vec3 } from "vec3";
 import {
-  assertNoBctLeak,
+  assertBctStateStable,
   clearBctArtifacts,
   countBctItems,
   countMatchingItems,
@@ -40,6 +40,7 @@ export async function run(ctx) {
     await command("tp ScenarioBot 231 80 0 0 0", 500);
     await command("tp MountBctBreak 232 80 -2 0 0", 500);
     await command("tp MountBctSeat 232 80 2 180 0", 500);
+    await Promise.all([bot.waitForChunksToLoad(), rider.waitForChunksToLoad(), seat.waitForChunksToLoad()]);
     await waitForBlock(bot, SUPPORT_BLOCK, "stone", "BCT support block");
     await waitForBlock(rider, RIDER_FLOOR, "stone", "mounted rider floor block");
     await waitForBlock(seat, SEAT_FLOOR, "stone", "mounted seat floor block");
@@ -48,8 +49,6 @@ export async function run(ctx) {
     await command("gamemode survival MountBctSeat", 250);
     await command("effect give MountBctBreak minecraft:slow_falling 30 1 true", 250);
     await command("effect give MountBctSeat minecraft:slow_falling 30 1 true", 250);
-    await rider.waitForChunksToLoad();
-    await seat.waitForChunksToLoad();
     await command("tp MountBctBreak 232 80 -2 0 0", 500);
     await command("tp MountBctSeat 232 80 2 180 0", 500);
     await wait(250);
@@ -83,13 +82,11 @@ export async function run(ctx) {
     } catch {
       // The state assertions below are the important cross-plugin contract.
     }
-    await wait(1000);
-
-    assert(rider.blockAt(BCT_BLOCK)?.name === "crafter", "mounted Corebreaker should not remove the BCT");
-    await assertNoBctLeak(ctx, {
+    await assertBctStateStable(ctx, {
       position: BCT_BLOCK,
       holders: [bot, rider, seat],
-      label: "mounted Corebreaker attempt"
+      label: "mounted Corebreaker attempt",
+      durationMs: 1000
     });
     assert(countMatchingItems(rider, isCorebreakerItem) === startingCorebreakers, "mounted denied BCT break should keep the Corebreaker item");
     assert(await queryCorebreakerCharges(rider) === startingCharges, "mounted denied BCT break should not consume a Corebreaker charge");
