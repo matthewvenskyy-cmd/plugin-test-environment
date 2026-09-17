@@ -1082,6 +1082,16 @@ function scenarioSpecConfigIssues(spec) {
       message: "Manual and expected-failure scenarios should include a reason."
     });
   }
+  if (spec.expectedFailure && (typeof spec.failurePattern !== "string" || spec.failurePattern.trim() === "")) {
+    issues.push({
+      severity: "error",
+      path: label,
+      message: "Expected-failure scenarios must include a non-empty failurePattern."
+    });
+  }
+  if (spec.failurePattern != null && typeof spec.failurePattern !== "string") {
+    issues.push({ severity: "error", path: label, message: "Scenario failurePattern must be a string when present." });
+  }
   if (spec.area && typeof spec.area !== "string") {
     issues.push({ severity: "error", path: label, message: "Scenario area must be a string when present." });
   }
@@ -1941,6 +1951,7 @@ async function runSelfTest() {
       && scenarioSpecIssues.some((issue) => issue.message.includes("path must be"))
       && scenarioSpecIssues.some((issue) => issue.message.includes("both manual and expectedFailure"))
       && scenarioSpecIssues.some((issue) => issue.message.includes("include a reason"))
+      && scenarioSpecIssues.some((issue) => issue.message.includes("non-empty failurePattern"))
       && scenarioSpecIssues.some((issue) => issue.message.includes("area must be")),
     "scenarioSpecConfigIssues should catch malformed scenario config entries"
   );

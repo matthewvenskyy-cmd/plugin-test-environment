@@ -69,7 +69,8 @@
     {
       "path": "tests/scenarios/offline-owner-core-is-protected.js",
       "expectedFailure": true,
-      "reason": "CorePlugin currently allows breaking a core during the offline-protection grace window."
+      "reason": "CorePlugin currently allows breaking a core during the offline-protection grace window.",
+      "failurePattern": "offline owner's core should remain protected"
     },
     "tests/scenarios/corebreaker-without-charges-cannot-break-core.js",
     "tests/scenarios/corebreaker-cannot-break-normal-block.js",
@@ -107,7 +108,8 @@
     {
       "path": "tests/scenarios/classes-archer-movement-clears-invisibility.js",
       "expectedFailure": true,
-      "reason": "ClassesPlugin currently leaves Archer Invisibility active after teleport-style movement."
+      "reason": "ClassesPlugin currently leaves Archer Invisibility active after teleport-style movement.",
+      "failurePattern": "Archer movement should clear Invisibility"
     },
     "tests/scenarios/classes-heavy-knight-speed-penalty.js",
     "tests/scenarios/classes-light-knight-speed-boost.js",
@@ -115,7 +117,8 @@
     {
       "path": "tests/scenarios/classes-viking-shield-bashes-target.js",
       "expectedFailure": true,
-      "reason": "ClassesPlugin currently does not apply Viking Shield bash damage from a real shield right-click."
+      "reason": "ClassesPlugin currently does not apply Viking Shield bash damage from a real shield right-click.",
+      "failurePattern": "Viking shield bash should damage the nearby target"
     },
     "tests/scenarios/classes-viking-berserk-increases-health.js",
     "tests/scenarios/classes-mage-melee-reduces-damage.js",
@@ -156,12 +159,14 @@
     {
       "path": "tests/scenarios/mount-rider-archer-movement-clears-invisibility.js",
       "expectedFailure": true,
-      "reason": "ClassesPlugin currently leaves Archer Invisibility active after teleport-style movement while mounted."
+      "reason": "ClassesPlugin currently leaves Archer Invisibility active after teleport-style movement while mounted.",
+      "failurePattern": "mounted Archer rider movement should clear Invisibility"
     },
     {
       "path": "tests/scenarios/mount-target-archer-movement-clears-invisibility.js",
       "expectedFailure": true,
-      "reason": "ClassesPlugin currently leaves Archer Invisibility active after teleport-style movement while ridden."
+      "reason": "ClassesPlugin currently leaves Archer Invisibility active after teleport-style movement while ridden.",
+      "failurePattern": "ridden Archer target movement should clear Invisibility"
     },
     "tests/scenarios/mount-rider-basic-mage-melee-reduces-damage.js",
     "tests/scenarios/mount-target-basic-mage-melee-reduces-damage.js",
@@ -174,12 +179,14 @@
     {
       "path": "tests/scenarios/mount-rider-viking-shield-bashes-target.js",
       "expectedFailure": true,
-      "reason": "ClassesPlugin currently does not apply Viking Shield bash damage from a real shield right-click while mounted."
+      "reason": "ClassesPlugin currently does not apply Viking Shield bash damage from a real shield right-click while mounted.",
+      "failurePattern": "mounted Viking rider shield bash should damage the nearby target"
     },
     {
       "path": "tests/scenarios/mount-target-viking-shield-bashes-target.js",
       "expectedFailure": true,
-      "reason": "ClassesPlugin currently does not apply Viking Shield bash damage from a real shield right-click while ridden."
+      "reason": "ClassesPlugin currently does not apply Viking Shield bash damage from a real shield right-click while ridden.",
+      "failurePattern": "mounted Viking target shield bash should damage the nearby target"
     },
     "tests/scenarios/mount-rider-heavy-knight-speed-penalty.js",
     "tests/scenarios/mount-target-heavy-knight-speed-penalty.js",
@@ -188,12 +195,14 @@
     {
       "path": "tests/scenarios/mount-rider-necromancer-darkness-blinds-target.js",
       "expectedFailure": true,
-      "reason": "ClassesPlugin currently does not apply Necromancer darkness from a real staff right-click while mounted."
+      "reason": "ClassesPlugin currently does not apply Necromancer darkness from a real staff right-click while mounted.",
+      "failurePattern": "mounted Necromancer rider darkness should apply Blindness"
     },
     {
       "path": "tests/scenarios/mount-target-necromancer-darkness-blinds-target.js",
       "expectedFailure": true,
-      "reason": "ClassesPlugin currently does not apply Necromancer darkness from a real staff right-click while ridden."
+      "reason": "ClassesPlugin currently does not apply Necromancer darkness from a real staff right-click while ridden.",
+      "failurePattern": "mounted Necromancer target darkness should apply Blindness"
     },
     "tests/scenarios/mount-rider-necromancer-night-speed.js",
     "tests/scenarios/mount-target-necromancer-night-speed.js",
@@ -212,7 +221,8 @@
     {
       "path": "tests/scenarios/mount-rider-bound-items-cannot-hotbar-swap-into-chest.js",
       "expectedFailure": true,
-      "reason": "CorePlugin currently allows a mounted rider to hotbar-swap a Corebreaker into a chest."
+      "reason": "CorePlugin currently allows a mounted rider to hotbar-swap a Corebreaker into a chest.",
+      "failurePattern": "mounted rider Corebreaker should not appear in the chest after hotbar swap"
     },
     "tests/scenarios/mount-rider-bound-items-cannot-store-in-bct.js",
     "tests/scenarios/mount-rider-bound-items-cannot-hotbar-swap-into-bct.js",
