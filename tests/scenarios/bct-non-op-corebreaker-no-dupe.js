@@ -1,6 +1,6 @@
 import { Vec3 } from "vec3";
 import {
-  assertNoBctLeak,
+  assertBctStateStable,
   clearBctArtifacts,
   countBctItems,
   countMatchingItems,
@@ -58,13 +58,11 @@ export async function run(ctx) {
       }
     }, /Corebreakers can only break player cores/i);
     assert(denied, "non-op Corebreaker should be denied when used on BCT");
-    await wait(1000);
-
-    assert(breaker.blockAt(BCT_BLOCK)?.name === "crafter", "non-op Corebreaker should not remove a BCT");
-    await assertNoBctLeak(ctx, {
+    await assertBctStateStable(ctx, {
       position: BCT_BLOCK,
       holders: [bot, breaker],
-      label: "non-op Corebreaker attempt"
+      label: "non-op Corebreaker attempt",
+      durationMs: 1000
     });
     assert(countMatchingItems(breaker, isCorebreakerItem) === startingCorebreakers, "denied BCT break should keep the non-op Corebreaker item");
     assert(await queryCorebreakerCharges(breaker) === startingCharges, "denied BCT break should not consume a Corebreaker charge");

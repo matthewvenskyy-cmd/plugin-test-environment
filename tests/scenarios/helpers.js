@@ -291,6 +291,25 @@ export async function assertNoBctLeak(ctx, options) {
   ctx.assert(displayCount === expectedDisplays, `${label} should have ${expectedDisplays} BCT display entity; found ${displayCount}`);
 }
 
+export async function assertBctStateStable(ctx, options) {
+  const {
+    position,
+    blockName = "crafter",
+    durationMs = 1000,
+    intervalMs = 100,
+    label = "BCT state"
+  } = options;
+  const started = Date.now();
+
+  do {
+    ctx.assert(await serverBlockIs(ctx, position, blockName), `${label} should keep the ${blockName} block on the server`);
+    await assertNoBctLeak(ctx, options);
+    if (Date.now() - started < durationMs) {
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+  } while (Date.now() - started < durationMs);
+}
+
 export async function queryEntityCount(ctx, selector) {
   const objective = "scenario_count";
   await ctx.command(`scoreboard objectives add ${objective} dummy`, 100);

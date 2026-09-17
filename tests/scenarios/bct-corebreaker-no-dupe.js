@@ -1,6 +1,6 @@
 import { Vec3 } from "vec3";
 import {
-  assertNoBctLeak,
+  assertBctStateStable,
   clearBctArtifacts,
   countBctItems,
   isCorebreakerItem,
@@ -16,7 +16,7 @@ const SUPPORT_BLOCK = new Vec3(0, 79, 1);
 const FLOOR_BLOCK = new Vec3(0, 79, 0);
 
 export async function run(ctx) {
-  const { bot, assert, command, wait } = ctx;
+  const { bot, assert, command } = ctx;
 
   await clearBctArtifacts(ctx);
   await command(`setblock ${FLOOR_BLOCK.x} ${FLOOR_BLOCK.y} ${FLOOR_BLOCK.z} minecraft:stone`, 250);
@@ -42,14 +42,11 @@ export async function run(ctx) {
   } catch {
     // Cancelled server-side breaks often surface as a client-side dig failure.
   }
-  await wait(1500);
-
-  const afterBreak = bot.blockAt(BCT_BLOCK);
-  assert(afterBreak?.name === "crafter", "Corebreaker should not break non-core Bigger Crafting Table blocks");
-  await assertNoBctLeak(ctx, {
+  await assertBctStateStable(ctx, {
     position: BCT_BLOCK,
     holders: [bot],
-    label: "Corebreaker break attempt"
+    label: "Corebreaker break attempt",
+    durationMs: 1500
   });
   assert(await selectedItemHasNoDamage(ctx, "ScenarioBot"), "Corebreaker attempt should not damage the Corebreaker");
 

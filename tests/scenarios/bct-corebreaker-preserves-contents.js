@@ -1,6 +1,6 @@
 import { Vec3 } from "vec3";
 import {
-  assertNoBctLeak,
+  assertBctStateStable,
   clearBctArtifacts,
   isCorebreakerItem,
   placeBiggerCraftingTable,
@@ -29,6 +29,7 @@ export async function run(ctx) {
     await command("gamemode creative ScenarioBot", 250);
     await command(`tp ScenarioBot ${FLOOR_BLOCK.x} 80 ${FLOOR_BLOCK.z} 0 0`, 500);
     await command("gamemode survival ScenarioBot", 250);
+    await bot.waitForChunksToLoad();
     await waitForBlock(bot, SUPPORT_BLOCK, "stone", "BCT support block");
 
     await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK);
@@ -50,13 +51,11 @@ export async function run(ctx) {
     } catch {
       // Cancelled server-side breaks often surface as a client-side dig failure.
     }
-    await wait(1500);
-
-    assert(bot.blockAt(BCT_BLOCK)?.name === "crafter", "Corebreaker should not remove a BCT with contents");
-    await assertNoBctLeak(ctx, {
+    await assertBctStateStable(ctx, {
       position: BCT_BLOCK,
       holders: [bot],
-      label: "Corebreaker attempt"
+      label: "Corebreaker attempt",
+      durationMs: 1500
     });
     assert(await selectedItemHasNoDamage(ctx, "ScenarioBot"), "Corebreaker attempt should not damage the Corebreaker");
 

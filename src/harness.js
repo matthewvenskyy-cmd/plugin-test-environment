@@ -1119,11 +1119,11 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario defines local chat polling; use waitForChat or waitForNoChat from helpers.js instead."
     });
   }
-  if (isBctCorebreakerDigScenario(source, spec) && !source.includes("assertNoBctLeak")) {
+  if (isBctCorebreakerDigScenario(source, spec) && !/assert(?:NoBctLeak|BctStateStable)/.test(source)) {
     issues.push({
       severity: "warning",
       path: scenarioPath,
-      message: "BCT/Corebreaker dig scenario should use assertNoBctLeak to guard item and display duplication."
+      message: "BCT/Corebreaker dig scenario should use assertNoBctLeak or assertBctStateStable to guard item and display duplication."
     });
   }
   return issues;
@@ -1872,6 +1872,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/bct-corebreaker-example.js" }
     ).some((issue) => issue.message.includes("assertNoBctLeak")),
     "scenarioQualityIssues should warn when BCT/Corebreaker dig scenarios skip assertNoBctLeak"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'export const name = "BCT Corebreaker"; await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK); await bot.dig(bot.blockAt(BCT_BLOCK), true); await assertBctStateStable(ctx, { position: BCT_BLOCK });',
+      { path: "tests/scenarios/bct-corebreaker-stable.js" }
+    ).every((issue) => !issue.message.includes("assertNoBctLeak")),
+    "scenarioQualityIssues should accept assertBctStateStable for BCT/Corebreaker dig scenarios"
   );
   assertSelf(
     scenarioQualityIssues(
