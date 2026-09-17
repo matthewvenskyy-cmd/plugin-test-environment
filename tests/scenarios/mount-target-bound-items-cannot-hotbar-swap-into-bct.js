@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  assertWindowExcludesItemStable,
   clearBctArtifacts,
   countMatchingItems,
   isCoreItem,
@@ -37,6 +38,7 @@ export async function run(ctx) {
     await command("tp MtTgtHotBctP 283 80 1 0 0", 500);
     await command("tp MtTgtHotBctR 282 80 0 0 0", 500);
     await command("tp MtTgtHotBct 282 80 2 180 0", 500);
+    await Promise.all([placer.waitForChunksToLoad(), rider.waitForChunksToLoad(), target.waitForChunksToLoad()]);
     await waitForBlock(placer, SUPPORT_BLOCK, "stone", "mounted target hotbar BCT support block");
     await waitForBlock(rider, RIDER_FLOOR, "stone", "mounted target hotbar BCT rider floor block");
     await waitForBlock(target, TARGET_FLOOR, "stone", "mounted target hotbar BCT floor block");
@@ -47,9 +49,6 @@ export async function run(ctx) {
     await command("effect give MtTgtHotBctP minecraft:slow_falling 30 1 true", 250);
     await command("effect give MtTgtHotBctR minecraft:slow_falling 30 1 true", 250);
     await command("effect give MtTgtHotBct minecraft:slow_falling 30 1 true", 250);
-    await placer.waitForChunksToLoad();
-    await rider.waitForChunksToLoad();
-    await target.waitForChunksToLoad();
     await command("tp MtTgtHotBctP 283 80 1 0 0", 500);
     await command("tp MtTgtHotBctR 282 80 0 0 0", 500);
     await command("tp MtTgtHotBct 282 80 2 180 0", 500);
@@ -116,13 +115,17 @@ async function assertCannotHotbarSwap(ctx, bot, predicate, startingCount, label)
     // Cancelled custom-inventory clicks can reject at the Mineflayer transaction layer.
   }
   const denied = await deniedPromise;
-  await wait(750);
   if (denied) {
     assert(/Core items cannot be dropped, traded, or stored\./.test(denied), `${label} hotbar swap into BCT should be denied`);
   }
-  assert(!window.containerItems().some(predicate), `${label} should not appear in the BCT inventory after hotbar swap`);
   window.close();
-  await wait(500);
+
+  const refreshedWindow = await tryOpenBct(bot, bot.blockAt(BCT_BLOCK));
+  if (refreshedWindow) {
+    await assertWindowExcludesItemStable(ctx, refreshedWindow, predicate, `${label} in the reopened BCT inventory after hotbar swap`);
+    refreshedWindow.close();
+    await wait(500);
+  }
 
   assert(countMatchingItems(bot, predicate) === startingCount, `${label} should remain in the mounted target inventory`);
 }

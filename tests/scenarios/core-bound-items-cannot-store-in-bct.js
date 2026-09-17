@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  assertWindowExcludesItemStable,
   clearBctArtifacts,
   countMatchingItems,
   isCoreItem,
@@ -16,7 +17,7 @@ const SUPPORT_BLOCK = new Vec3(34, 79, 1);
 const FLOOR_BLOCK = new Vec3(34, 79, 0);
 
 export async function run(ctx) {
-  const { assert, command, wait, spawnBot } = ctx;
+  const { assert, command, spawnBot } = ctx;
   const bot = await spawnBot("BoundBct");
 
   await clearBctArtifacts(ctx);
@@ -26,7 +27,7 @@ export async function run(ctx) {
   await command("gamemode creative BoundBct", 250);
   await command("tp BoundBct 34 80 0 0 0", 500);
   await command("gamemode survival BoundBct", 500);
-  await wait(1000);
+  await bot.waitForChunksToLoad();
 
   await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK, { settleMs: 1250 });
 
@@ -62,8 +63,7 @@ async function assertCannotDeposit(ctx, bot, item, predicate, startingCount, lab
   }
   const denied = await deniedPromise;
   assert(denied, `${label} BCT storage should be denied`);
-  await wait(750);
-  assert(!window.containerItems().some(predicate), `${label} should not appear in the BCT inventory`);
+  await assertWindowExcludesItemStable(ctx, window, predicate, `${label} in the BCT inventory`);
   window.close();
   await wait(500);
 

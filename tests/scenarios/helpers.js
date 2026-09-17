@@ -310,6 +310,30 @@ export async function assertBctStateStable(ctx, options) {
   } while (Date.now() - started < durationMs);
 }
 
+export async function assertWindowExcludesItemStable(ctx, window, predicate, label, options = {}) {
+  const durationMs = options.durationMs ?? 750;
+  const intervalMs = options.intervalMs ?? 50;
+  const settleTimeoutMs = options.settleTimeoutMs ?? 2000;
+  const matchingCount = () => window.containerItems()
+    .filter(predicate)
+    .reduce((total, item) => total + item.count, 0);
+
+  await waitForCondition(
+    () => matchingCount() === 0 ? { count: 0 } : null,
+    { timeoutMs: settleTimeoutMs, intervalMs, label: `${label} to be rejected` }
+  );
+
+  const started = Date.now();
+
+  do {
+    const count = matchingCount();
+    ctx.assert(count === 0, `${label} reappeared in the container (${count} item(s))`);
+    if (Date.now() - started < durationMs) {
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+  } while (Date.now() - started < durationMs);
+}
+
 export async function queryEntityCount(ctx, selector) {
   const objective = "scenario_count";
   await ctx.command(`scoreboard objectives add ${objective} dummy`, 100);

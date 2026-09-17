@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  assertWindowExcludesItemStable,
   clearBctArtifacts,
   countMatchingItems,
   isCoreItem,
@@ -16,7 +17,7 @@ const SUPPORT_BLOCK = new Vec3(204, 79, 1);
 const FLOOR_BLOCK = new Vec3(204, 79, 0);
 
 export async function run(ctx) {
-  const { assert, command, wait, spawnBot } = ctx;
+  const { assert, command, spawnBot } = ctx;
   const bot = await spawnBot("BoundBctHotbar");
 
   try {
@@ -29,7 +30,7 @@ export async function run(ctx) {
     await command("tp BoundBctHotbar 204 80 0 0 0", 500);
     await command("gamemode survival BoundBctHotbar", 500);
     await command("give BoundBctHotbar minecraft:stick", 250);
-    await wait(1000);
+    await bot.waitForChunksToLoad();
 
     await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK, { settleMs: 1250 });
 
@@ -77,9 +78,11 @@ async function assertCannotHotbarSwap(ctx, bot, predicate, startingCount, label)
   }
   const denied = await deniedPromise;
   assert(denied, `${label} hotbar swap into BCT should be denied`);
-  await wait(750);
-  assert(!window.containerItems().some(predicate), `${label} should not appear in the BCT inventory after hotbar swap`);
   window.close();
+
+  const refreshedWindow = await bot.openBlock(bot.blockAt(BCT_BLOCK));
+  await assertWindowExcludesItemStable(ctx, refreshedWindow, predicate, `${label} in the reopened BCT inventory after hotbar swap`);
+  refreshedWindow.close();
   await wait(500);
 
   assert(countMatchingItems(bot, predicate) === startingCount, `${label} should remain in the player inventory`);

@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  assertWindowExcludesItemStable,
   clearBctArtifacts,
   countMatchingItems,
   isCoreItem,
@@ -37,6 +38,7 @@ export async function run(ctx) {
     await command("tp MntBctPlace 273 80 1 0 0", 500);
     await command("tp MntBctRider 272 80 0 0 0", 500);
     await command("tp MntBctSeat 272 80 2 180 0", 500);
+    await Promise.all([placer.waitForChunksToLoad(), rider.waitForChunksToLoad(), seat.waitForChunksToLoad()]);
     await waitForBlock(placer, SUPPORT_BLOCK, "stone", "mounted BCT support block");
     await waitForBlock(rider, RIDER_FLOOR, "stone", "mounted rider BCT floor block");
     await waitForBlock(seat, SEAT_FLOOR, "stone", "mounted BCT seat floor block");
@@ -46,9 +48,6 @@ export async function run(ctx) {
     await command("effect give MntBctPlace minecraft:slow_falling 30 1 true", 250);
     await command("effect give MntBctRider minecraft:slow_falling 30 1 true", 250);
     await command("effect give MntBctSeat minecraft:slow_falling 30 1 true", 250);
-    await placer.waitForChunksToLoad();
-    await rider.waitForChunksToLoad();
-    await seat.waitForChunksToLoad();
     await command("tp MntBctPlace 273 80 1 0 0", 500);
     await command("tp MntBctRider 272 80 0 0 0", 500);
     await command("tp MntBctSeat 272 80 2 180 0", 500);
@@ -103,7 +102,7 @@ async function tryOpenBct(bot, bctBlock) {
 }
 
 async function assertCannotDeposit(ctx, bot, window, item, predicate, startingCount, label) {
-  const { assert, wait } = ctx;
+  const { assert } = ctx;
 
   const deniedPromise = waitForChat(bot, () => {}, /Core items cannot be dropped, traded, or stored\./, 5000);
   try {
@@ -113,8 +112,7 @@ async function assertCannotDeposit(ctx, bot, window, item, predicate, startingCo
   }
   const denied = await deniedPromise;
   assert(denied, `${label} BCT storage should be denied`);
-  await wait(750);
-  assert(!window.containerItems().some(predicate), `${label} should not appear in the BCT inventory`);
+  await assertWindowExcludesItemStable(ctx, window, predicate, `${label} in the BCT inventory`);
 
   assert(countMatchingItems(bot, predicate) === startingCount, `${label} should remain in the mounted rider inventory`);
 }
