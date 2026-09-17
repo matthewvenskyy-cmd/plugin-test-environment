@@ -73,6 +73,16 @@ export async function waitForBlock(bot, position, blockName, label, timeoutMs = 
   );
 }
 
+export async function waitForWindowSlot(window, slot, predicate, label, timeoutMs = 5000) {
+  return waitForCondition(
+    () => {
+      const item = window.slots[slot];
+      return predicate(item) ? item : null;
+    },
+    { timeoutMs, label }
+  );
+}
+
 export async function waitForServerBlock(ctx, position, blockName, label, timeoutMs = 5000) {
   return waitForCondition(
     async () => await serverBlockIs(ctx, position, blockName),

@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { clearBctArtifacts, countItemsByName, displayText, placeBiggerCraftingTable, waitForInventoryItem } from "./helpers.js";
+import { clearBctArtifacts, countItemsByName, displayText, placeBiggerCraftingTable, waitForCondition, waitForInventoryItem, waitForWindowSlot } from "./helpers.js";
 
 export const name = "Rocketlytra crafts inside Bigger Crafting Table";
 
@@ -9,7 +9,7 @@ const FLOOR_BLOCK = new Vec3(44, 79, 0);
 const RESULT_SLOT = 25;
 
 export async function run(ctx) {
-  const { assert, command, wait, spawnBot } = ctx;
+  const { assert, command, spawnBot } = ctx;
   const bot = await spawnBot("RocketBct");
 
   await clearBctArtifacts(ctx);
@@ -20,7 +20,7 @@ export async function run(ctx) {
   await command("gamemode creative RocketBct", 250);
   await command("tp RocketBct 44 80 0 0 0", 500);
   await command("gamemode survival RocketBct", 500);
-  await wait(1000);
+  await bot.waitForChunksToLoad();
 
   await placeBiggerCraftingTable(ctx, bot, BCT_BLOCK, SUPPORT_BLOCK, { settleMs: 1250 });
 
@@ -33,16 +33,22 @@ export async function run(ctx) {
   const window = await bot.openBlock(bot.blockAt(BCT_BLOCK));
   await window.deposit(bot.registry.itemsByName.elytra.id, null, 1);
   await window.deposit(bot.registry.itemsByName.firework_rocket.id, null, 3);
-  await wait(1000);
 
-  const result = window.slots[RESULT_SLOT];
+  const result = await waitForWindowSlot(
+    window,
+    RESULT_SLOT,
+    (item) => item != null,
+    "BCT Rocketlytra crafting result"
+  );
   assert(isRocketlytraWithCharges(result, 3), `BCT result slot should show Rocketlytra with 3 charges, got ${describeItem(result)}`);
   await bot.clickWindow(RESULT_SLOT, 0, 0);
-  await wait(1000);
   window.close();
-  await wait(500);
 
   const rocketlytra = await waitForInventoryItem(bot, (item) => isRocketlytraWithCharges(item, 3), "BCT-crafted Rocketlytra with 3 charges");
+  await waitForCondition(
+    () => countItemsByName(bot, "firework_rocket") === 0 ? { count: 0 } : null,
+    { label: "BCT crafting to consume three firework rockets" }
+  );
   assert(rocketlytra.name === "elytra", `crafted item should stay an elytra, got ${rocketlytra.name}`);
   assert(countItemsByName(bot, "firework_rocket") === 0, "BCT crafting should consume exactly three firework rockets");
 

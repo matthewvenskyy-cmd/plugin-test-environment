@@ -134,7 +134,8 @@
     {
       "path": "tests/scenarios/rocketlytra-crafts-in-bct.js",
       "expectedFailure": true,
-      "reason": "Bigger Crafting Table currently matches the Rocketlytra one-firework recipe even when three fireworks are present."
+      "reason": "Bigger Crafting Table currently matches the Rocketlytra one-firework recipe even when three fireworks are present.",
+      "failurePattern": "BCT result slot should show Rocketlytra with 3 charges"
     },
     "tests/scenarios/rocketlytra-recipe-range-registered.js",
     "tests/scenarios/mount-player-riding-cycle.js",
