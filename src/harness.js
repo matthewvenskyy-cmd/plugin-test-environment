@@ -1129,6 +1129,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario defines local chat polling; use waitForChat or waitForNoChat from helpers.js instead."
     });
   }
+  if (definesLocalPlayerHealthQuery(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario parses player health locally; use queryPlayerHealth from helpers.js instead."
+    });
+  }
   if (isBctCorebreakerDigScenario(source, spec) && !/assert(?:NoBctLeak|BctStateStable)/.test(source)) {
     issues.push({
       severity: "warning",
@@ -1142,6 +1149,11 @@ function scenarioQualityIssues(source, spec) {
 function definesLocalBctDisplayCounter(source) {
   return /function\s+queryBctDisplays\s*\(/.test(source)
     || /queryEntityCount\s*\([^)]*bigger_crafting_table_display/s.test(source);
+}
+
+function definesLocalPlayerHealthQuery(source) {
+  return /data get entity[^\n`"']+Health/.test(source)
+    || /async function health\s*\(ctx,\s*playerName\)/.test(source);
 }
 
 function definesManualDroppedItemCleanup(source, spec) {
@@ -1917,6 +1929,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/local-chat-helper.js" }
     ).some((issue) => issue.message.includes("waitForChat or waitForNoChat")),
     "scenarioQualityIssues should warn when scenarios define local chat polling helpers"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'async function health(ctx, playerName) { return ctx.command(`data get entity ${playerName} Health`); }',
+      { path: "tests/scenarios/local-health-helper.js" }
+    ).some((issue) => issue.message.includes("queryPlayerHealth")),
+    "scenarioQualityIssues should warn when scenarios parse player health locally"
   );
   assertSelf(
     scenarioQualityIssues(

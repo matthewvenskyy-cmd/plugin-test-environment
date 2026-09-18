@@ -1,4 +1,4 @@
-import { waitForChat, waitForInventoryItem } from "./helpers.js";
+import { queryPlayerHealth, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Classes Viking axe increases damage";
 
@@ -56,27 +56,13 @@ async function measureSingleHitDamage(ctx, attacker, label) {
   await wait(750);
   await command("data merge entity AxeTarget {Health:40.0f,HurtTime:0s}", 250);
 
-  const before = await health(ctx, "AxeTarget");
+  const before = await queryPlayerHealth(ctx, "AxeTarget");
   const damageOutput = await command(`damage AxeTarget 10 minecraft:generic by ${attacker.username}`, 500);
   assert(/Applied|damaged|AxeTarget/i.test(damageOutput), `${label} damage command did not report success: ${damageOutput}`);
   await wait(1000);
 
-  const after = await health(ctx, "AxeTarget");
+  const after = await queryPlayerHealth(ctx, "AxeTarget");
   const damage = before - after;
   assert(damage > 0, `${label} should damage the target; before=${before}, after=${after}, output=${damageOutput}`);
   return damage;
-}
-
-async function health(ctx, playerName) {
-  const output = await ctx.command(`data get entity ${playerName} Health`, 500);
-  const cleanOutput = stripAnsi(output);
-  const match = cleanOutput.match(/Health:?\s*([\d.]+)f?/i) || cleanOutput.match(/entity data:\s*([\d.]+)f?/i);
-  if (!match) {
-    throw new Error(`Could not parse ${playerName} health from command output: ${output}`);
-  }
-  return Number(match[1]);
-}
-
-function stripAnsi(value) {
-  return value.replace(/\u001b\[[0-9;]*m/g, "");
 }

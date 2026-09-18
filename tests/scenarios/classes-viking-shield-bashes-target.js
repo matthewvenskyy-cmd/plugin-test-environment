@@ -1,4 +1,4 @@
-import { waitForChat, waitForInventoryItem } from "./helpers.js";
+import { queryPlayerHealth, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Classes Viking shield bashes target";
 
@@ -34,13 +34,13 @@ export async function run(ctx) {
     await command("tp ShieldTarget 113 80 0 180 0", 250);
     await wait(750);
 
-    const before = await health(ctx, "ShieldTarget");
+    const before = await queryPlayerHealth(ctx, "ShieldTarget");
     await viking.lookAt(viking.entity.position.offset(0, 1.4, 2), true);
     viking.activateItem();
     await wait(1500);
     viking.deactivateItem();
 
-    const after = await health(ctx, "ShieldTarget");
+    const after = await queryPlayerHealth(ctx, "ShieldTarget");
     const damage = before - after;
     assert(damage >= 2.5, `Viking shield bash should damage the nearby target; before=${before}, after=${after}, damage=${damage}`);
   } finally {
@@ -51,18 +51,4 @@ export async function run(ctx) {
     await command("attribute ShieldTarget minecraft:max_health base set 20", 250);
     await command("fill 112 79 -1 114 79 1 minecraft:air", 250);
   }
-}
-
-async function health(ctx, playerName) {
-  const output = await ctx.command(`data get entity ${playerName} Health`, 500);
-  const cleanOutput = stripAnsi(output);
-  const match = cleanOutput.match(/Health:?\s*([\d.]+)f?/i) || cleanOutput.match(/entity data:\s*([\d.]+)f?/i);
-  if (!match) {
-    throw new Error(`Could not parse ${playerName} health from command output: ${output}`);
-  }
-  return Number(match[1]);
-}
-
-function stripAnsi(value) {
-  return value.replace(/\u001b\[[0-9;]*m/g, "");
 }

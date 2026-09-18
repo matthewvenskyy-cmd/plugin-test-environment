@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { queryPlayerHealth, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted rider Viking axe increases damage";
 
@@ -99,30 +99,17 @@ async function measureOutgoingDamage(ctx, label) {
   await command("data merge entity MntVikingVictim {Health:40.0f,HurtTime:0s,DeathTime:0s,Invulnerable:0b}", 250);
   await wait(1000);
 
-  const before = await health(ctx, "MntVikingVictim");
+  const before = await queryPlayerHealth(ctx, "MntVikingVictim");
   const damageOutput = await command("damage MntVikingVictim 10 minecraft:generic by MntVikingHit", 500);
   assert(/Applied|damaged|MntVikingVictim/i.test(damageOutput), `${label} damage command did not report success: ${damageOutput}`);
   await wait(1000);
 
-  const after = await health(ctx, "MntVikingVictim");
+  const after = await queryPlayerHealth(ctx, "MntVikingVictim");
   const damage = before - after;
   assert(damage > 0, `${label} should damage the victim; before=${before}, after=${after}, output=${damageOutput}`);
   return damage;
 }
 
-async function health(ctx, playerName) {
-  const output = await ctx.command(`data get entity ${playerName} Health`, 500);
-  const cleanOutput = stripAnsi(output);
-  const match = cleanOutput.match(/Health:?\s*([\d.]+)f?/i) || cleanOutput.match(/entity data:\s*([\d.]+)f?/i);
-  if (!match) {
-    throw new Error(`Could not parse ${playerName} health from command output: ${output}`);
-  }
-  return Number(match[1]);
-}
-
-function stripAnsi(value) {
-  return value.replace(/\u001b\[[0-9;]*m/g, "");
-}
 
 async function playerExists(ctx, playerName) {
   const output = await ctx.command(`execute if entity @a[name=${playerName}]`, 250);

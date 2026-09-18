@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { queryPlayerHealth, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted rider Basic Mage food heals ally";
 
@@ -71,14 +71,14 @@ export async function run(ctx) {
     await wait(750);
     await rider.lookAt(ally.entity.position.offset(0, 1.2, 0), true);
 
-    const before = await health(ctx, "MntFoodAlly");
+    const before = await queryPlayerHealth(ctx, "MntFoodAlly");
     const healed = await waitForChat(rider, () => {
       rider.activateEntityAt(ally.entity, ally.entity.position.offset(0, 1.2, 0)).catch(() => {});
     }, /Shared food healing empowered an ally/i);
     assert(healed, "mounted rider right-clicking an ally with food should emit the shared healing message");
     await wait(750);
 
-    const after = await health(ctx, "MntFoodAlly");
+    const after = await queryPlayerHealth(ctx, "MntFoodAlly");
     assert(after > before + 5.0, `mounted rider shared food healing should restore about 6 health; before=${before}, after=${after}`);
 
     rider.chat("/unmount");
@@ -98,18 +98,4 @@ export async function run(ctx) {
     await command("fill 391 79 0 394 79 2 minecraft:air", 500);
     await command("forceload remove 391 0 394 2", 250);
   }
-}
-
-async function health(ctx, playerName) {
-  const output = await ctx.command(`data get entity ${playerName} Health`, 500);
-  const cleanOutput = stripAnsi(output);
-  const match = cleanOutput.match(/Health:?\s*([\d.]+)f?/i) || cleanOutput.match(/entity data:\s*([\d.]+)f?/i);
-  if (!match) {
-    throw new Error(`Could not parse ${playerName} health from command output: ${output}`);
-  }
-  return Number(match[1]);
-}
-
-function stripAnsi(value) {
-  return value.replace(/\u001b\[[0-9;]*m/g, "");
 }
