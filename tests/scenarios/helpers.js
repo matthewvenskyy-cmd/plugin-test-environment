@@ -371,19 +371,20 @@ export async function waitForEntityCount(ctx, selector, expectedCount, options =
 }
 
 export async function serverBlockIs(ctx, position, blockName) {
-  const output = await runCommandUntil(ctx, `execute if block ${position.x} ${position.y} ${position.z} minecraft:${blockName}`, /Test passed|Test failed/i, {
+  return queryCommandSuccess(ctx, `execute if block ${position.x} ${position.y} ${position.z} minecraft:${blockName}`, {
+    holder: "block_match",
     timeoutMs: 1000,
     label: `server block ${position.x} ${position.y} ${position.z} is ${blockName}`
   });
-  return patternMatches(/Test passed/, output);
 }
 
 export async function selectedItemHasNoDamage(ctx, username) {
-  const output = await runCommandUntil(ctx, `data get entity ${username} SelectedItem.components.minecraft:damage`, /No element matching|Found no elements|Unknown path|nothing found|has the following entity data/i, {
+  const hasDamage = await queryCommandSuccess(ctx, `data get entity ${username} SelectedItem.components.minecraft:damage`, {
+    holder: "item_damage",
     timeoutMs: 1500,
     label: `${username} selected item damage`
   });
-  return patternMatches(/No element matching|Found no elements|Unknown path|nothing found/i, output);
+  return !hasDamage;
 }
 
 export async function queryPlayerHealth(ctx, playerName, timeoutMs = 2000) {
@@ -417,6 +418,23 @@ export async function queryPlayerAttribute(ctx, playerName, attributeName, timeo
     throw new Error(`Could not parse ${playerName} ${attributeName} from command output: ${output}`);
   }
   return Number(match[1]) / scale;
+}
+
+async function queryCommandSuccess(ctx, commandText, options) {
+  const objective = "scenario_bool";
+  const holder = options.holder;
+  await ctx.command(`scoreboard objectives add ${objective} dummy`, 100);
+  await ctx.command(`scoreboard players reset ${holder} ${objective}`, 100);
+  await ctx.command(`execute store success score ${holder} ${objective} run ${commandText}`, 100);
+  const output = await runCommandUntil(ctx, `scoreboard players get ${holder} ${objective}`, new RegExp(`${holder} has [01] \\[`), {
+    timeoutMs: options.timeoutMs ?? 1000,
+    label: options.label ?? commandText
+  });
+  const match = output.match(new RegExp(`${holder} has ([01]) \\[`));
+  if (!match) {
+    throw new Error(`Could not parse command success for ${commandText}: ${output}`);
+  }
+  return match[1] === "1";
 }
 
 async function runCommandUntil(ctx, commandText, pattern, options) {
