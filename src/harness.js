@@ -1143,6 +1143,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario parses a player attribute locally; use queryPlayerAttribute from helpers.js instead."
     });
   }
+  if (definesLocalServerBlockQuery(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario defines a local server block query; use serverBlockIs or waitForServerBlock from helpers.js instead."
+    });
+  }
   if (isBctCorebreakerDigScenario(source, spec) && !/assert(?:NoBctLeak|BctStateStable)/.test(source)) {
     issues.push({
       severity: "warning",
@@ -1166,6 +1173,10 @@ function definesLocalPlayerHealthQuery(source) {
 function definesLocalPlayerAttributeQuery(source) {
   return /attribute\s+[^\n`"']+\s+minecraft:[a-z_]+\s+get/.test(source)
     && /\.match\s*\(/.test(source);
+}
+
+function definesLocalServerBlockQuery(source) {
+  return /(?:async\s+)?function\s+serverBlockIs\s*\(/.test(source);
 }
 
 function definesManualDroppedItemCleanup(source, spec) {
@@ -1955,6 +1966,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/local-attribute-helper.js" }
     ).some((issue) => issue.message.includes("queryPlayerAttribute")),
     "scenarioQualityIssues should warn when scenarios parse player attributes locally"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'async function serverBlockIs(ctx, position, blockName) { return ctx.command(`execute if block ${position.x} ${position.y} ${position.z} ${blockName}`); }',
+      { path: "tests/scenarios/local-block-helper.js" }
+    ).some((issue) => issue.message.includes("waitForServerBlock")),
+    "scenarioQualityIssues should warn when scenarios define local server block queries"
   );
   assertSelf(
     scenarioQualityIssues(

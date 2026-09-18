@@ -6,9 +6,11 @@ import {
   placeCoreBlock,
   queryCorebreakerCharges,
   selectedItemHasNoDamage,
+  serverBlockIs,
   waitForBlock,
   waitForChat,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForServerBlock
 } from "./helpers.js";
 
 export const name = "Mounted target Corebreaker without charges cannot break player core";
@@ -76,14 +78,14 @@ export async function run(ctx) {
     const startingCorebreakers = countMatchingItems(target, isCorebreakerItem);
     await target.equip(corebreaker, "hand");
 
-    await breakCore(ctx, target, FIRST_CORE, "ridden default charge should break the first core");
+    await breakCore(ctx, target, FIRST_CORE, "air", "ridden default charge should break the first core");
     assert(await serverBlockIs(ctx, FIRST_CORE, "air"), "ridden target default Corebreaker charge should remove the first core");
     assert(await queryCorebreakerCharges(target) === 0, "/kills should report zero charges after the ridden target default charge is consumed");
 
     await command("tp MtNoChargeRide 407 80 -2 0 0", 250);
     await command("tp MtNoChargeBrk 407 80 2 180 0", 250);
     await wait(750);
-    await breakCore(ctx, target, SECOND_CORE, "ridden exhausted Corebreaker should be cancelled");
+    await breakCore(ctx, target, SECOND_CORE, "beacon", "ridden exhausted Corebreaker should be cancelled");
     assert(await serverBlockIs(ctx, SECOND_CORE, "beacon"), "ridden exhausted Corebreaker should not remove the second core");
     assert(await queryCorebreakerCharges(target) === 0, "ridden exhausted Corebreaker denial should keep charges at zero");
     assert(countMatchingItems(target, isCorebreakerItem) === startingCorebreakers, "ridden exhausted Corebreaker denial should keep the Corebreaker item");
@@ -107,8 +109,7 @@ export async function run(ctx) {
   }
 }
 
-async function breakCore(ctx, breaker, corePosition, label) {
-  const { wait } = ctx;
+async function breakCore(ctx, breaker, corePosition, expectedBlock, label) {
   const target = await waitForBlock(breaker, corePosition, "beacon", label);
   await breaker.lookAt(corePosition.offset(0.5, 0.5, 0.5), true);
   try {
@@ -116,10 +117,5 @@ async function breakCore(ctx, breaker, corePosition, label) {
   } catch {
     // CorePlugin cancels denied Corebreaker paths and handles successful core removal itself.
   }
-  await wait(1500);
-}
-
-async function serverBlockIs(ctx, position, blockName) {
-  const output = await ctx.command(`execute if block ${position.x} ${position.y} ${position.z} minecraft:${blockName}`, 250);
-  return /Test passed/.test(output);
+  await waitForServerBlock(ctx, corePosition, expectedBlock, label);
 }
