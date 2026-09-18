@@ -386,6 +386,21 @@ export async function selectedItemHasNoDamage(ctx, username) {
   return patternMatches(/No element matching|Found no elements|Unknown path|nothing found/i, output);
 }
 
+export async function queryPlayerHealth(ctx, playerName, timeoutMs = 2000) {
+  const objective = "scenario_health";
+  await ctx.command(`scoreboard objectives add ${objective} dummy`, 100);
+  await ctx.command(`execute store result score health_value ${objective} run data get entity ${playerName} Health 100`, 100);
+  const output = await runCommandUntil(ctx, `scoreboard players get health_value ${objective}`, /health_value has -?\d+ \[/, {
+    timeoutMs,
+    label: `${playerName} health`
+  });
+  const match = output.match(/health_value has (-?\d+) \[/);
+  if (!match) {
+    throw new Error(`Could not parse ${playerName} health from command output: ${output}`);
+  }
+  return Number(match[1]) / 100;
+}
+
 async function runCommandUntil(ctx, commandText, pattern, options) {
   if (ctx.commandUntil) {
     return ctx.commandUntil(commandText, pattern, options);

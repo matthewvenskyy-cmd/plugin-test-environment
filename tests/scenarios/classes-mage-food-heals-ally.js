@@ -1,4 +1,4 @@
-import { waitForChat, waitForInventoryItem } from "./helpers.js";
+import { queryPlayerHealth, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Classes mage food heals ally";
 
@@ -36,14 +36,14 @@ export async function run(ctx) {
   await mage.equip(apple, "hand");
   await mage.lookAt(ally.entity.position.offset(0, 1.2, 0), true);
 
-  const before = await health(ctx, "FoodAlly");
+  const before = await queryPlayerHealth(ctx, "FoodAlly");
   const healed = await waitForChat(mage, () => {
     mage.activateEntityAt(ally.entity, ally.entity.position.offset(0, 1.2, 0)).catch(() => {});
   }, /Shared food healing empowered an ally/i);
   assert(healed, "right-clicking an ally with food should emit the shared healing message");
   await wait(750);
 
-  const after = await health(ctx, "FoodAlly");
+  const after = await queryPlayerHealth(ctx, "FoodAlly");
   assert(after > before + 5.0, `shared food healing should restore about 6 health; before=${before}, after=${after}`);
 
   await command("gamerule naturalRegeneration true", 250);
@@ -53,18 +53,4 @@ export async function run(ctx) {
   await command("effect clear FoodAlly", 250);
   await command("attribute FoodAlly minecraft:max_health base set 20", 250);
   await command("fill 104 79 -1 106 79 1 minecraft:air", 250);
-}
-
-async function health(ctx, playerName) {
-  const output = await ctx.command(`data get entity ${playerName} Health`, 500);
-  const cleanOutput = stripAnsi(output);
-  const match = cleanOutput.match(/Health:?\s*([\d.]+)f?/i) || cleanOutput.match(/entity data:\s*([\d.]+)f?/i);
-  if (!match) {
-    throw new Error(`Could not parse ${playerName} health from command output: ${output}`);
-  }
-  return Number(match[1]);
-}
-
-function stripAnsi(value) {
-  return value.replace(/\u001b\[[0-9;]*m/g, "");
 }
