@@ -389,6 +389,7 @@ export async function selectedItemHasNoDamage(ctx, username) {
 export async function queryPlayerHealth(ctx, playerName, timeoutMs = 2000) {
   const objective = "scenario_health";
   await ctx.command(`scoreboard objectives add ${objective} dummy`, 100);
+  await ctx.command(`scoreboard players reset health_value ${objective}`, 100);
   await ctx.command(`execute store result score health_value ${objective} run data get entity ${playerName} Health 100`, 100);
   const output = await runCommandUntil(ctx, `scoreboard players get health_value ${objective}`, /health_value has -?\d+ \[/, {
     timeoutMs,
@@ -399,6 +400,23 @@ export async function queryPlayerHealth(ctx, playerName, timeoutMs = 2000) {
     throw new Error(`Could not parse ${playerName} health from command output: ${output}`);
   }
   return Number(match[1]) / 100;
+}
+
+export async function queryPlayerAttribute(ctx, playerName, attributeName, timeoutMs = 2000) {
+  const objective = "scenario_attr";
+  const scale = 100000;
+  await ctx.command(`scoreboard objectives add ${objective} dummy`, 100);
+  await ctx.command(`scoreboard players reset attribute_value ${objective}`, 100);
+  await ctx.command(`execute store result score attribute_value ${objective} run attribute ${playerName} ${attributeName} get ${scale}`, 100);
+  const output = await runCommandUntil(ctx, `scoreboard players get attribute_value ${objective}`, /attribute_value has -?\d+ \[/, {
+    timeoutMs,
+    label: `${playerName} ${attributeName}`
+  });
+  const match = output.match(/attribute_value has (-?\d+) \[/);
+  if (!match) {
+    throw new Error(`Could not parse ${playerName} ${attributeName} from command output: ${output}`);
+  }
+  return Number(match[1]) / scale;
 }
 
 async function runCommandUntil(ctx, commandText, pattern, options) {

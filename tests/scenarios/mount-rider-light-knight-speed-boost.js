@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { queryPlayerAttribute, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted rider Light Knight applies speed boost";
 
@@ -38,7 +38,7 @@ export async function run(ctx) {
     await command("tp MntLightSeat 292 80 2 180 0", 500);
     await wait(250);
 
-    const defaultSpeed = await movementSpeed(ctx, "MntLightRider");
+    const defaultSpeed = await queryPlayerAttribute(ctx, "MntLightRider", "minecraft:movement_speed");
     assert(Math.abs(defaultSpeed - 0.1) < 0.0001, `mounted rider default speed should start at 0.1, got ${defaultSpeed}`);
 
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
@@ -54,7 +54,7 @@ export async function run(ctx) {
     const status = await waitForChat(rider, () => rider.chat("/classes status"), /Current class: Light Knight/);
     assert(status, "mounted rider Light Knight Chain should set class status to Light Knight");
 
-    const lightSpeed = await movementSpeed(ctx, "MntLightRider");
+    const lightSpeed = await queryPlayerAttribute(ctx, "MntLightRider", "minecraft:movement_speed");
     assert(lightSpeed > defaultSpeed, `mounted Light Knight should increase movement speed; default=${defaultSpeed}, light=${lightSpeed}`);
 
     const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
@@ -70,13 +70,4 @@ export async function run(ctx) {
     await command("fill 291 79 0 293 79 2 minecraft:air", 500);
     await command("forceload remove 291 0 293 2", 250);
   }
-}
-
-async function movementSpeed(ctx, playerName) {
-  const output = await ctx.command(`attribute ${playerName} minecraft:movement_speed get`, 500);
-  const match = output.match(/(?:has the following attribute value:|is) ([\d.]+)/);
-  if (!match) {
-    throw new Error(`Could not parse movement speed from command output: ${output}`);
-  }
-  return Number(match[1]);
 }

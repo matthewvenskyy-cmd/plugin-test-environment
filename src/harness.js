@@ -1136,6 +1136,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario parses player health locally; use queryPlayerHealth from helpers.js instead."
     });
   }
+  if (definesLocalPlayerAttributeQuery(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario parses a player attribute locally; use queryPlayerAttribute from helpers.js instead."
+    });
+  }
   if (isBctCorebreakerDigScenario(source, spec) && !/assert(?:NoBctLeak|BctStateStable)/.test(source)) {
     issues.push({
       severity: "warning",
@@ -1154,6 +1161,11 @@ function definesLocalBctDisplayCounter(source) {
 function definesLocalPlayerHealthQuery(source) {
   return /data get entity[^\n`"']+Health/.test(source)
     || /async function health\s*\(ctx,\s*playerName\)/.test(source);
+}
+
+function definesLocalPlayerAttributeQuery(source) {
+  return /attribute\s+[^\n`"']+\s+minecraft:[a-z_]+\s+get/.test(source)
+    && /\.match\s*\(/.test(source);
 }
 
 function definesManualDroppedItemCleanup(source, spec) {
@@ -1936,6 +1948,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/local-health-helper.js" }
     ).some((issue) => issue.message.includes("queryPlayerHealth")),
     "scenarioQualityIssues should warn when scenarios parse player health locally"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'const output = await ctx.command(`attribute ${playerName} minecraft:movement_speed get`); return output.match(/[\\d.]+/);',
+      { path: "tests/scenarios/local-attribute-helper.js" }
+    ).some((issue) => issue.message.includes("queryPlayerAttribute")),
+    "scenarioQualityIssues should warn when scenarios parse player attributes locally"
   );
   assertSelf(
     scenarioQualityIssues(
