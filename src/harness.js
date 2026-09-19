@@ -1171,6 +1171,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario parses damage command output locally; use applyServerDamage from helpers.js instead."
     });
   }
+  if (definesLocalItemReplaceParser(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario parses item replace output locally; use applyServerItemReplace from helpers.js instead."
+    });
+  }
   if (isBctCorebreakerDigScenario(source, spec) && !/assert(?:NoBctLeak|BctStateStable)/.test(source)) {
     issues.push({
       severity: "warning",
@@ -1211,6 +1218,11 @@ function definesLocalEffectCommandParser(source) {
 function definesLocalDamageCommandParser(source) {
   return /(?:const|let)\s+\w+\s*=\s*await command\(\s*["'`]damage\b/.test(source)
     && /Applied|damaged|was slain by|died/.test(source);
+}
+
+function definesLocalItemReplaceParser(source) {
+  return /(?:const|let)\s+\w+\s*=\s*await command\(\s*["'`]item replace\b/.test(source)
+    && /Replaced|Modified|commands\\\.item\\\.target/.test(source);
 }
 
 function definesManualDroppedItemCleanup(source, spec) {
@@ -2028,6 +2040,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/local-damage-helper.js" }
     ).some((issue) => issue.message.includes("applyServerDamage")),
     "scenarioQualityIssues should warn when scenarios parse damage command output"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'const output = await command("item replace entity Bot armor.chest with minecraft:elytra"); assert(/Replaced|Modified/.test(output));',
+      { path: "tests/scenarios/local-item-replace-helper.js" }
+    ).some((issue) => issue.message.includes("applyServerItemReplace")),
+    "scenarioQualityIssues should warn when scenarios parse item replace command output"
   );
   assertSelf(
     scenarioQualityIssues(

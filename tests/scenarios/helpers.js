@@ -453,6 +453,14 @@ export async function applyServerDamage(ctx, commandText, label = "damage") {
   ctx.assert(succeeded, `${label} command did not succeed`);
 }
 
+export async function applyServerItemReplace(ctx, commandText, label = "item replace") {
+  const succeeded = await serverCommandSucceeds(ctx, commandText, {
+    holder: "item_result",
+    label
+  });
+  ctx.assert(succeeded, `${label} command did not succeed`);
+}
+
 async function runCommandUntil(ctx, commandText, pattern, options) {
   if (ctx.commandUntil) {
     return ctx.commandUntil(commandText, pattern, options);

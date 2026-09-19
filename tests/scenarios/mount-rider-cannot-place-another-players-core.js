@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  applyServerItemReplace,
   clearDroppedItems,
   countMatchingItems,
   isCoreItem,
@@ -51,8 +52,11 @@ export async function run(ctx) {
     const ownerCore = await waitForInventoryItem(owner, isCoreItem, "real owner's core item");
     const sourceSlot = toServerContainerSlot(ownerCore.slot);
     await command("clear MountCoreCopy minecraft:beacon", 250);
-    const copyOutput = await command(`item replace entity MountCoreCopy container.0 from entity MountOwnCore container.${sourceSlot}`, 500);
-    assert(/Replaced|Modified|commands\.item\.target/i.test(copyOutput), `server should give the rider another player's core; output=${copyOutput}`);
+    await applyServerItemReplace(
+      ctx,
+      `item replace entity MountCoreCopy container.0 from entity MountOwnCore container.${sourceSlot}`,
+      "copy another player's core to mounted rider"
+    );
     await wait(750);
     assert(countMatchingItems(rider, isCoreItem) === 1, "mounted rider should hold exactly one copied core item before placement");
 

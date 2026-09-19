@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  applyServerItemReplace,
   clearDroppedItems,
   countMatchingItems,
   isCoreItem,
@@ -32,8 +33,11 @@ export async function run(ctx) {
 
     const originalCore = await waitForInventoryItem(owner, isCoreItem, "owner core item");
     const sourceSlot = toServerContainerSlot(originalCore.slot);
-    const copyOutput = await command(`item replace entity SecondCore container.10 from entity SecondCore container.${sourceSlot}`, 500);
-    assert(/Replaced|Modified|commands\.item\.target/i.test(copyOutput), `server should duplicate the owned core for second-placement guard setup; output=${copyOutput}`);
+    await applyServerItemReplace(
+      ctx,
+      `item replace entity SecondCore container.10 from entity SecondCore container.${sourceSlot}`,
+      "duplicate owned core"
+    );
     await wait(750);
     assert(countMatchingItems(owner, isCoreItem) === 2, "test setup should produce two owned core items before placement");
 

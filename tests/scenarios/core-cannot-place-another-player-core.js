@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  applyServerItemReplace,
   clearDroppedItems,
   countMatchingItems,
   isCoreItem,
@@ -36,8 +37,11 @@ export async function run(ctx) {
     const ownerCore = await waitForInventoryItem(owner, isCoreItem, "real owner's core item");
     const sourceSlot = toServerContainerSlot(ownerCore.slot);
     await command("clear CoreWrongOwner minecraft:beacon", 250);
-    const copyOutput = await command(`item replace entity CoreWrongOwner container.0 from entity CoreRealOwner container.${sourceSlot}`, 500);
-    assert(/Replaced|Modified|commands\.item\.target/i.test(copyOutput), `server should give the wrong owner another player's core; output=${copyOutput}`);
+    await applyServerItemReplace(
+      ctx,
+      `item replace entity CoreWrongOwner container.0 from entity CoreRealOwner container.${sourceSlot}`,
+      "copy another player's core"
+    );
     await wait(750);
     assert(countMatchingItems(thief, isCoreItem) === 1, "wrong owner should hold exactly one copied core item before placement");
 

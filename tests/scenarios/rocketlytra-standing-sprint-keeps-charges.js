@@ -1,4 +1,4 @@
-import { countItemsByName, displayText, waitForInventoryItem } from "./helpers.js";
+import { applyServerItemReplace, countItemsByName, displayText, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Rocketlytra standing sprint keeps charges";
 
@@ -24,8 +24,11 @@ export async function run(ctx) {
 
     const rocketlytra = await waitForInventoryItem(bot, isRocketlytraWithCharges(3), "Rocketlytra with 3 charges");
     assert(Number.isInteger(rocketlytra.slot), `crafted Rocketlytra should expose an inventory slot; item=${displayText(rocketlytra)}`);
-    const equipOutput = await command(`item replace entity RocketStand armor.chest from entity RocketStand container.${rocketlytra.slot}`, 500);
-    assert(/Replaced|Modified|commands\.item\.target/i.test(equipOutput), `server should equip crafted Rocketlytra; output=${equipOutput}`);
+    await applyServerItemReplace(
+      ctx,
+      `item replace entity RocketStand armor.chest from entity RocketStand container.${rocketlytra.slot}`,
+      "equip crafted Rocketlytra"
+    );
     await wait(1000);
 
     bot.setControlState("sprint", true);
