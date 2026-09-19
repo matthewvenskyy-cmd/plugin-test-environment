@@ -1157,6 +1157,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario parses a local server entity query; use serverEntityExists from helpers.js instead."
     });
   }
+  if (definesLocalEffectCommandParser(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario parses effect command output locally; use serverCommandSucceeds from helpers.js instead."
+    });
+  }
   if (isBctCorebreakerDigScenario(source, spec) && !/assert(?:NoBctLeak|BctStateStable)/.test(source)) {
     issues.push({
       severity: "warning",
@@ -1188,6 +1195,10 @@ function definesLocalServerBlockQuery(source) {
 
 function definesLocalServerEntityQuery(source) {
   return /execute if entity/.test(source) && /Test passed/.test(source);
+}
+
+function definesLocalEffectCommandParser(source) {
+  return /effect clear/.test(source) && /Removed effect/.test(source);
 }
 
 function definesManualDroppedItemCleanup(source, spec) {
@@ -1991,6 +2002,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/local-entity-helper.js" }
     ).some((issue) => issue.message.includes("serverEntityExists")),
     "scenarioQualityIssues should warn when scenarios parse local server entity queries"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'const output = await ctx.command(`effect clear ${playerName} ${effectId}`); return /Removed effect/.test(output);',
+      { path: "tests/scenarios/local-effect-helper.js" }
+    ).some((issue) => issue.message.includes("serverCommandSucceeds")),
+    "scenarioQualityIssues should warn when scenarios parse effect command output"
   );
   assertSelf(
     scenarioQualityIssues(

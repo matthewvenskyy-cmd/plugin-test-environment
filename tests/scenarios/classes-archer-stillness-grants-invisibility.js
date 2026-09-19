@@ -1,4 +1,4 @@
-import { waitForChat, waitForInventoryItem } from "./helpers.js";
+import { serverCommandSucceeds, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Classes Archer stillness grants invisibility";
 
@@ -30,6 +30,5 @@ export async function run(ctx) {
 }
 
 async function clearEffect(ctx, playerName, effectId, effectLabel) {
-  const output = await ctx.command(`effect clear ${playerName} ${effectId}`, 500);
-  return new RegExp(`Removed effect ${effectLabel}`, "i").test(output);
+  return serverCommandSucceeds(ctx, `effect clear ${playerName} ${effectId}`, { holder: "effect_clear", label: `clear ${effectLabel}` });
 }

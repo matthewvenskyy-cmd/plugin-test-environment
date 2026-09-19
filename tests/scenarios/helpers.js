@@ -371,7 +371,7 @@ export async function waitForEntityCount(ctx, selector, expectedCount, options =
 }
 
 export async function serverBlockIs(ctx, position, blockName) {
-  return queryCommandSuccess(ctx, `execute if block ${position.x} ${position.y} ${position.z} minecraft:${blockName}`, {
+  return serverCommandSucceeds(ctx, `execute if block ${position.x} ${position.y} ${position.z} minecraft:${blockName}`, {
     holder: "block_match",
     timeoutMs: 1000,
     label: `server block ${position.x} ${position.y} ${position.z} is ${blockName}`
@@ -379,7 +379,7 @@ export async function serverBlockIs(ctx, position, blockName) {
 }
 
 export async function serverEntityExists(ctx, selector, options = {}) {
-  return queryCommandSuccess(ctx, `execute if entity ${selector}`, {
+  return serverCommandSucceeds(ctx, `execute if entity ${selector}`, {
     holder: "entity_match",
     timeoutMs: options.timeoutMs ?? 1000,
     label: options.label ?? `server entity ${selector}`
@@ -387,7 +387,7 @@ export async function serverEntityExists(ctx, selector, options = {}) {
 }
 
 export async function selectedItemHasNoDamage(ctx, username) {
-  const hasDamage = await queryCommandSuccess(ctx, `data get entity ${username} SelectedItem.components.minecraft:damage`, {
+  const hasDamage = await serverCommandSucceeds(ctx, `data get entity ${username} SelectedItem.components.minecraft:damage`, {
     holder: "item_damage",
     timeoutMs: 1500,
     label: `${username} selected item damage`
@@ -428,9 +428,9 @@ export async function queryPlayerAttribute(ctx, playerName, attributeName, timeo
   return Number(match[1]) / scale;
 }
 
-async function queryCommandSuccess(ctx, commandText, options) {
+export async function serverCommandSucceeds(ctx, commandText, options = {}) {
   const objective = "scenario_bool";
-  const holder = options.holder;
+  const holder = options.holder ?? "command_result";
   await ctx.command(`scoreboard objectives add ${objective} dummy`, 100);
   await ctx.command(`scoreboard players reset ${holder} ${objective}`, 100);
   await ctx.command(`execute store success score ${holder} ${objective} run ${commandText}`, 100);
