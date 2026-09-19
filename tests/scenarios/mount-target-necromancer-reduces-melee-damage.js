@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { queryPlayerHealth, serverEntityExists, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, queryPlayerHealth, serverEntityExists, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted target Necromancer reduces melee damage";
 
@@ -93,13 +93,12 @@ async function measureIncomingDamage(ctx, label) {
   await wait(1000);
 
   const before = await queryPlayerHealth(ctx, "MtNecroHit");
-  const damageOutput = await command("damage MtNecroHit 8 minecraft:player_attack by MtNecroAtk", 500);
-  assert(/Applied|damaged/i.test(damageOutput), `${label} damage command did not report success: ${damageOutput}`);
+  await applyServerDamage(ctx, "damage MtNecroHit 8 minecraft:player_attack by MtNecroAtk", `${label} damage`);
   await wait(250);
 
   const after = await queryPlayerHealth(ctx, "MtNecroHit");
   const damage = before - after;
-  assert(damage > 0, `${label} should take damage; before=${before}, after=${after}, output=${damageOutput}`);
+  assert(damage > 0, `${label} should take damage; before=${before}, after=${after}`);
   return damage;
 }
 

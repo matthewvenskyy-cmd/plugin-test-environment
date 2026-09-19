@@ -445,6 +445,14 @@ export async function serverCommandSucceeds(ctx, commandText, options = {}) {
   return match[1] === "1";
 }
 
+export async function applyServerDamage(ctx, commandText, label = "damage") {
+  const succeeded = await serverCommandSucceeds(ctx, commandText, {
+    holder: "damage_result",
+    label
+  });
+  ctx.assert(succeeded, `${label} command did not succeed`);
+}
+
 async function runCommandUntil(ctx, commandText, pattern, options) {
   if (ctx.commandUntil) {
     return ctx.commandUntil(commandText, pattern, options);

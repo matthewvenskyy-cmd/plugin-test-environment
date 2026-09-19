@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { serverCommandSucceeds, serverEntityExists, waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, serverCommandSucceeds, serverEntityExists, waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted rider Dark Mage death affects nearby players";
 
@@ -62,8 +62,7 @@ export async function run(ctx) {
     assert(status, "mounted rider Dark Mage Staff should set class status before death");
 
     const respawned = waitForEvent(rider, "respawn", 8000);
-    const damageOutput = await command("damage MntDarkRider 40 minecraft:generic", 500);
-    assert(/Applied|damaged|died/i.test(damageOutput), `mounted Dark Mage rider death damage command did not report success: ${damageOutput}`);
+    await applyServerDamage(ctx, "damage MntDarkRider 40 minecraft:generic", "mounted Dark Mage rider death damage");
     await respawned;
     await wait(1500);
 

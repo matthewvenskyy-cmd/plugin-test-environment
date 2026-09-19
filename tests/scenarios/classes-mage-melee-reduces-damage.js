@@ -1,4 +1,4 @@
-import { queryPlayerHealth, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, queryPlayerHealth, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Classes Basic Mage melee reduces damage";
 
@@ -54,12 +54,11 @@ async function measureSingleHitDamage(ctx, attacker, label) {
   await command("data merge entity MageHitTarget {Health:40.0f,HurtTime:0s}", 250);
 
   const before = await queryPlayerHealth(ctx, "MageHitTarget");
-  const damageOutput = await command(`damage MageHitTarget 10 minecraft:generic by ${attacker.username}`, 500);
-  assert(/Applied|damaged|MageHitTarget/i.test(damageOutput), `${label} damage command did not report success: ${damageOutput}`);
+  await applyServerDamage(ctx, `damage MageHitTarget 10 minecraft:generic by ${attacker.username}`, `${label} damage`);
   await wait(1000);
 
   const after = await queryPlayerHealth(ctx, "MageHitTarget");
   const damage = before - after;
-  assert(damage > 0, `${label} should damage the target; before=${before}, after=${after}, output=${damageOutput}`);
+  assert(damage > 0, `${label} should damage the target; before=${before}, after=${after}`);
   return damage;
 }

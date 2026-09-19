@@ -1,4 +1,4 @@
-import { serverCommandSucceeds, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, serverCommandSucceeds, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Classes Divine Mage death affects nearby players";
 
@@ -32,8 +32,7 @@ export async function run(ctx) {
   assert(status, "Divine Mage Staff should set class status before death");
 
   const respawned = waitForEvent(mage, "respawn", 8000);
-  const damageOutput = await command("damage DivineDeathMage 40 minecraft:generic", 500);
-  assert(/Applied|damaged|died/i.test(damageOutput), `Divine Mage death damage command did not report success: ${damageOutput}`);
+  await applyServerDamage(ctx, "damage DivineDeathMage 40 minecraft:generic", "Divine Mage death damage");
   await respawned;
   await wait(1500);
 

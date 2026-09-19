@@ -1,4 +1,4 @@
-import { queryPlayerHealth, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, queryPlayerHealth, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Classes Necromancer reduces melee damage";
 
@@ -59,12 +59,11 @@ async function measureIncomingDamage(ctx, label) {
   await wait(1000);
 
   const before = await queryPlayerHealth(ctx, "NecroHitDefender");
-  const damageOutput = await command("damage NecroHitDefender 8 minecraft:player_attack by NecroHitAttacker", 500);
-  assert(/Applied|damaged/i.test(damageOutput), `${label} damage command did not report success: ${damageOutput}`);
+  await applyServerDamage(ctx, "damage NecroHitDefender 8 minecraft:player_attack by NecroHitAttacker", `${label} damage`);
   await wait(250);
 
   const after = await queryPlayerHealth(ctx, "NecroHitDefender");
   const damage = before - after;
-  assert(damage > 0, `${label} should take damage; before=${before}, after=${after}, output=${damageOutput}`);
+  assert(damage > 0, `${label} should take damage; before=${before}, after=${after}`);
   return damage;
 }

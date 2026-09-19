@@ -1164,6 +1164,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario parses effect command output locally; use serverCommandSucceeds from helpers.js instead."
     });
   }
+  if (definesLocalDamageCommandParser(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario parses damage command output locally; use applyServerDamage from helpers.js instead."
+    });
+  }
   if (isBctCorebreakerDigScenario(source, spec) && !/assert(?:NoBctLeak|BctStateStable)/.test(source)) {
     issues.push({
       severity: "warning",
@@ -1199,6 +1206,10 @@ function definesLocalServerEntityQuery(source) {
 
 function definesLocalEffectCommandParser(source) {
   return /effect clear/.test(source) && /Removed effect/.test(source);
+}
+
+function definesLocalDamageCommandParser(source) {
+  return /damageOutput/.test(source) && /Applied|damaged|died/.test(source);
 }
 
 function definesManualDroppedItemCleanup(source, spec) {
@@ -2009,6 +2020,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/local-effect-helper.js" }
     ).some((issue) => issue.message.includes("serverCommandSucceeds")),
     "scenarioQualityIssues should warn when scenarios parse effect command output"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'const damageOutput = await command("damage Target 10 minecraft:generic"); assert(/Applied|damaged/.test(damageOutput));',
+      { path: "tests/scenarios/local-damage-helper.js" }
+    ).some((issue) => issue.message.includes("applyServerDamage")),
+    "scenarioQualityIssues should warn when scenarios parse damage command output"
   );
   assertSelf(
     scenarioQualityIssues(

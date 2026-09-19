@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { queryPlayerHealth, serverEntityExists, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, queryPlayerHealth, serverEntityExists, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted target Basic Mage melee reduces damage";
 
@@ -96,13 +96,12 @@ async function measureOutgoingDamage(ctx, label) {
   await wait(1000);
 
   const before = await queryPlayerHealth(ctx, "MtMageVictim");
-  const damageOutput = await command("damage MtMageVictim 10 minecraft:generic by MtMageHit", 500);
-  assert(/Applied|damaged|MtMageVictim/i.test(damageOutput), `${label} damage command did not report success: ${damageOutput}`);
+  await applyServerDamage(ctx, "damage MtMageVictim 10 minecraft:generic by MtMageHit", `${label} damage`);
   await wait(1000);
 
   const after = await queryPlayerHealth(ctx, "MtMageVictim");
   const damage = before - after;
-  assert(damage > 0, `${label} should damage the victim; before=${before}, after=${after}, output=${damageOutput}`);
+  assert(damage > 0, `${label} should damage the victim; before=${before}, after=${after}`);
   return damage;
 }
 

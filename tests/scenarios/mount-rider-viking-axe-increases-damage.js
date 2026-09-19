@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { queryPlayerHealth, serverEntityExists, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, queryPlayerHealth, serverEntityExists, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted rider Viking axe increases damage";
 
@@ -100,13 +100,12 @@ async function measureOutgoingDamage(ctx, label) {
   await wait(1000);
 
   const before = await queryPlayerHealth(ctx, "MntVikingVictim");
-  const damageOutput = await command("damage MntVikingVictim 10 minecraft:generic by MntVikingHit", 500);
-  assert(/Applied|damaged|MntVikingVictim/i.test(damageOutput), `${label} damage command did not report success: ${damageOutput}`);
+  await applyServerDamage(ctx, "damage MntVikingVictim 10 minecraft:generic by MntVikingHit", `${label} damage`);
   await wait(1000);
 
   const after = await queryPlayerHealth(ctx, "MntVikingVictim");
   const damage = before - after;
-  assert(damage > 0, `${label} should damage the victim; before=${before}, after=${after}, output=${damageOutput}`);
+  assert(damage > 0, `${label} should damage the victim; before=${before}, after=${after}`);
   return damage;
 }
 

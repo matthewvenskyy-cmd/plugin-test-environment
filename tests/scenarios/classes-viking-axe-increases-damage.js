@@ -1,4 +1,4 @@
-import { queryPlayerHealth, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, queryPlayerHealth, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Classes Viking axe increases damage";
 
@@ -57,12 +57,11 @@ async function measureSingleHitDamage(ctx, attacker, label) {
   await command("data merge entity AxeTarget {Health:40.0f,HurtTime:0s}", 250);
 
   const before = await queryPlayerHealth(ctx, "AxeTarget");
-  const damageOutput = await command(`damage AxeTarget 10 minecraft:generic by ${attacker.username}`, 500);
-  assert(/Applied|damaged|AxeTarget/i.test(damageOutput), `${label} damage command did not report success: ${damageOutput}`);
+  await applyServerDamage(ctx, `damage AxeTarget 10 minecraft:generic by ${attacker.username}`, `${label} damage`);
   await wait(1000);
 
   const after = await queryPlayerHealth(ctx, "AxeTarget");
   const damage = before - after;
-  assert(damage > 0, `${label} should damage the target; before=${before}, after=${after}, output=${damageOutput}`);
+  assert(damage > 0, `${label} should damage the target; before=${before}, after=${after}`);
   return damage;
 }
