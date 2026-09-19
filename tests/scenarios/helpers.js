@@ -469,6 +469,15 @@ export async function giveClassItem(ctx, playerName, itemKey, label = `${itemKey
   ctx.assert(succeeded, `${label} command did not succeed`);
 }
 
+export async function serverRecipeExists(ctx, playerName, recipeKey, timeoutMs = 1000) {
+  await ctx.command(`recipe take ${playerName} ${recipeKey}`, 100);
+  return serverCommandSucceeds(ctx, `recipe give ${playerName} ${recipeKey}`, {
+    holder: "recipe_result",
+    label: `${recipeKey} recipe`,
+    timeoutMs
+  });
+}
+
 async function runCommandUntil(ctx, commandText, pattern, options) {
   if (ctx.commandUntil) {
     return ctx.commandUntil(commandText, pattern, options);

@@ -1185,6 +1185,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario parses classes give output locally; use giveClassItem from helpers.js instead."
     });
   }
+  if (definesLocalRecipeCommandParser(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario parses recipe command output locally; use serverRecipeExists from helpers.js instead."
+    });
+  }
   if (isBctCorebreakerDigScenario(source, spec) && !/assert(?:NoBctLeak|BctStateStable)/.test(source)) {
     issues.push({
       severity: "warning",
@@ -1235,6 +1242,11 @@ function definesLocalItemReplaceParser(source) {
 function definesLocalClassGiveParser(source) {
   return /(?:const|let)\s+\w+\s*=\s*await command\(\s*["'`]classes give\b/.test(source)
     && /Unknown player or item|Usage:/.test(source);
+}
+
+function definesLocalRecipeCommandParser(source) {
+  return /(?:const|let)\s+\w+\s*=\s*await command\(\s*["'`]recipe (?:give|take)\b/.test(source)
+    && /Unlocked|Gave|Took|No recipes were removed/.test(source);
 }
 
 function definesManualDroppedItemCleanup(source, spec) {
@@ -2066,6 +2078,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/local-class-give-helper.js" }
     ).some((issue) => issue.message.includes("giveClassItem")),
     "scenarioQualityIssues should warn when scenarios parse classes give command output"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'const output = await command("recipe give Bot plugin:test"); assert(/Unlocked|Gave/.test(output));',
+      { path: "tests/scenarios/local-recipe-helper.js" }
+    ).some((issue) => issue.message.includes("serverRecipeExists")),
+    "scenarioQualityIssues should warn when scenarios parse recipe command output"
   );
   assertSelf(
     scenarioQualityIssues(
