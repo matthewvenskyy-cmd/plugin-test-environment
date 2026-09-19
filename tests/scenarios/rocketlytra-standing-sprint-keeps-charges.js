@@ -1,6 +1,8 @@
-import { applyServerItemReplace, countItemsByName, displayText, waitForInventoryItem } from "./helpers.js";
+import { applyServerItemReplace, countItemsByName, displayText, waitForInventoryItem, waitForWindowSlot } from "./helpers.js";
 
 export const name = "Rocketlytra standing sprint keeps charges";
+
+const CHEST_EQUIPMENT_SLOT = 6;
 
 export async function run(ctx) {
   const { assert, command, wait, spawnBot } = ctx;
@@ -36,9 +38,13 @@ export async function run(ctx) {
     bot.setControlState("sprint", false);
     await wait(1500);
 
-    const armorData = await command("data get entity RocketStand equipment", 500);
-    assert(armorData.includes("minecraft:elytra"), `Rocketlytra should be equipped in an armor slot; armor=${armorData}`);
-    assert(armorData.includes("rocketlytra_charges") && armorData.includes("3"), `standing sprint should keep Rocketlytra at 3 charges; armor=${armorData}`);
+    const equippedRocketlytra = await waitForWindowSlot(
+      bot.inventory,
+      CHEST_EQUIPMENT_SLOT,
+      isRocketlytraWithCharges(3),
+      "equipped Rocketlytra with 3 charges"
+    );
+    assert(equippedRocketlytra.name === "elytra", `equipped Rocketlytra should remain an elytra, got ${displayText(equippedRocketlytra)}`);
     assert(countItemsByName(bot, "firework_rocket") === 0, "crafting should consume the three firework rockets before sprint check");
   } finally {
     bot.setControlState("sprint", false);

@@ -1192,6 +1192,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario parses recipe command output locally; use serverRecipeExists from helpers.js instead."
     });
   }
+  if (definesLocalEquipmentDataParser(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario parses serialized player equipment; inspect Mineflayer inventory equipment slots instead."
+    });
+  }
   if (isBctCorebreakerDigScenario(source, spec) && !/assert(?:NoBctLeak|BctStateStable)/.test(source)) {
     issues.push({
       severity: "warning",
@@ -1247,6 +1254,11 @@ function definesLocalClassGiveParser(source) {
 function definesLocalRecipeCommandParser(source) {
   return /(?:const|let)\s+\w+\s*=\s*await command\(\s*["'`]recipe (?:give|take)\b/.test(source)
     && /Unlocked|Gave|Took|No recipes were removed/.test(source);
+}
+
+function definesLocalEquipmentDataParser(source) {
+  return /data get entity\s+\w+\s+equipment/.test(source)
+    && /\.includes\s*\(/.test(source);
 }
 
 function definesManualDroppedItemCleanup(source, spec) {
@@ -2085,6 +2097,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/local-recipe-helper.js" }
     ).some((issue) => issue.message.includes("serverRecipeExists")),
     "scenarioQualityIssues should warn when scenarios parse recipe command output"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'const equipment = await command("data get entity Bot equipment"); assert(equipment.includes("minecraft:elytra"));',
+      { path: "tests/scenarios/local-equipment-query.js" }
+    ).some((issue) => issue.message.includes("Mineflayer inventory equipment slots")),
+    "scenarioQualityIssues should warn when scenarios parse serialized player equipment"
   );
   assertSelf(
     scenarioQualityIssues(
