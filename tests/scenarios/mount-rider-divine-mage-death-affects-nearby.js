@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { serverEntityExists, waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted rider Divine Mage death affects nearby players";
 
@@ -93,6 +93,5 @@ async function clearEffect(ctx, playerName, effectId, effectLabel) {
 }
 
 async function playerExists(ctx, playerName) {
-  const output = await ctx.command(`execute if entity @a[name=${playerName}]`, 250);
-  return /Test passed/.test(output);
+  return serverEntityExists(ctx, `@a[name=${playerName}]`);
 }

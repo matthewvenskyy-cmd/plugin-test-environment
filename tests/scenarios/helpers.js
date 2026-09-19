@@ -378,6 +378,14 @@ export async function serverBlockIs(ctx, position, blockName) {
   });
 }
 
+export async function serverEntityExists(ctx, selector, options = {}) {
+  return queryCommandSuccess(ctx, `execute if entity ${selector}`, {
+    holder: "entity_match",
+    timeoutMs: options.timeoutMs ?? 1000,
+    label: options.label ?? `server entity ${selector}`
+  });
+}
+
 export async function selectedItemHasNoDamage(ctx, username) {
   const hasDamage = await queryCommandSuccess(ctx, `data get entity ${username} SelectedItem.components.minecraft:damage`, {
     holder: "item_damage",

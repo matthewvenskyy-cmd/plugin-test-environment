@@ -1,3 +1,5 @@
+import { serverEntityExists } from "./helpers.js";
+
 export const name = "Admin slow shift chain does not toggle game mode";
 
 export async function run(ctx) {
@@ -30,6 +32,5 @@ export async function run(ctx) {
 }
 
 async function playerInGameMode(ctx, playerName, gameMode) {
-  const output = await ctx.command(`execute if entity @a[name=${playerName},gamemode=${gameMode}]`, 250);
-  return /Test passed/.test(output);
+  return serverEntityExists(ctx, `@a[name=${playerName},gamemode=${gameMode}]`);
 }

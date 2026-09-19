@@ -1,4 +1,4 @@
-import { waitForChat } from "./helpers.js";
+import { serverEntityExists, waitForChat } from "./helpers.js";
 
 export const name = "Core breakcore without target core is denied";
 
@@ -25,11 +25,9 @@ export async function run(ctx) {
 }
 
 async function playerExists(ctx, playerName) {
-  const output = await ctx.command(`execute if entity @a[name=${playerName}]`, 250);
-  return /Test passed/.test(output);
+  return serverEntityExists(ctx, `@a[name=${playerName}]`);
 }
 
 async function playerInGameMode(ctx, playerName, gameMode) {
-  const output = await ctx.command(`execute if entity @a[name=${playerName},gamemode=${gameMode}]`, 250);
-  return /Test passed/.test(output);
+  return serverEntityExists(ctx, `@a[name=${playerName},gamemode=${gameMode}]`);
 }

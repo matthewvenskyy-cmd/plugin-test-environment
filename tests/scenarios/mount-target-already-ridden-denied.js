@@ -1,4 +1,4 @@
-import { queryEntityCount, waitForChat } from "./helpers.js";
+import { queryEntityCount, serverEntityExists, waitForChat } from "./helpers.js";
 
 export const name = "MountPlugin denies mounting occupied targets";
 
@@ -39,6 +39,5 @@ export async function run(ctx) {
 }
 
 async function entityExists(ctx, selector) {
-  const output = await ctx.command(`execute if entity ${selector}`, 250);
-  return /Test passed/.test(output);
+  return serverEntityExists(ctx, selector);
 }

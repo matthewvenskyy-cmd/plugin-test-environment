@@ -1150,6 +1150,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario defines a local server block query; use serverBlockIs or waitForServerBlock from helpers.js instead."
     });
   }
+  if (definesLocalServerEntityQuery(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario parses a local server entity query; use serverEntityExists from helpers.js instead."
+    });
+  }
   if (isBctCorebreakerDigScenario(source, spec) && !/assert(?:NoBctLeak|BctStateStable)/.test(source)) {
     issues.push({
       severity: "warning",
@@ -1177,6 +1184,10 @@ function definesLocalPlayerAttributeQuery(source) {
 
 function definesLocalServerBlockQuery(source) {
   return /(?:async\s+)?function\s+serverBlockIs\s*\(/.test(source);
+}
+
+function definesLocalServerEntityQuery(source) {
+  return /execute if entity/.test(source) && /Test passed/.test(source);
 }
 
 function definesManualDroppedItemCleanup(source, spec) {
@@ -1973,6 +1984,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/local-block-helper.js" }
     ).some((issue) => issue.message.includes("waitForServerBlock")),
     "scenarioQualityIssues should warn when scenarios define local server block queries"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'const output = await ctx.command(`execute if entity @a[name=${playerName}]`); return /Test passed/.test(output);',
+      { path: "tests/scenarios/local-entity-helper.js" }
+    ).some((issue) => issue.message.includes("serverEntityExists")),
+    "scenarioQualityIssues should warn when scenarios parse local server entity queries"
   );
   assertSelf(
     scenarioQualityIssues(

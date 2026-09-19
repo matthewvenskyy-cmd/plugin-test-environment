@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { queryCorebreakerCharges, waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { queryCorebreakerCharges, serverEntityExists, waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted target Viking kill grants one Corebreaker charge";
 
@@ -106,6 +106,5 @@ async function killVictim(ctx, victim) {
 }
 
 async function playerExists(ctx, playerName) {
-  const output = await ctx.command(`execute if entity @a[name=${playerName}]`, 250);
-  return /Test passed/.test(output);
+  return serverEntityExists(ctx, `@a[name=${playerName}]`);
 }

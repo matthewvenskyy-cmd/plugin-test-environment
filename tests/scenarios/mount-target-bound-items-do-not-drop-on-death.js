@@ -5,6 +5,7 @@ import {
   isCoreItem,
   isCorebreakerItem,
   queryDroppedItemEntityCount,
+  serverEntityExists,
   waitForBlock,
   waitForChat,
   waitForEvent,
@@ -77,6 +78,5 @@ export async function run(ctx) {
 }
 
 async function playerExists(ctx, playerName) {
-  const output = await ctx.command(`execute if entity @a[name=${playerName}]`, 250);
-  return /Test passed/.test(output);
+  return serverEntityExists(ctx, `@a[name=${playerName}]`);
 }
