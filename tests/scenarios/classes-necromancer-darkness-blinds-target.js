@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { serverCommandSucceeds, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { giveClassItem, serverCommandSucceeds, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Classes Necromancer darkness blinds target";
 
@@ -27,8 +27,7 @@ export async function run(ctx) {
     await target.waitForChunksToLoad();
     await waitForBlock(necromancer, CASTER_FLOOR, "stone", "Necromancer darkness caster floor");
     await waitForBlock(target, TARGET_FLOOR, "stone", "Necromancer darkness target floor");
-    const giveOutput = await command("classes give DarknessCaster necromancer_staff", 500);
-    assert(!/Unknown player or item|Usage:/i.test(giveOutput), `Necromancer Staff give command failed: ${giveOutput}`);
+    await giveClassItem(ctx, "DarknessCaster", "necromancer_staff", "Necromancer Staff give");
     await wait(1000);
 
     const staff = await waitForInventoryItem(necromancer, (item) => item?.name === "blaze_rod", "Necromancer Staff class item");

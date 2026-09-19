@@ -1,4 +1,4 @@
-import { applyServerDamage, queryPlayerHealth, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, giveClassItem, queryPlayerHealth, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Classes Basic Mage melee reduces damage";
 
@@ -22,8 +22,7 @@ export async function run(ctx) {
   await command("tp PlainMageHit 58 80 0 0 0", 500);
   await command("tp BasicMageHit 58 80 2 0 0", 500);
   await command("tp MageHitTarget 58 80 1 180 0", 500);
-  const giveOutput = await command("classes give BasicMageHit basic_mage_staff", 500);
-  assert(!/Unknown player or item|Usage:/i.test(giveOutput), `Basic Mage Staff give command failed: ${giveOutput}`);
+  await giveClassItem(ctx, "BasicMageHit", "basic_mage_staff", "Basic Mage Staff give");
   await wait(1000);
 
   const staff = await waitForInventoryItem(mage, (item) => item?.name === "blaze_rod", "Basic Mage Staff class item");

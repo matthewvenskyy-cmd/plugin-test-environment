@@ -1,4 +1,4 @@
-import { queryPlayerHealth, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { giveClassItem, queryPlayerHealth, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Classes mage food heals ally";
 
@@ -20,8 +20,7 @@ export async function run(ctx) {
   await command("tp FoodAlly 105 80 1 180 0", 500);
   await command("data merge entity FoodAlly {Health:20.0f,HurtTime:0s,DeathTime:0s,Invulnerable:0b}", 250);
 
-  const giveOutput = await command("classes give FoodMage basic_mage_staff", 500);
-  assert(!/Unknown player or item|Usage:/i.test(giveOutput), `Basic Mage Staff give command failed: ${giveOutput}`);
+  await giveClassItem(ctx, "FoodMage", "basic_mage_staff", "Basic Mage Staff give");
   await command("give FoodMage minecraft:apple", 500);
   await wait(1000);
 

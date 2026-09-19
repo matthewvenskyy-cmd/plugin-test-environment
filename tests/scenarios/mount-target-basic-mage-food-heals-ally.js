@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { queryPlayerHealth, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { giveClassItem, queryPlayerHealth, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted target Basic Mage food heals ally";
 
@@ -52,8 +52,7 @@ export async function run(ctx) {
     assert(mounted, "rider should mount the Basic Mage target before ally-healing checks");
     await wait(500);
 
-    const giveOutput = await command("classes give MtFoodMage basic_mage_staff", 500);
-    assert(!/Unknown player or item|Usage:/i.test(giveOutput), `mounted target Basic Mage Staff give command failed: ${giveOutput}`);
+    await giveClassItem(ctx, "MtFoodMage", "basic_mage_staff", "mounted target Basic Mage Staff give");
     await command("give MtFoodMage minecraft:apple", 500);
     const staff = await waitForInventoryItem(target, (item) => item?.name === "blaze_rod", "mounted target Basic Mage Staff");
     await target.equip(staff, "hand");

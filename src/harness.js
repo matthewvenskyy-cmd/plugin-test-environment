@@ -1178,6 +1178,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario parses item replace output locally; use applyServerItemReplace from helpers.js instead."
     });
   }
+  if (definesLocalClassGiveParser(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario parses classes give output locally; use giveClassItem from helpers.js instead."
+    });
+  }
   if (isBctCorebreakerDigScenario(source, spec) && !/assert(?:NoBctLeak|BctStateStable)/.test(source)) {
     issues.push({
       severity: "warning",
@@ -1223,6 +1230,11 @@ function definesLocalDamageCommandParser(source) {
 function definesLocalItemReplaceParser(source) {
   return /(?:const|let)\s+\w+\s*=\s*await command\(\s*["'`]item replace\b/.test(source)
     && /Replaced|Modified|commands\\\.item\\\.target/.test(source);
+}
+
+function definesLocalClassGiveParser(source) {
+  return /(?:const|let)\s+\w+\s*=\s*await command\(\s*["'`]classes give\b/.test(source)
+    && /Unknown player or item|Usage:/.test(source);
 }
 
 function definesManualDroppedItemCleanup(source, spec) {
@@ -2047,6 +2059,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/local-item-replace-helper.js" }
     ).some((issue) => issue.message.includes("applyServerItemReplace")),
     "scenarioQualityIssues should warn when scenarios parse item replace command output"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'const output = await command("classes give Bot basic_mage_staff"); assert(!/Unknown player or item|Usage:/.test(output));',
+      { path: "tests/scenarios/local-class-give-helper.js" }
+    ).some((issue) => issue.message.includes("giveClassItem")),
+    "scenarioQualityIssues should warn when scenarios parse classes give command output"
   );
   assertSelf(
     scenarioQualityIssues(

@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { applyServerDamage, queryPlayerHealth, serverEntityExists, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, giveClassItem, queryPlayerHealth, serverEntityExists, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted target Viking axe increases damage";
 
@@ -56,8 +56,7 @@ export async function run(ctx) {
     const plainDamage = await measureOutgoingDamage(ctx, "mounted target plain axe");
 
     await command("clear MtVikingHit", 250);
-    const giveOutput = await command("classes give MtVikingHit double_long_axe", 500);
-    assert(!/Unknown player or item|Usage:/i.test(giveOutput), `mounted target Viking Axe give command failed: ${giveOutput}`);
+    await giveClassItem(ctx, "MtVikingHit", "double_long_axe", "mounted target Viking Axe give");
     const classAxe = await waitForInventoryItem(target, (item) => item?.name === "iron_axe", "mounted target Viking class axe");
     await target.equip(classAxe, "hand");
     await wait(1500);

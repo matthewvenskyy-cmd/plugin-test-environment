@@ -461,6 +461,14 @@ export async function applyServerItemReplace(ctx, commandText, label = "item rep
   ctx.assert(succeeded, `${label} command did not succeed`);
 }
 
+export async function giveClassItem(ctx, playerName, itemKey, label = `${itemKey} give`) {
+  const succeeded = await serverCommandSucceeds(ctx, `classes give ${playerName} ${itemKey}`, {
+    holder: "class_give_result",
+    label
+  });
+  ctx.assert(succeeded, `${label} command did not succeed`);
+}
+
 async function runCommandUntil(ctx, commandText, pattern, options) {
   if (ctx.commandUntil) {
     return ctx.commandUntil(commandText, pattern, options);

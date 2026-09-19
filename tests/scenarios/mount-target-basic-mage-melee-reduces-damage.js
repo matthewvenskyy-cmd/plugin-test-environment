@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { applyServerDamage, queryPlayerHealth, serverEntityExists, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, giveClassItem, queryPlayerHealth, serverEntityExists, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted target Basic Mage melee reduces damage";
 
@@ -52,8 +52,7 @@ export async function run(ctx) {
 
     const plainDamage = await measureOutgoingDamage(ctx, "mounted plain target");
 
-    const giveOutput = await command("classes give MtMageHit basic_mage_staff", 500);
-    assert(!/Unknown player or item|Usage:/i.test(giveOutput), `mounted target Basic Mage Staff give command failed: ${giveOutput}`);
+    await giveClassItem(ctx, "MtMageHit", "basic_mage_staff", "mounted target Basic Mage Staff give");
     const staff = await waitForInventoryItem(target, (item) => item?.name === "blaze_rod", "mounted target Basic Mage Staff");
     await target.equip(staff, "hand");
     await wait(1500);
