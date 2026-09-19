@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { queryCorebreakerCharges, serverEntityExists, waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, queryCorebreakerCharges, serverEntityExists, waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Mounted rider Viking kill grants one Corebreaker charge";
 
@@ -99,8 +99,7 @@ async function killVictim(ctx, victim) {
   await wait(750);
 
   const respawned = waitForEvent(victim, "respawn", 8000);
-  const output = await command("damage MntVikingVic 40 minecraft:generic by MntVikingKill", 500);
-  assert(output.trim() === "" || /Applied|damaged|was slain by/i.test(output), `mounted Viking kill damage command reported unexpected output: ${output}`);
+  await applyServerDamage(ctx, "damage MntVikingVic 40 minecraft:generic by MntVikingKill", "mounted Viking kill damage");
   await respawned;
   await wait(1500);
 }

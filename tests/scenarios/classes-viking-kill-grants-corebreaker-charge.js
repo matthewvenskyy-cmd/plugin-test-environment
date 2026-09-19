@@ -1,4 +1,4 @@
-import { queryCorebreakerCharges, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, queryCorebreakerCharges, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Classes Viking kill grants one Corebreaker charge";
 
@@ -56,8 +56,7 @@ async function killVictim(ctx, victim) {
   await wait(750);
 
   const respawned = waitForEvent(victim, "respawn", 8000);
-  const output = await command("damage VikingVictim 40 minecraft:generic by VikingCharge", 500);
-  assert(/Applied|damaged|was slain by/i.test(output), `Viking kill damage command did not report success: ${output}`);
+  await applyServerDamage(ctx, "damage VikingVictim 40 minecraft:generic by VikingCharge", "Viking kill damage");
   await respawned;
   await wait(1500);
 }

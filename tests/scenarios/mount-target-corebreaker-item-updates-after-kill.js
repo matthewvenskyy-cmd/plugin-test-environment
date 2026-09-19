@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  applyServerDamage,
   clearDroppedItems,
   displayText,
   isCorebreakerItem,
@@ -97,8 +98,7 @@ async function killVictim(ctx, victim) {
   await wait(750);
 
   const respawned = waitForEvent(victim, "respawn", 8000);
-  const output = await command("damage MTLoreVictim 40 minecraft:player_attack by MTLoreKiller", 500);
-  assert(/Applied|damaged|was slain by/i.test(output), `mounted target lore damage command did not report success: ${output}`);
+  await applyServerDamage(ctx, "damage MTLoreVictim 40 minecraft:player_attack by MTLoreKiller", "mounted target lore damage");
   await respawned;
   await wait(1500);
 }

@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { clearDroppedItems, isCorebreakerItem, placeCoreBlock, queryCorebreakerCharges, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, clearDroppedItems, isCorebreakerItem, placeCoreBlock, queryCorebreakerCharges, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Corebreaker earned charge breaks player core";
 
@@ -89,8 +89,7 @@ async function killPlayerWithBreaker(ctx, victim) {
   await wait(750);
 
   const respawned = waitForEvent(victim, "respawn", 8000);
-  const output = await command("damage EarnVictim 40 minecraft:player_attack by EarnBreaker", 500);
-  assert(/Applied|damaged|was slain by/i.test(output), `earned-charge damage command did not report success: ${output}`);
+  await applyServerDamage(ctx, "damage EarnVictim 40 minecraft:player_attack by EarnBreaker", "earned-charge damage");
   await respawned;
   await wait(1500);
 }

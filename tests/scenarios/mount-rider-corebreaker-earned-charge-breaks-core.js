@@ -1,5 +1,6 @@
 import { Vec3 } from "vec3";
 import {
+  applyServerDamage,
   clearDroppedItems,
   isCorebreakerItem,
   placeCoreBlock,
@@ -147,8 +148,7 @@ async function killVictimWithBreaker(ctx, victim) {
   await wait(750);
 
   const respawned = waitForEvent(victim, "respawn", 8000);
-  const output = await command("damage MEarnVictim 40 minecraft:player_attack by MEarnBreaker", 500);
-  assert(/Applied|damaged|was slain by/i.test(output), `mounted earned-charge damage command did not report success: ${output}`);
+  await applyServerDamage(ctx, "damage MEarnVictim 40 minecraft:player_attack by MEarnBreaker", "mounted earned-charge damage");
   await respawned;
   await wait(1500);
 }

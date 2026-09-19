@@ -1,4 +1,4 @@
-import { displayText, isCorebreakerItem, queryCorebreakerCharges, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import { applyServerDamage, displayText, isCorebreakerItem, queryCorebreakerCharges, waitForEvent, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Corebreaker item updates after unique kill";
 
@@ -53,8 +53,7 @@ async function killVictim(ctx, victim) {
   await wait(750);
 
   const respawned = waitForEvent(victim, "respawn", 8000);
-  const output = await command("damage LoreVictim 40 minecraft:player_attack by LoreKiller", 500);
-  assert(/Applied|damaged|was slain by/i.test(output), `kill damage command did not report success: ${output}`);
+  await applyServerDamage(ctx, "damage LoreVictim 40 minecraft:player_attack by LoreKiller", "kill damage");
   await respawned;
   await wait(1500);
 }

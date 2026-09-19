@@ -1209,7 +1209,8 @@ function definesLocalEffectCommandParser(source) {
 }
 
 function definesLocalDamageCommandParser(source) {
-  return /damageOutput/.test(source) && /Applied|damaged|died/.test(source);
+  return /(?:const|let)\s+\w+\s*=\s*await command\(\s*["'`]damage\b/.test(source)
+    && /Applied|damaged|was slain by|died/.test(source);
 }
 
 function definesManualDroppedItemCleanup(source, spec) {
@@ -2023,7 +2024,7 @@ async function runSelfTest() {
   );
   assertSelf(
     scenarioQualityIssues(
-      'const damageOutput = await command("damage Target 10 minecraft:generic"); assert(/Applied|damaged/.test(damageOutput));',
+      'const output = await command("damage Target 10 minecraft:generic"); assert(/Applied|damaged/.test(output));',
       { path: "tests/scenarios/local-damage-helper.js" }
     ).some((issue) => issue.message.includes("applyServerDamage")),
     "scenarioQualityIssues should warn when scenarios parse damage command output"
