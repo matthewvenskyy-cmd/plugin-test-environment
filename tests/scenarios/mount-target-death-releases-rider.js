@@ -1,4 +1,4 @@
-import { clearDroppedItems, waitForChat, waitForEvent } from "./helpers.js";
+import { clearDroppedItems, waitForChat, waitForEvent, waitForPlayerPassengerState } from "./helpers.js";
 
 export const name = "MountPlugin target death releases rider";
 
@@ -26,12 +26,12 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MountDeathSeat/i);
     assert(mounted, "rider should mount the target before target death");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MountDeathRide", "MountDeathSeat", true, "target-death initial attachment");
 
     const respawned = waitForEvent(target, "respawn", 8000);
     await command("kill MountDeathSeat", 500);
     await respawned;
-    await wait(1500);
+    await waitForPlayerPassengerState(ctx, "MountDeathRide", "MountDeathSeat", false, "target death to release rider");
 
     const notMounted = await waitForChat(rider, () => rider.chat("/unmount"), /not mounted/i);
     assert(notMounted, "target death should clear the rider's active mount session");
@@ -40,6 +40,7 @@ export async function run(ctx) {
     await rider.lookAt(nextTarget.entity.position.offset(0, 1.2, 0), true);
     const remounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MountDeathNext/i);
     assert(remounted, "rider should be able to mount a different player after the target dies");
+    await waitForPlayerPassengerState(ctx, "MountDeathRide", "MountDeathNext", true, "rider attachment to replacement target after death");
   } finally {
     rider.chat("/unmount");
     await wait(500);

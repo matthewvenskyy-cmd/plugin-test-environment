@@ -1,4 +1,4 @@
-import { waitForChat } from "./helpers.js";
+import { waitForChat, waitForPlayerPassengerState } from "./helpers.js";
 
 export const name = "MountPlugin rider logout releases target";
 
@@ -25,14 +25,16 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MountLogoutSeat/i);
     assert(mounted, "initial rider should mount the target before logout");
+    await waitForPlayerPassengerState(ctx, "MountLogout", "MountLogoutSeat", true, "logout scenario initial rider attachment");
 
     rider.quit("scenario logout");
-    await wait(1500);
+    await waitForPlayerPassengerState(ctx, "MountLogout", "MountLogoutSeat", false, "rider logout to release target");
 
     await command("tp MountLogoutNext 128 80 -2 0 0", 500);
     await nextRider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const remounted = await waitForChat(nextRider, () => nextRider.chat("/mount"), /now riding MountLogoutSeat/i);
     assert(remounted, "target should be mountable again after the first rider logs out");
+    await waitForPlayerPassengerState(ctx, "MountLogoutNext", "MountLogoutSeat", true, "replacement rider attachment after logout");
   } finally {
     nextRider.chat("/unmount");
     await wait(500);
