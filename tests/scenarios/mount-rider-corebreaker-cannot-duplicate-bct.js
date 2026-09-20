@@ -9,9 +9,11 @@ import {
   queryBctDisplayCount,
   queryCorebreakerCharges,
   selectedItemHasNoDamage,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted rider Corebreaker cannot duplicate BCT";
@@ -68,7 +70,13 @@ export async function run(ctx) {
     await rider.lookAt(seat.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MountBctSeat/i);
     assert(mounted, "rider should mount the target player before BCT Corebreaker attempt");
-    await wait(250);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MountBctBreak",
+      "MountBctSeat",
+      true,
+      "mounted rider BCT regression attachment"
+    );
 
     const target = rider.blockAt(BCT_BLOCK);
     assert(target?.name === "crafter", "mounted rider could not see the placed BCT");
@@ -91,6 +99,20 @@ export async function run(ctx) {
     assert(countMatchingItems(rider, isCorebreakerItem) === startingCorebreakers, "mounted denied BCT break should keep the Corebreaker item");
     assert(await queryCorebreakerCharges(rider) === startingCharges, "mounted denied BCT break should not consume a Corebreaker charge");
     assert(await selectedItemHasNoDamage(ctx, "MountBctBreak"), "mounted denied BCT break should not damage the Corebreaker");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MountBctBreak", "MountBctSeat"),
+      "denied BCT break should not detach the mounted rider"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "mounted rider should dismount cleanly after the denied BCT break");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MountBctBreak",
+      "MountBctSeat",
+      false,
+      "mounted rider BCT regression detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
