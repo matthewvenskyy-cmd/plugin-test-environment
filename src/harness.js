@@ -1055,7 +1055,7 @@ function projectConfigIssues(projects) {
 
 function scenarioSpecConfigIssues(spec) {
   const issues = [];
-  const allowedKeys = new Set(["path", "manual", "expectedFailure", "failurePattern", "reason", "area"]);
+  const allowedKeys = new Set(["path", "manual", "expectedFailure", "failurePattern", "reason", "area", "timeoutMs"]);
   const label = spec?.path ?? "(scenario)";
   if (!spec || typeof spec !== "object" || Array.isArray(spec)) {
     return [{ severity: "error", path: label, message: "Scenario entry must be a path string or object." }];
@@ -1094,6 +1094,9 @@ function scenarioSpecConfigIssues(spec) {
   }
   if (spec.area && typeof spec.area !== "string") {
     issues.push({ severity: "error", path: label, message: "Scenario area must be a string when present." });
+  }
+  if (spec.timeoutMs != null && !isPositiveInteger(spec.timeoutMs)) {
+    issues.push({ severity: "error", path: label, message: "Scenario timeoutMs must be a positive integer when present." });
   }
   return issues;
 }
@@ -1418,7 +1421,7 @@ async function runScenarioBatch(config, server, scenarios) {
         try {
           await withTimeout(
             scenario.run(createScenarioContext(config, server, bot, name, extraBots)),
-            config.scenarioTimeoutMs ?? 60000,
+            scenarioSpec.timeoutMs ?? config.scenarioTimeoutMs ?? 60000,
             `Scenario timed out: ${name}`
           );
           if (scenarioSpec.expectedFailure) {
@@ -2166,7 +2169,8 @@ async function runSelfTest() {
     manual: true,
     expectedFailure: true,
     expectedFailures: true,
-    area: ["CorePlugin"]
+    area: ["CorePlugin"],
+    timeoutMs: 0
   });
   assertSelf(
     scenarioSpecConfigIssues(42).some((issue) => issue.message.includes("path string or object"))
@@ -2175,7 +2179,8 @@ async function runSelfTest() {
       && scenarioSpecIssues.some((issue) => issue.message.includes("both manual and expectedFailure"))
       && scenarioSpecIssues.some((issue) => issue.message.includes("include a reason"))
       && scenarioSpecIssues.some((issue) => issue.message.includes("non-empty failurePattern"))
-      && scenarioSpecIssues.some((issue) => issue.message.includes("area must be")),
+      && scenarioSpecIssues.some((issue) => issue.message.includes("area must be"))
+      && scenarioSpecIssues.some((issue) => issue.message.includes("timeoutMs must be")),
     "scenarioSpecConfigIssues should catch malformed scenario config entries"
   );
   assertSelf(

@@ -7,9 +7,11 @@ import {
   queryCorebreakerCharges,
   selectedItemHasNoDamage,
   serverBlockIs,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
   waitForInventoryItem,
+  waitForPlayerPassengerState,
   waitForServerBlock
 } from "./helpers.js";
 
@@ -72,7 +74,13 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtNoChargeBrk/i);
     assert(mounted, "rider should mount the Corebreaker target before charge exhaustion checks");
-    await wait(750);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MtNoChargeRide",
+      "MtNoChargeBrk",
+      true,
+      "mounted target no-charge attachment"
+    );
 
     const corebreaker = await waitForInventoryItem(target, isCorebreakerItem, "mounted target Corebreaker with default charge");
     const startingCorebreakers = countMatchingItems(target, isCorebreakerItem);
@@ -81,15 +89,30 @@ export async function run(ctx) {
     await breakCore(ctx, target, FIRST_CORE, "air", "ridden default charge should break the first core");
     assert(await serverBlockIs(ctx, FIRST_CORE, "air"), "ridden target default Corebreaker charge should remove the first core");
     assert(await queryCorebreakerCharges(target) === 0, "/kills should report zero charges after the ridden target default charge is consumed");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtNoChargeRide", "MtNoChargeBrk"),
+      "successful target core break should leave the rider attached"
+    );
 
-    await command("tp MtNoChargeRide 407 80 -2 0 0", 250);
-    await command("tp MtNoChargeBrk 407 80 2 180 0", 250);
-    await wait(750);
     await breakCore(ctx, target, SECOND_CORE, "beacon", "ridden exhausted Corebreaker should be cancelled");
     assert(await serverBlockIs(ctx, SECOND_CORE, "beacon"), "ridden exhausted Corebreaker should not remove the second core");
     assert(await queryCorebreakerCharges(target) === 0, "ridden exhausted Corebreaker denial should keep charges at zero");
     assert(countMatchingItems(target, isCorebreakerItem) === startingCorebreakers, "ridden exhausted Corebreaker denial should keep the Corebreaker item");
     assert(await selectedItemHasNoDamage(ctx, "MtNoChargeBrk"), "ridden exhausted Corebreaker denial should not damage the Corebreaker");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtNoChargeRide", "MtNoChargeBrk"),
+      "denied target core break should leave the rider attached"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "rider should dismount cleanly after target charge exhaustion checks");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MtNoChargeRide",
+      "MtNoChargeBrk",
+      false,
+      "mounted target no-charge detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
