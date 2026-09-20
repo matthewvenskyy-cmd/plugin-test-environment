@@ -6,9 +6,11 @@ import {
   placeBiggerCraftingTable,
   queryBctDisplayCount,
   selectedItemHasNoDamage,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted rider BCT Corebreaker attempt preserves contents";
@@ -69,7 +71,13 @@ export async function run(ctx) {
     await rider.lookAt(seat.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MRBctSeat/i);
     assert(mounted, "rider should mount the target before BCT contents Corebreaker attempt");
-    await wait(500);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MRBctContents",
+      "MRBctSeat",
+      true,
+      "mounted rider BCT contents attachment"
+    );
 
     const bct = rider.blockAt(BCT_BLOCK);
     assert(bct?.name === "crafter", "mounted rider could not see the BCT with contents");
@@ -94,6 +102,20 @@ export async function run(ctx) {
     const secondWindow = await bot.openBlock(bot.blockAt(BCT_BLOCK));
     assert(secondWindow.containerItems().some((item) => item?.name === "diamond"), "mounted rider Corebreaker attempt should preserve BCT inventory contents");
     secondWindow.close();
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MRBctContents", "MRBctSeat"),
+      "BCT contents check should leave the rider mounted"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "mounted rider should dismount cleanly after the BCT contents check");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MRBctContents",
+      "MRBctSeat",
+      false,
+      "mounted rider BCT contents detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
