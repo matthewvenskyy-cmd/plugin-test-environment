@@ -1,4 +1,4 @@
-import { countItemsByName, displayText, waitForInventoryItem } from "./helpers.js";
+import { countItemsByName, displayText, isRocketlytraWithCharges, rocketlytraRecipe, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Rocketlytra craft adds charges";
 
@@ -13,7 +13,7 @@ export async function run(ctx) {
   await waitForInventoryItem(bot, (item) => item?.name === "elytra", "elytra");
   await waitForInventoryItem(bot, (item) => item?.name === "firework_rocket" && item.count >= 3, "firework rockets");
 
-  const recipe = rocketlytraRecipe(bot);
+  const recipe = rocketlytraRecipe(bot, 3);
   await bot.craft(recipe, 1, null);
   await wait(750);
 
@@ -23,15 +23,9 @@ export async function run(ctx) {
   await command("gamemode creative ScenarioBot", 250);
 }
 
-function isRocketlytraWithThreeCharges(item) {
-  if (item?.name !== "elytra") return false;
-  const text = displayText(item);
-  return text.includes("Rocketlytra") && text.includes("3");
-}
-
 async function waitForRocketlytra(bot) {
   try {
-    return await waitForInventoryItem(bot, isRocketlytraWithThreeCharges, "crafted Rocketlytra with 3 charges");
+    return await waitForInventoryItem(bot, isRocketlytraWithCharges(3), "crafted Rocketlytra with 3 charges");
   } catch (error) {
     const inventory = bot.inventory.items().map((item) => ({
       name: item.name,
@@ -41,19 +35,4 @@ async function waitForRocketlytra(bot) {
     }));
     throw new Error(`${error.message}. Inventory: ${JSON.stringify(inventory)}`);
   }
-}
-
-function rocketlytraRecipe(bot) {
-  const elytra = bot.registry.itemsByName.elytra.id;
-  const firework = bot.registry.itemsByName.firework_rocket.id;
-  const ingredient = (id) => ({ id, metadata: null, count: 1 });
-  return {
-    result: ingredient(elytra),
-    ingredients: [ingredient(elytra), ingredient(firework), ingredient(firework), ingredient(firework)],
-    delta: [
-      { id: elytra, metadata: null, count: 0 },
-      { id: firework, metadata: null, count: -3 }
-    ],
-    requiresTable: false
-  };
 }

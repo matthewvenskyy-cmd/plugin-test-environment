@@ -1,4 +1,4 @@
-import { countItemsByName, displayText, waitForInventoryItem } from "./helpers.js";
+import { countItemsByName, displayText, rocketlytraRecipe, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Rocketlytra craft preserves custom elytra name";
 
@@ -34,20 +34,5 @@ function isCustomNamedRocketlytra(charges) {
     if (!isCustomNamedElytra(item)) return false;
     const text = displayText(item);
     return text.includes("Rocketlytra charges") && text.includes(String(charges));
-  };
-}
-
-function rocketlytraRecipe(bot, fireworks) {
-  const elytra = bot.registry.itemsByName.elytra.id;
-  const firework = bot.registry.itemsByName.firework_rocket.id;
-  const ingredient = (id) => ({ id, metadata: null, count: 1 });
-  return {
-    result: ingredient(elytra),
-    ingredients: [ingredient(elytra), ...Array.from({ length: fireworks }, () => ingredient(firework))],
-    delta: [
-      { id: elytra, metadata: null, count: 0 },
-      { id: firework, metadata: null, count: -fireworks }
-    ],
-    requiresTable: false
   };
 }

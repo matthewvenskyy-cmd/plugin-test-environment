@@ -139,6 +139,10 @@
       "area": "MountPlugin"
     },
     {
+      "path": "tests/scenarios/mount-target-rocketlytra-sprint-keeps-charges.js",
+      "area": "MountPlugin"
+    },
+    {
       "path": "tests/scenarios/rocketlytra-crafts-in-bct.js",
       "expectedFailure": true,
       "reason": "Bigger Crafting Table currently matches the Rocketlytra one-firework recipe even when three fireworks are present.",

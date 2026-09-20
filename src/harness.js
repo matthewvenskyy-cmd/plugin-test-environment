@@ -1199,6 +1199,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario parses serialized player equipment; inspect Mineflayer inventory equipment slots instead."
     });
   }
+  if (definesLocalRocketlytraHelpers(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario defines Rocketlytra item or recipe helpers locally; import the shared helpers.js implementations instead."
+    });
+  }
   if (isBctCorebreakerDigScenario(source, spec) && !/assert(?:NoBctLeak|BctStateStable)/.test(source)) {
     issues.push({
       severity: "warning",
@@ -1259,6 +1266,10 @@ function definesLocalRecipeCommandParser(source) {
 function definesLocalEquipmentDataParser(source) {
   return /data get entity\s+\w+\s+equipment/.test(source)
     && /\.includes\s*\(/.test(source);
+}
+
+function definesLocalRocketlytraHelpers(source) {
+  return /function\s+(?:isRocketlytraWithCharges|rocketlytraRecipe)\s*\(/.test(source);
 }
 
 function definesManualDroppedItemCleanup(source, spec) {
@@ -2104,6 +2115,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/local-equipment-query.js" }
     ).some((issue) => issue.message.includes("Mineflayer inventory equipment slots")),
     "scenarioQualityIssues should warn when scenarios parse serialized player equipment"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'function rocketlytraRecipe(bot, fireworks) { return { bot, fireworks }; }',
+      { path: "tests/scenarios/local-rocketlytra-helper.js" }
+    ).some((issue) => issue.message.includes("shared helpers.js implementations")),
+    "scenarioQualityIssues should warn when scenarios duplicate Rocketlytra helpers"
   );
   assertSelf(
     scenarioQualityIssues(

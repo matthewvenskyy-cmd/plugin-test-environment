@@ -2,6 +2,8 @@ import { Vec3 } from "vec3";
 import {
   countItemsByName,
   displayText,
+  isRocketlytraWithCharges,
+  rocketlytraRecipe,
   serverRecipeExists,
   waitForBlock,
   waitForChat,
@@ -88,27 +90,4 @@ function waitForMountedTarget(rider) {
     () => rider.vehicle?.username === "MntRocketSeat" ? rider.vehicle : null,
     { timeoutMs: 3000, label: "Mineflayer mounted target state" }
   );
-}
-
-function isRocketlytraWithCharges(charges) {
-  return (item) => {
-    if (item?.name !== "elytra") return false;
-    const text = displayText(item);
-    return text.includes("Rocketlytra") && text.includes(String(charges));
-  };
-}
-
-function rocketlytraRecipe(bot, fireworks) {
-  const elytra = bot.registry.itemsByName.elytra.id;
-  const firework = bot.registry.itemsByName.firework_rocket.id;
-  const ingredient = (id) => ({ id, metadata: null, count: 1 });
-  return {
-    result: ingredient(elytra),
-    ingredients: [ingredient(elytra), ...Array.from({ length: fireworks }, () => ingredient(firework))],
-    delta: [
-      { id: elytra, metadata: null, count: 0 },
-      { id: firework, metadata: null, count: -fireworks }
-    ],
-    requiresTable: false
-  };
 }

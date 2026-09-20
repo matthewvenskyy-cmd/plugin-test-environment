@@ -1,4 +1,4 @@
-import { countItemsByName, displayText, waitForInventoryItem } from "./helpers.js";
+import { countItemsByName, isRocketlytraWithCharges, rocketlytraRecipe, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Rocketlytra recraft preserves charges";
 
@@ -27,27 +27,4 @@ export async function run(ctx) {
   assert(rocketlytra.name === "elytra", `recrafted item should stay an elytra, got ${rocketlytra.name}`);
   assert(countItemsByName(bot, "firework_rocket") === 0, "recrafting should consume exactly the two added firework rockets");
   await command("gamemode creative ScenarioBot", 250);
-}
-
-function isRocketlytraWithCharges(charges) {
-  return (item) => {
-    if (item?.name !== "elytra") return false;
-    const text = displayText(item);
-    return text.includes("Rocketlytra") && text.includes(String(charges));
-  };
-}
-
-function rocketlytraRecipe(bot, fireworks) {
-  const elytra = bot.registry.itemsByName.elytra.id;
-  const firework = bot.registry.itemsByName.firework_rocket.id;
-  const ingredient = (id) => ({ id, metadata: null, count: 1 });
-  return {
-    result: ingredient(elytra),
-    ingredients: [ingredient(elytra), ...Array.from({ length: fireworks }, () => ingredient(firework))],
-    delta: [
-      { id: elytra, metadata: null, count: 0 },
-      { id: firework, metadata: null, count: -fireworks }
-    ],
-    requiresTable: false
-  };
 }

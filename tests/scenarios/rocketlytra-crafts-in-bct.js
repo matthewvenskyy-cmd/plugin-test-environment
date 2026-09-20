@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { clearBctArtifacts, countItemsByName, displayText, placeBiggerCraftingTable, waitForCondition, waitForInventoryItem, waitForWindowSlot } from "./helpers.js";
+import { clearBctArtifacts, countItemsByName, displayText, isRocketlytraWithCharges, placeBiggerCraftingTable, waitForCondition, waitForInventoryItem, waitForWindowSlot } from "./helpers.js";
 
 export const name = "Rocketlytra crafts inside Bigger Crafting Table";
 
@@ -40,11 +40,11 @@ export async function run(ctx) {
     (item) => item != null,
     "BCT Rocketlytra crafting result"
   );
-  assert(isRocketlytraWithCharges(result, 3), `BCT result slot should show Rocketlytra with 3 charges, got ${describeItem(result)}`);
+  assert(isRocketlytraWithCharges(3)(result), `BCT result slot should show Rocketlytra with 3 charges, got ${describeItem(result)}`);
   await bot.clickWindow(RESULT_SLOT, 0, 0);
   window.close();
 
-  const rocketlytra = await waitForInventoryItem(bot, (item) => isRocketlytraWithCharges(item, 3), "BCT-crafted Rocketlytra with 3 charges");
+  const rocketlytra = await waitForInventoryItem(bot, isRocketlytraWithCharges(3), "BCT-crafted Rocketlytra with 3 charges");
   await waitForCondition(
     () => countItemsByName(bot, "firework_rocket") === 0 ? { count: 0 } : null,
     { label: "BCT crafting to consume three firework rockets" }
@@ -57,12 +57,6 @@ export async function run(ctx) {
   await command(`setblock ${BCT_BLOCK.x} ${BCT_BLOCK.y} ${BCT_BLOCK.z} minecraft:air`, 250);
   await command(`setblock ${SUPPORT_BLOCK.x} ${SUPPORT_BLOCK.y} ${SUPPORT_BLOCK.z} minecraft:air`, 250);
   await command(`setblock ${FLOOR_BLOCK.x} ${FLOOR_BLOCK.y} ${FLOOR_BLOCK.z} minecraft:air`, 250);
-}
-
-function isRocketlytraWithCharges(item, charges) {
-  if (item?.name !== "elytra") return false;
-  const text = displayText(item);
-  return text.includes("Rocketlytra") && text.includes(String(charges));
 }
 
 function describeItem(item) {

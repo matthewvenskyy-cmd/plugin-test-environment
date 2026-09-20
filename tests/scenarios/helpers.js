@@ -12,6 +12,29 @@ export function isCoreItem(item) {
   return item?.name === "beacon" && displayText(item).includes("Core");
 }
 
+export function isRocketlytraWithCharges(charges) {
+  return (item) => {
+    if (item?.name !== "elytra") return false;
+    const text = displayText(item);
+    return text.includes("Rocketlytra") && text.includes(String(charges));
+  };
+}
+
+export function rocketlytraRecipe(bot, fireworks) {
+  const elytra = bot.registry.itemsByName.elytra.id;
+  const firework = bot.registry.itemsByName.firework_rocket.id;
+  const ingredient = (id) => ({ id, metadata: null, count: 1 });
+  return {
+    result: ingredient(elytra),
+    ingredients: [ingredient(elytra), ...Array.from({ length: fireworks }, () => ingredient(firework))],
+    delta: [
+      { id: elytra, metadata: null, count: 0 },
+      { id: firework, metadata: null, count: -fireworks }
+    ],
+    requiresTable: false
+  };
+}
+
 export function countMatchingItems(bot, predicate) {
   return bot.inventory.items()
     .filter(predicate)

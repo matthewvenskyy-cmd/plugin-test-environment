@@ -1,4 +1,4 @@
-import { applyServerItemReplace, countItemsByName, displayText, waitForInventoryItem, waitForWindowSlot } from "./helpers.js";
+import { applyServerItemReplace, countItemsByName, displayText, isRocketlytraWithCharges, rocketlytraRecipe, waitForInventoryItem, waitForWindowSlot } from "./helpers.js";
 
 export const name = "Rocketlytra standing sprint keeps charges";
 
@@ -52,27 +52,4 @@ export async function run(ctx) {
     await command("effect clear RocketStand", 250);
     await command("fill 124 79 -1 126 79 1 minecraft:air", 250);
   }
-}
-
-function isRocketlytraWithCharges(charges) {
-  return (item) => {
-    if (item?.name !== "elytra") return false;
-    const text = displayText(item);
-    return text.includes("Rocketlytra") && text.includes(String(charges));
-  };
-}
-
-function rocketlytraRecipe(bot, fireworks) {
-  const elytra = bot.registry.itemsByName.elytra.id;
-  const firework = bot.registry.itemsByName.firework_rocket.id;
-  const ingredient = (id) => ({ id, metadata: null, count: 1 });
-  return {
-    result: ingredient(elytra),
-    ingredients: [ingredient(elytra), ...Array.from({ length: fireworks }, () => ingredient(firework))],
-    delta: [
-      { id: elytra, metadata: null, count: 0 },
-      { id: firework, metadata: null, count: -fireworks }
-    ],
-    requiresTable: false
-  };
 }
