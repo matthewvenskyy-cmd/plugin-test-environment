@@ -1,5 +1,5 @@
 import { Vec3 } from "vec3";
-import { waitForChat } from "./helpers.js";
+import { waitForChat, waitForPlayerPassengerState } from "./helpers.js";
 
 export const name = "MountPlugin ridden player can kick rider";
 
@@ -29,6 +29,13 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MountSeat/i);
     assert(mounted, "rider should mount the target before kick attempt");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MountKick",
+      "MountSeat",
+      true,
+      "MountPlugin target-kick initial attachment",
+    );
 
     const kickBlock = target.blockAt(KICK_BLOCK);
     assert(kickBlock?.name === "stone", "kick block should exist for sneak left-click");
@@ -36,7 +43,13 @@ export async function run(ctx) {
     const kicked = await waitForChat(rider, () => target.dig(kickBlock, true).catch(() => {}), /kicked off/i);
     assert(kicked, "rider should receive a kick message from the ridden player");
     target.setControlState("sneak", false);
-    await wait(750);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MountKick",
+      "MountSeat",
+      false,
+      "MountPlugin target-kick detachment",
+    );
 
     const notMounted = await waitForChat(rider, () => rider.chat("/unmount"), /not mounted/i);
     assert(notMounted, "kicking should clear the rider's active mount session");
@@ -45,6 +58,13 @@ export async function run(ctx) {
     await rider.lookAt(nextTarget.entity.position.offset(0, 1.2, 0), true);
     const remounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MountSeatAgain/i);
     assert(remounted, "rider should be able to mount again after being kicked");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MountKick",
+      "MountSeatAgain",
+      true,
+      "MountPlugin target-kick replacement attachment",
+    );
   } finally {
     target.setControlState("sneak", false);
     rider.chat("/unmount");

@@ -1,4 +1,4 @@
-import { serverEntityExists, waitForChat } from "./helpers.js";
+import { serverEntityExists, waitForChat, waitForPlayerPassengerState } from "./helpers.js";
 
 export const name = "MountPlugin rider sneak dismounts cleanly";
 
@@ -26,11 +26,25 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MountSneakSeat/i);
     assert(mounted, "rider should mount the target before sneak-dismount");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MountSneakOff",
+      "MountSneakSeat",
+      true,
+      "MountPlugin sneak-dismount initial attachment",
+    );
     await wait(500);
 
     rider.setControlState("sneak", true);
     await wait(1000);
     rider.setControlState("sneak", false);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MountSneakOff",
+      "MountSneakSeat",
+      false,
+      "MountPlugin sneak-dismount detachment",
+    );
 
     const notMounted = await waitForChat(rider, () => rider.chat("/unmount"), /not mounted/i);
     assert(notMounted, "rider sneak-dismount should clear the active mount session");
@@ -43,6 +57,13 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const remounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MountSneakSeat/i);
     assert(remounted, "rider should be able to mount again after sneak-dismount");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MountSneakOff",
+      "MountSneakSeat",
+      true,
+      "MountPlugin sneak-dismount replacement attachment",
+    );
   } finally {
     rider.setControlState("sneak", false);
     rider.chat("/unmount");
