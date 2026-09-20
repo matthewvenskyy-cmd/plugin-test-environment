@@ -1206,6 +1206,13 @@ function scenarioQualityIssues(source, spec) {
       message: "Scenario defines Rocketlytra item or recipe helpers locally; import the shared helpers.js implementations instead."
     });
   }
+  if (definesPlayerPassengerNbtQuery(source)) {
+    issues.push({
+      severity: "warning",
+      path: scenarioPath,
+      message: "Scenario queries player Passengers NBT; use serverPlayerIsPassengerOf or waitForPlayerPassengerState instead."
+    });
+  }
   if (isBctCorebreakerDigScenario(source, spec) && !/assert(?:NoBctLeak|BctStateStable)/.test(source)) {
     issues.push({
       severity: "warning",
@@ -1270,6 +1277,10 @@ function definesLocalEquipmentDataParser(source) {
 
 function definesLocalRocketlytraHelpers(source) {
   return /function\s+(?:isRocketlytraWithCharges|rocketlytraRecipe)\s*\(/.test(source);
+}
+
+function definesPlayerPassengerNbtQuery(source) {
+  return /@a\[[^\]]*nbt=\{Passengers:\[\{\}\]\}/.test(source);
 }
 
 function definesManualDroppedItemCleanup(source, spec) {
@@ -2122,6 +2133,13 @@ async function runSelfTest() {
       { path: "tests/scenarios/local-rocketlytra-helper.js" }
     ).some((issue) => issue.message.includes("shared helpers.js implementations")),
     "scenarioQualityIssues should warn when scenarios duplicate Rocketlytra helpers"
+  );
+  assertSelf(
+    scenarioQualityIssues(
+      'return serverEntityExists(ctx, "@a[name=Seat,nbt={Passengers:[{}]}]");',
+      { path: "tests/scenarios/local-passenger-query.js" }
+    ).some((issue) => issue.message.includes("serverPlayerIsPassengerOf")),
+    "scenarioQualityIssues should warn when scenarios query player passenger NBT"
   );
   assertSelf(
     scenarioQualityIssues(

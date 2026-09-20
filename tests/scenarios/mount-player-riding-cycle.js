@@ -1,4 +1,4 @@
-import { waitForChat } from "./helpers.js";
+import { waitForChat, waitForPlayerPassengerState } from "./helpers.js";
 
 export const name = "MountPlugin player riding cycle";
 
@@ -17,10 +17,12 @@ export async function run(ctx) {
   await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
   const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MountTarget/i);
   assert(mounted, "MountPlugin should allow mounting another player through /mount");
+  await waitForPlayerPassengerState(ctx, "MountRider", "MountTarget", true, "MountPlugin riding cycle attachment");
 
   await wait(500);
   const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
   assert(unmounted, "MountPlugin should allow /unmount after player riding");
+  await waitForPlayerPassengerState(ctx, "MountRider", "MountTarget", false, "MountPlugin riding cycle detachment");
 
   await command("fill 19 79 -3 21 79 2 minecraft:air", 250);
 }

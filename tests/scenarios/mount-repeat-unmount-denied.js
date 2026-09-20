@@ -1,4 +1,4 @@
-import { serverEntityExists, waitForChat } from "./helpers.js";
+import { serverEntityExists, serverPlayerIsPassengerOf, waitForChat, waitForPlayerPassengerState } from "./helpers.js";
 
 export const name = "MountPlugin repeated unmount is denied safely";
 
@@ -26,15 +26,17 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MountUnSeat/i);
     assert(mounted, "initial /mount should mount the target player");
+    await waitForPlayerPassengerState(ctx, "MountUnAgain", "MountUnSeat", true, "repeated-unmount initial attachment");
 
     const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
     assert(unmounted, "first /unmount should dismount the rider");
+    await waitForPlayerPassengerState(ctx, "MountUnAgain", "MountUnSeat", false, "repeated-unmount initial detachment");
 
     const denied = await waitForChat(rider, () => rider.chat("/unmount"), /not mounted/i);
     assert(denied, "second /unmount should be denied after a successful dismount");
     assert(await playerExists(ctx, "MountUnAgain"), "repeated /unmount should not kill or disconnect the rider");
     assert(await playerExists(ctx, "MountUnSeat"), "repeated /unmount should not kill or disconnect the target");
-    assert(!(await hasPassenger(ctx, "MountUnSeat")), "repeated /unmount should not reattach a passenger to the target");
+    assert(!(await serverPlayerIsPassengerOf(ctx, "MountUnAgain", "MountUnSeat")), "repeated /unmount should not reattach the rider to the target");
   } finally {
     rider.chat("/unmount");
     await wait(500);
@@ -48,8 +50,4 @@ export async function run(ctx) {
 
 async function playerExists(ctx, playerName) {
   return serverEntityExists(ctx, `@a[name=${playerName}]`);
-}
-
-async function hasPassenger(ctx, playerName) {
-  return serverEntityExists(ctx, `@a[name=${playerName},nbt={Passengers:[{}]}]`);
 }
