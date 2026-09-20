@@ -5,9 +5,11 @@ import {
   placeCoreBlock,
   queryDroppedItemEntityCount,
   serverBlockIs,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted target Corebreaker drops owner inventory at core";
@@ -15,10 +17,8 @@ export const name = "Mounted target Corebreaker drops owner inventory at core";
 const CORE_BLOCK = new Vec3(440, 80, 1);
 const SUPPORT_BLOCK = new Vec3(440, 79, 1);
 const OWNER_FLOOR = new Vec3(440, 79, 0);
-const RIDER_FLOOR = new Vec3(441, 79, -1);
-const TARGET_FLOOR = new Vec3(441, 79, 1);
-const SAFE_RIDER_FLOOR = new Vec3(447, 79, -1);
-const SAFE_TARGET_FLOOR = new Vec3(447, 79, 1);
+const RIDER_FLOOR = new Vec3(443, 79, -1);
+const TARGET_FLOOR = new Vec3(443, 79, 1);
 const DROP_CENTER = CORE_BLOCK.offset(0.5, 0.5, 0.5);
 
 export async function run(ctx) {
@@ -44,16 +44,14 @@ export async function run(ctx) {
     await command("gamemode creative MTDropRider", 250);
     await command("gamemode creative MTDropBreaker", 250);
     await command("tp MTDropOwner 440 80 0 0 0", 500);
-    await command("tp MTDropRider 441 80 -1 0 0", 500);
-    await command("tp MTDropBreaker 441 80 1 180 0", 500);
+    await command("tp MTDropRider 443 80 -1 0 0", 500);
+    await command("tp MTDropBreaker 443 80 1 180 0", 500);
     await owner.waitForChunksToLoad();
     await rider.waitForChunksToLoad();
     await target.waitForChunksToLoad();
     await waitForBlock(owner, OWNER_FLOOR, "stone", "mounted target inventory-drop owner floor block");
     await waitForBlock(rider, RIDER_FLOOR, "stone", "mounted target inventory-drop rider floor block");
     await waitForBlock(target, TARGET_FLOOR, "stone", "mounted target inventory-drop target floor block");
-    await waitForBlock(rider, SAFE_RIDER_FLOOR, "stone", "mounted target inventory-drop safe rider floor block");
-    await waitForBlock(target, SAFE_TARGET_FLOOR, "stone", "mounted target inventory-drop safe target floor block");
     await command("gamemode survival MTDropOwner", 250);
     await command("gamemode survival MTDropRider", 250);
     await command("gamemode survival MTDropBreaker", 250);
@@ -67,7 +65,13 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MTDropBreaker/i);
     assert(mounted, "rider should mount the Corebreaker target before inventory-drop check");
-    await wait(750);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MTDropRider",
+      "MTDropBreaker",
+      true,
+      "mounted target inventory-drop attachment"
+    );
 
     const corebreaker = await waitForInventoryItem(target, isCorebreakerItem, "mounted target Corebreaker for inventory-drop check");
     await target.equip(corebreaker, "hand");
@@ -78,13 +82,25 @@ export async function run(ctx) {
     } catch {
       // CorePlugin cancels vanilla breaking and handles valid core destruction itself.
     }
-    await command("tp MTDropRider 447 80 -1 0 0", 250);
-    await command("tp MTDropBreaker 447 80 1 180 0", 250);
     await wait(2000);
 
     assert(await serverBlockIs(ctx, CORE_BLOCK, "air"), "mounted target Corebreaker should remove the owner's core");
     const droppedItems = await queryDroppedItemEntityCount(ctx, DROP_CENTER, 2.5);
     assert(droppedItems >= 1, `mounted target Corebreaker should drop owner inventory at the broken core location; found ${droppedItems} item entities`);
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MTDropRider", "MTDropBreaker"),
+      "target inventory-drop core break should leave the rider attached"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "rider should dismount cleanly after the target inventory-drop check");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MTDropRider",
+      "MTDropBreaker",
+      false,
+      "mounted target inventory-drop detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
