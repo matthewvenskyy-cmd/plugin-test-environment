@@ -9,9 +9,11 @@ import {
   queryBctDisplayCount,
   queryCorebreakerCharges,
   selectedItemHasNoDamage,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted rider repeated Corebreaker attempts do not leak BCT state";
@@ -66,12 +68,19 @@ export async function run(ctx) {
     await rider.lookAt(seat.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MRBctRepeatSeat/i);
     assert(mounted, "rider should mount the target before repeated BCT Corebreaker attempts");
-    await wait(500);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MRBctRepeat",
+      "MRBctRepeatSeat",
+      true,
+      "mounted rider repeated BCT attachment"
+    );
 
     for (let attempt = 1; attempt <= 2; attempt++) {
-      await command("tp MRBctRepeat 450 80 -2 0 0", 250);
-      await command("tp MRBctRepeatSeat 450 80 2 180 0", 250);
-      await wait(250);
+      assert(
+        await serverPlayerIsPassengerOf(ctx, "MRBctRepeat", "MRBctRepeatSeat"),
+        `attempt ${attempt} should run while the rider is mounted`
+      );
       const bct = rider.blockAt(BCT_BLOCK);
       assert(bct?.name === "crafter", `attempt ${attempt} should start with the BCT placed`);
       await rider.lookAt(BCT_BLOCK.offset(0.5, 0.5, 0.5), true);
@@ -93,7 +102,21 @@ export async function run(ctx) {
       assert(countMatchingItems(rider, isCorebreakerItem) === startingCorebreakers, `attempt ${attempt} should keep the Corebreaker item`);
       assert(await queryCorebreakerCharges(rider) === startingCharges, `attempt ${attempt} should not consume a Corebreaker charge`);
       assert(await selectedItemHasNoDamage(ctx, "MRBctRepeat"), `attempt ${attempt} should not damage the Corebreaker`);
+      assert(
+        await serverPlayerIsPassengerOf(ctx, "MRBctRepeat", "MRBctRepeatSeat"),
+        `attempt ${attempt} should leave the rider mounted`
+      );
     }
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "rider should dismount cleanly after repeated BCT attempts");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MRBctRepeat",
+      "MRBctRepeatSeat",
+      false,
+      "mounted rider repeated BCT detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
