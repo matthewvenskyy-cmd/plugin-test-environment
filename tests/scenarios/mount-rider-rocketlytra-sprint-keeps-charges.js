@@ -7,8 +7,9 @@ import {
   serverRecipeExists,
   waitForBlock,
   waitForChat,
-  waitForCondition,
   waitForInventoryItem,
+  waitForPlayerPassengerState,
+  waitForVehicle,
   waitForWindowSlot
 } from "./helpers.js";
 
@@ -58,7 +59,8 @@ export async function run(ctx) {
     await rider.lookAt(seat.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MntRocketSeat/i);
     assert(mounted, "Rocketlytra wearer should mount the target");
-    await waitForMountedTarget(rider);
+    await waitForVehicle(rider, "MntRocketSeat", "Rocketlytra rider mount state");
+    await waitForPlayerPassengerState(ctx, "MntRocketRider", "MntRocketSeat", true, "Rocketlytra seat to gain its rider");
 
     rider.setControlState("sprint", true);
     await wait(750);
@@ -74,6 +76,16 @@ export async function run(ctx) {
     );
     assert(equippedRocketlytra.name === "elytra", `mounted rider Rocketlytra should remain equipped, got ${displayText(equippedRocketlytra)}`);
     assert(countItemsByName(rider, "firework_rocket") === 0, "crafting should consume the mounted rider's three firework rockets");
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "Rocketlytra wearer should dismount cleanly");
+    await waitForPlayerPassengerState(ctx, "MntRocketRider", "MntRocketSeat", false, "Rocketlytra seat to release its rider");
+    await waitForWindowSlot(
+      rider.inventory,
+      CHEST_EQUIPMENT_SLOT,
+      isRocketlytraWithCharges(3),
+      "dismounted rider Rocketlytra retaining 3 charges"
+    );
   } finally {
     rider.setControlState("sprint", false);
     rider.chat("/unmount");
@@ -83,11 +95,4 @@ export async function run(ctx) {
     await command("fill 439 79 0 441 79 2 minecraft:air", 500);
     await command("forceload remove 439 0 441 2", 250);
   }
-}
-
-function waitForMountedTarget(rider) {
-  return waitForCondition(
-    () => rider.vehicle?.username === "MntRocketSeat" ? rider.vehicle : null,
-    { timeoutMs: 3000, label: "Mineflayer mounted target state" }
-  );
 }

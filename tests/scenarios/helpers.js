@@ -86,6 +86,23 @@ export async function waitForInventoryItem(bot, predicate, label, timeoutMs = 50
   );
 }
 
+export async function waitForVehicle(bot, vehicleUsername, label = `${bot.username} to mount ${vehicleUsername}`, timeoutMs = 5000) {
+  return waitForCondition(
+    () => bot.vehicle?.username === vehicleUsername ? bot.vehicle : null,
+    { timeoutMs, label }
+  );
+}
+
+export async function waitForPlayerPassengerState(ctx, riderName, vehicleName, hasPassenger, label, timeoutMs = 5000) {
+  return waitForCondition(
+    async () => {
+      const current = await serverPlayerIsPassengerOf(ctx, riderName, vehicleName);
+      return current === hasPassenger ? { hasPassenger: current } : null;
+    },
+    { timeoutMs, label: label ?? `${riderName} passenger state on ${vehicleName}: ${hasPassenger}` }
+  );
+}
+
 export async function waitForBlock(bot, position, blockName, label, timeoutMs = 5000) {
   return waitForCondition(
     () => {
@@ -409,6 +426,18 @@ export async function serverEntityExists(ctx, selector, options = {}) {
   });
 }
 
+export async function serverPlayerIsPassengerOf(ctx, riderName, vehicleName, timeoutMs = 1000) {
+  return serverCommandSucceeds(
+    ctx,
+    `execute as @a[name=${vehicleName}] on passengers if entity @s[name=${riderName}]`,
+    {
+      holder: "passenger_result",
+      label: `${riderName} riding ${vehicleName}`,
+      timeoutMs
+    }
+  );
+}
+
 export async function selectedItemHasNoDamage(ctx, username) {
   const hasDamage = await serverCommandSucceeds(ctx, `data get entity ${username} SelectedItem.components.minecraft:damage`, {
     holder: "item_damage",
@@ -455,7 +484,7 @@ export async function serverCommandSucceeds(ctx, commandText, options = {}) {
   const objective = "scenario_bool";
   const holder = options.holder ?? "command_result";
   await ctx.command(`scoreboard objectives add ${objective} dummy`, 100);
-  await ctx.command(`scoreboard players reset ${holder} ${objective}`, 100);
+  await ctx.command(`scoreboard players set ${holder} ${objective} 0`, 100);
   await ctx.command(`execute store success score ${holder} ${objective} run ${commandText}`, 100);
   const output = await runCommandUntil(ctx, `scoreboard players get ${holder} ${objective}`, new RegExp(`${holder} has [01] \\[`), {
     timeoutMs: options.timeoutMs ?? 1000,
