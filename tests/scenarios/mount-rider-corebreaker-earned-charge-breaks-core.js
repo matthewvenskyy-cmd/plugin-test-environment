@@ -6,10 +6,12 @@ import {
   placeCoreBlock,
   queryCorebreakerCharges,
   serverBlockIs,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
   waitForEvent,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted rider Corebreaker earned charge breaks player core";
@@ -82,7 +84,13 @@ export async function run(ctx) {
     await rider.lookAt(seat.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MEarnSeat/i);
     assert(mounted, "Corebreaker rider should mount the target before earned-charge checks");
-    await wait(750);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MEarnBreaker",
+      "MEarnSeat",
+      true,
+      "mounted rider earned-charge attachment"
+    );
 
     const corebreaker = await waitForInventoryItem(rider, isCorebreakerItem, "mounted rider Corebreaker with default charge");
     await rider.equip(corebreaker, "hand");
@@ -90,16 +98,35 @@ export async function run(ctx) {
     await breakCore(ctx, rider, FIRST_CORE, "mounted default charge should break the first core");
     assert(await serverBlockIs(ctx, FIRST_CORE, "air"), "mounted default Corebreaker charge should remove the first core");
     assert(await queryCorebreakerCharges(rider) === 0, "mounted default charge should be consumed before earning a kill charge");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MEarnBreaker", "MEarnSeat"),
+      "first core break should leave the Corebreaker rider mounted"
+    );
 
     await killVictimWithBreaker(ctx, victim);
     assert(await queryCorebreakerCharges(rider) === 1, "mounted rider unique kill should grant one Corebreaker charge");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MEarnBreaker", "MEarnSeat"),
+      "earned-charge kill should leave the Corebreaker rider mounted"
+    );
 
-    await command("tp MEarnBreaker 413 80 -2 0 0", 250);
-    await command("tp MEarnSeat 413 80 2 180 0", 250);
-    await wait(750);
     await breakCore(ctx, rider, SECOND_CORE, "mounted earned kill charge should break the second core");
     assert(await serverBlockIs(ctx, SECOND_CORE, "air"), "mounted earned kill charge should destroy the second core");
     assert(await queryCorebreakerCharges(rider) === 0, "mounted earned kill charge should be consumed after breaking the second core");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MEarnBreaker", "MEarnSeat"),
+      "second core break should leave the Corebreaker rider mounted"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "Corebreaker rider should dismount cleanly after earned-charge checks");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MEarnBreaker",
+      "MEarnSeat",
+      false,
+      "mounted rider earned-charge detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
@@ -140,8 +167,6 @@ async function killVictimWithBreaker(ctx, victim) {
   const { assert, command, wait } = ctx;
   await command("effect clear MEarnVictim", 250);
   await command("attribute MEarnVictim minecraft:max_health base set 20", 250);
-  await command("tp MEarnBreaker 413 80 -2 0 0", 250);
-  await command("tp MEarnSeat 413 80 2 180 0", 250);
   await command("tp MEarnVictim 414 80 -2 -90 0", 250);
   await wait(750);
   await command("data merge entity MEarnVictim {Health:20.0f,HurtTime:0s,DeathTime:0s,Invulnerable:0b}", 250);
