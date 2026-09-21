@@ -1,5 +1,13 @@
 import { Vec3 } from "vec3";
-import { giveClassItem, queryPlayerHealth, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import {
+  giveClassItem,
+  queryPlayerHealth,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted target Basic Mage food heals ally";
 
@@ -50,7 +58,13 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtFoodMage/i);
     assert(mounted, "rider should mount the Basic Mage target before ally-healing checks");
-    await wait(500);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MtFoodRide",
+      "MtFoodMage",
+      true,
+      "mounted target Basic Mage attachment"
+    );
 
     await giveClassItem(ctx, "MtFoodMage", "basic_mage_staff", "mounted target Basic Mage Staff give");
     await command("give MtFoodMage minecraft:apple", 500);
@@ -64,10 +78,10 @@ export async function run(ctx) {
     const apple = await waitForInventoryItem(target, (item) => item?.name === "apple", "mounted target healing apple");
     await target.equip(apple, "hand");
     await command("data merge entity MtFoodAlly {Health:20.0f,HurtTime:0s,DeathTime:0s,Invulnerable:0b}", 250);
-    await command("tp MtFoodRide 396 80 0 0 0", 250);
-    await command("tp MtFoodMage 396 80 2 180 0", 250);
-    await command("tp MtFoodAlly 397 80 2 -90 0", 250);
-    await wait(750);
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtFoodRide", "MtFoodMage"),
+      "target Basic Mage class selection should leave the rider attached"
+    );
     await target.lookAt(ally.entity.position.offset(0, 1.2, 0), true);
 
     const before = await queryPlayerHealth(ctx, "MtFoodAlly");
@@ -79,9 +93,20 @@ export async function run(ctx) {
 
     const after = await queryPlayerHealth(ctx, "MtFoodAlly");
     assert(after > before + 5.0, `mounted target shared food healing should restore about 6 health; before=${before}, after=${after}`);
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtFoodRide", "MtFoodMage"),
+      "mounted target ally healing should preserve the mount relationship"
+    );
 
-    rider.chat("/unmount");
-    await wait(500);
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "rider should dismount cleanly after target Basic Mage ally healing");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MtFoodRide",
+      "MtFoodMage",
+      false,
+      "mounted target Basic Mage detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
