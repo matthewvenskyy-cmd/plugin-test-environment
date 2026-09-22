@@ -1,5 +1,12 @@
 import { Vec3 } from "vec3";
-import { serverCommandSucceeds, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import {
+  serverCommandSucceeds,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted rider Necromancer darkness blinds target";
 
@@ -46,7 +53,13 @@ export async function run(ctx) {
     await rider.lookAt(seat.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MntNecroSeat/i);
     assert(mounted, "Necromancer darkness rider should mount the target before casting");
-    await wait(500);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MntNecroDark",
+      "MntNecroSeat",
+      true,
+      "mounted rider Necromancer darkness attachment"
+    );
 
     await command("classes give MntNecroDark necromancer_staff", 500);
     const staff = await waitForInventoryItem(rider, (item) => item?.name === "blaze_rod", "mounted rider Necromancer Staff");
@@ -57,19 +70,30 @@ export async function run(ctx) {
     assert(status, "mounted rider Necromancer Staff should set class status before casting darkness");
 
     await command("effect clear MntNecroBlind minecraft:blindness", 250);
-    await command("tp MntNecroDark 384 80 0 0 0", 250);
-    await command("tp MntNecroSeat 384 80 2 180 0", 250);
-    await command("tp MntNecroBlind 384 80 4 180 0", 250);
-    await wait(750);
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MntNecroDark", "MntNecroSeat"),
+      "Necromancer class selection should leave the darkness caster mounted"
+    );
 
     await rider.lookAt(victim.entity.position.offset(0, 1.5, 0), true);
     rider.activateItem();
     await wait(1000);
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MntNecroDark", "MntNecroSeat"),
+      "darkness staff activation should leave the Necromancer rider mounted"
+    );
 
     assert(await clearEffect(ctx, "MntNecroBlind", "minecraft:blindness", "Blindness"), "mounted Necromancer rider darkness should apply Blindness to the targeted player");
 
     const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
     assert(unmounted, "mounted Necromancer darkness checks should leave the mount session cleanly unmountable");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MntNecroDark",
+      "MntNecroSeat",
+      false,
+      "mounted rider Necromancer darkness detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
