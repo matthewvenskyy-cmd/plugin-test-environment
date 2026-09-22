@@ -1,5 +1,12 @@
 import { Vec3 } from "vec3";
-import { queryPlayerHealth, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import {
+  queryPlayerHealth,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted target Viking shield bashes target";
 
@@ -49,7 +56,13 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtShieldVik/i);
     assert(mounted, "rider should mount the Viking target before shield bash check");
-    await wait(500);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MtShieldRide",
+      "MtShieldVik",
+      true,
+      "mounted target Viking shield attachment"
+    );
 
     const shield = await waitForInventoryItem(target, (item) => item?.name === "shield", "mounted target Viking Shield class item");
     await target.equip(shield, "hand");
@@ -60,20 +73,34 @@ export async function run(ctx) {
 
     await command("attribute MtShieldVictim minecraft:max_health base set 20", 250);
     await command("data merge entity MtShieldVictim {Health:20.0f,HurtTime:0s,Invulnerable:0b}", 250);
-    await command("tp MtShieldRide 376 80 0 0 0", 250);
-    await command("tp MtShieldVik 376 80 2 180 0", 250);
-    await command("tp MtShieldVictim 377 80 2 -90 0", 250);
-    await wait(750);
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtShieldRide", "MtShieldVik"),
+      "target Viking class selection should leave the rider attached"
+    );
 
     const before = await queryPlayerHealth(ctx, "MtShieldVictim");
     await target.lookAt(victim.entity.position.offset(0, 1.4, 0), true);
     target.activateItem();
     await wait(1500);
     target.deactivateItem();
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtShieldRide", "MtShieldVik"),
+      "target shield activation should leave the rider attached"
+    );
 
     const after = await queryPlayerHealth(ctx, "MtShieldVictim");
     const damage = before - after;
     assert(damage >= 2.5, `mounted Viking target shield bash should damage the nearby target; before=${before}, after=${after}, damage=${damage}`);
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "rider should dismount cleanly after target Viking shield bash");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MtShieldRide",
+      "MtShieldVik",
+      false,
+      "mounted target Viking shield detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
