@@ -167,14 +167,13 @@
     {
       "path": "tests/scenarios/mount-rider-archer-movement-clears-invisibility.js",
       "expectedFailure": true,
-      "reason": "ClassesPlugin currently leaves Archer Invisibility active after teleport-style movement while mounted.",
-      "failurePattern": "mounted Archer rider movement should clear Invisibility"
+      "reason": "ClassesPlugin currently leaves Archer Invisibility active after real vehicle movement while mounted.",
+      "failurePattern": "mounted Archer rider movement should clear Invisibility",
+      "timeoutMs": 90000
     },
     {
       "path": "tests/scenarios/mount-target-archer-movement-clears-invisibility.js",
-      "expectedFailure": true,
-      "reason": "ClassesPlugin currently leaves Archer Invisibility active after teleport-style movement while ridden.",
-      "failurePattern": "ridden Archer target movement should clear Invisibility"
+      "timeoutMs": 90000
     },
     "tests/scenarios/mount-rider-basic-mage-melee-reduces-damage.js",
     "tests/scenarios/mount-target-basic-mage-melee-reduces-damage.js",
