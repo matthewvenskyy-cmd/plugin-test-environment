@@ -5,9 +5,11 @@ import {
   isCoreItem,
   isCorebreakerItem,
   queryDroppedItemEntityCount,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted rider bound items cannot be dropped";
@@ -46,7 +48,13 @@ export async function run(ctx) {
     await rider.lookAt(seat.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MountBoundSeat/i);
     assert(mounted, "rider should mount the target player before bound item drop attempts");
-    await wait(500);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MountBoundDrop",
+      "MountBoundSeat",
+      true,
+      "mounted rider bound-item drop attachment"
+    );
 
     const coreItem = await waitForInventoryItem(rider, isCoreItem, "mounted rider bound core item");
     const corebreaker = await waitForInventoryItem(rider, isCorebreakerItem, "mounted rider bound Corebreaker");
@@ -57,11 +65,29 @@ export async function run(ctx) {
     await wait(750);
     assert(countMatchingItems(rider, isCoreItem) === startingCoreItems, "mounted bound core item should stay in inventory after drop attempt");
     assert(await queryDroppedItemEntityCount(ctx, DROP_POSITION, 5) === 0, "mounted bound core drop attempt should not create an item entity");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MountBoundDrop", "MountBoundSeat"),
+      "bound core drop denial should leave the rider mounted"
+    );
 
     await tryToss(rider, corebreaker);
     await wait(750);
     assert(countMatchingItems(rider, isCorebreakerItem) === startingCorebreakers, "mounted Corebreaker should stay in inventory after drop attempt");
     assert(await queryDroppedItemEntityCount(ctx, DROP_POSITION, 5) === 0, "mounted Corebreaker drop attempt should not create an item entity");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MountBoundDrop", "MountBoundSeat"),
+      "Corebreaker drop denial should leave the rider mounted"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "bound-item rider should dismount cleanly after drop denials");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MountBoundDrop",
+      "MountBoundSeat",
+      false,
+      "mounted rider bound-item drop detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
