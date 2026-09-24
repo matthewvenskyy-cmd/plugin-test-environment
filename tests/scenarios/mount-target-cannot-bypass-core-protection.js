@@ -4,9 +4,11 @@ import {
   countItemsByName,
   placeCoreBlock,
   selectedItemHasNoDamage,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted target cannot bypass core protection";
@@ -59,7 +61,13 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtTgtProt/i);
     assert(mounted, "rider should mount the target player before target core protection break attempt");
-    await wait(500);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MtTgtProtR",
+      "MtTgtProt",
+      true,
+      "mounted target core-protection attachment"
+    );
 
     const core = await waitForBlock(target, CORE_BLOCK, "beacon", "placed core block");
     await target.lookAt(CORE_BLOCK.offset(0.5, 0.5, 0.5), true);
@@ -73,6 +81,20 @@ export async function run(ctx) {
     assert(target.blockAt(CORE_BLOCK)?.name === "beacon", "ridden plain-tool target should not remove another player's core");
     assert(countItemsByName(target, "diamond_pickaxe") === startingPickaxes, "ridden denied core break should keep the diamond pickaxe");
     assert(await selectedItemHasNoDamage(ctx, "MtTgtProt"), "ridden denied core break should not damage the diamond pickaxe");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtTgtProtR", "MtTgtProt"),
+      "cancelled target core break should leave the rider attached"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "rider should dismount cleanly after the target's denied core break");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MtTgtProtR",
+      "MtTgtProt",
+      false,
+      "mounted target core-protection detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);

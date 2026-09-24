@@ -1,5 +1,15 @@
 import { Vec3 } from "vec3";
-import { clearDroppedItems, countItemsByName, placeCoreBlock, selectedItemHasNoDamage, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import {
+  clearDroppedItems,
+  countItemsByName,
+  placeCoreBlock,
+  selectedItemHasNoDamage,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted rider cannot bypass core protection";
 
@@ -45,7 +55,13 @@ export async function run(ctx) {
   await rider.lookAt(mount.entity.position.offset(0, 1.2, 0), true);
   const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MountCoreSeat/i);
   assert(mounted, "rider should mount the target player before core break attempt");
-  await wait(750);
+  await waitForPlayerPassengerState(
+    ctx,
+    "MountCoreRider",
+    "MountCoreSeat",
+    true,
+    "mounted rider core-protection attachment"
+  );
 
   const target = await waitForBlock(rider, CORE_BLOCK, "beacon", "placed core block");
   assert(target?.name === "beacon", "mounted rider could not see the placed core");
@@ -60,9 +76,20 @@ export async function run(ctx) {
   assert(rider.blockAt(CORE_BLOCK)?.name === "beacon", "mounted plain-tool rider should not remove another player's core");
   assert(countItemsByName(rider, "diamond_pickaxe") === startingPickaxes, "mounted denied core break should keep the diamond pickaxe");
   assert(await selectedItemHasNoDamage(ctx, "MountCoreRider"), "mounted denied core break should not damage the diamond pickaxe");
+  assert(
+    await serverPlayerIsPassengerOf(ctx, "MountCoreRider", "MountCoreSeat"),
+    "cancelled core break should leave the protected-core rider mounted"
+  );
 
-  rider.chat("/unmount");
-  await wait(500);
+  const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+  assert(unmounted, "protected-core rider should dismount cleanly after the denied break");
+  await waitForPlayerPassengerState(
+    ctx,
+    "MountCoreRider",
+    "MountCoreSeat",
+    false,
+    "mounted rider core-protection detachment"
+  );
   await command("clear MountCoreRider minecraft:diamond_pickaxe", 250);
   await command(`setblock ${CORE_BLOCK.x} ${CORE_BLOCK.y} ${CORE_BLOCK.z} minecraft:air`, 250);
   await command("fill 29 79 -2 32 79 2 minecraft:air", 250);
