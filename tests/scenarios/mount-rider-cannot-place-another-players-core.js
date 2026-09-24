@@ -5,9 +5,11 @@ import {
   countMatchingItems,
   isCoreItem,
   serverBlockIs,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted rider cannot place another player's core";
@@ -69,7 +71,13 @@ export async function run(ctx) {
     await rider.lookAt(seat.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MountCoreSit/i);
     assert(mounted, "rider should mount the target player before wrong-owner core placement");
-    await wait(250);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MountCoreCopy",
+      "MountCoreSit",
+      true,
+      "mounted rider foreign-core placement attachment"
+    );
 
     const support = rider.blockAt(SUPPORT_BLOCK);
     assert(support?.name === "stone", "support block was not visible before mounted placement attempt");
@@ -82,6 +90,20 @@ export async function run(ctx) {
 
     assert(await serverBlockIs(ctx, CORE_BLOCK, "air"), "mounted denied wrong-owner core placement should leave the target empty");
     assert(countMatchingItems(rider, isCoreItem) === 1, "mounted denied wrong-owner core placement should keep the copied core item");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MountCoreCopy", "MountCoreSit"),
+      "denied foreign-core placement should leave the rider mounted"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "foreign-core rider should dismount cleanly after denied placement");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MountCoreCopy",
+      "MountCoreSit",
+      false,
+      "mounted rider foreign-core placement detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
