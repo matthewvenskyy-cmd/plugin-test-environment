@@ -6,9 +6,11 @@ import {
   queryCorebreakerCharges,
   selectedItemHasNoDamage,
   serverBlockIs,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted rider Corebreaker cannot break normal blocks";
@@ -49,7 +51,13 @@ export async function run(ctx) {
     await rider.lookAt(seat.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MCoreSeat/i);
     assert(mounted, "rider should mount the target player before Corebreaker attempt");
-    await wait(750);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MCorebreak",
+      "MCoreSeat",
+      true,
+      "mounted rider normal-block Corebreaker attachment"
+    );
 
     const corebreaker = await waitForInventoryItem(rider, isCorebreakerItem, "mounted rider Corebreaker");
     const startingCorebreakers = countMatchingItems(rider, isCorebreakerItem);
@@ -73,6 +81,20 @@ export async function run(ctx) {
     assert(countMatchingItems(rider, isCorebreakerItem) === startingCorebreakers, "mounted denied normal-block break should keep the Corebreaker item");
     assert(await queryCorebreakerCharges(rider) === startingCharges, "mounted denied normal-block break should not consume a Corebreaker charge");
     assert(await selectedItemHasNoDamage(ctx, "MCorebreak"), "mounted denied normal-block break should not damage the Corebreaker");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MCorebreak", "MCoreSeat"),
+      "normal-block Corebreaker denial should leave the rider mounted"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "Corebreaker rider should dismount cleanly after normal-block denial");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MCorebreak",
+      "MCoreSeat",
+      false,
+      "mounted rider normal-block Corebreaker detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);

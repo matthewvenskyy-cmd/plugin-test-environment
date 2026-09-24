@@ -6,9 +6,11 @@ import {
   queryCorebreakerCharges,
   selectedItemHasNoDamage,
   serverBlockIs,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted target Corebreaker cannot break normal blocks";
@@ -48,7 +50,13 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtTgtNorm/i);
     assert(mounted, "rider should mount the target player before target Corebreaker attempt");
-    await wait(500);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MtTgtNormR",
+      "MtTgtNorm",
+      true,
+      "mounted target normal-block Corebreaker attachment"
+    );
 
     const corebreaker = await waitForInventoryItem(target, isCorebreakerItem, "ridden target Corebreaker");
     const startingCorebreakers = countMatchingItems(target, isCorebreakerItem);
@@ -72,6 +80,20 @@ export async function run(ctx) {
     assert(countMatchingItems(target, isCorebreakerItem) === startingCorebreakers, "ridden target denied normal-block break should keep the Corebreaker item");
     assert(await queryCorebreakerCharges(target) === startingCharges, "ridden target denied normal-block break should not consume a Corebreaker charge");
     assert(await selectedItemHasNoDamage(ctx, "MtTgtNorm"), "ridden target denied normal-block break should not damage the Corebreaker");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtTgtNormR", "MtTgtNorm"),
+      "target normal-block Corebreaker denial should leave the rider attached"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "rider should dismount cleanly after target normal-block denial");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MtTgtNormR",
+      "MtTgtNorm",
+      false,
+      "mounted target normal-block Corebreaker detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
