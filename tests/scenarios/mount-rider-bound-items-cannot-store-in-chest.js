@@ -4,9 +4,11 @@ import {
   countMatchingItems,
   isCoreItem,
   isCorebreakerItem,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted rider bound items cannot be stored in chests";
@@ -49,7 +51,13 @@ export async function run(ctx) {
     await rider.lookAt(seat.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MntChestSeat/i);
     assert(mounted, "rider should mount the target player before chest storage attempts");
-    await wait(500);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MntChestRider",
+      "MntChestSeat",
+      true,
+      "mounted rider chest-storage attachment"
+    );
 
     const coreItem = await waitForInventoryItem(rider, isCoreItem, "mounted rider bound core item");
     const corebreaker = await waitForInventoryItem(rider, isCorebreakerItem, "mounted rider bound Corebreaker");
@@ -74,6 +82,20 @@ export async function run(ctx) {
 
     assert(countMatchingItems(rider, isCoreItem) === startingCoreItems, "mounted rider bound core item should stay in inventory after chest attempts");
     assert(countMatchingItems(rider, isCorebreakerItem) === startingCorebreakers, "mounted rider Corebreaker should stay in inventory after chest attempts");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MntChestRider", "MntChestSeat"),
+      "bound-item chest denials should leave the rider mounted"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "bound-item chest rider should dismount cleanly after storage denials");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MntChestRider",
+      "MntChestSeat",
+      false,
+      "mounted rider chest-storage detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
