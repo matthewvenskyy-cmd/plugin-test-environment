@@ -6,9 +6,11 @@ import {
   isCoreItem,
   isCorebreakerItem,
   placeBiggerCraftingTable,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted rider bound items cannot hotbar-swap into Bigger Crafting Table";
@@ -60,7 +62,13 @@ export async function run(ctx) {
     await rider.lookAt(seat.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MntHotBctS/i);
     assert(mounted, "rider should mount the target player before BCT hotbar-swap attempts");
-    await wait(500);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MntHotBctR",
+      "MntHotBctS",
+      true,
+      "mounted rider BCT hotbar-swap attachment"
+    );
 
     const startingCoreItems = countMatchingItems(rider, isCoreItem);
     const startingCorebreakers = countMatchingItems(rider, isCorebreakerItem);
@@ -72,6 +80,20 @@ export async function run(ctx) {
 
     assert(countMatchingItems(rider, isCoreItem) === startingCoreItems, "mounted rider bound core item count should stay stable after BCT hotbar-swap attempts");
     assert(countMatchingItems(rider, isCorebreakerItem) === startingCorebreakers, "mounted rider Corebreaker count should stay stable after BCT hotbar-swap attempts");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MntHotBctR", "MntHotBctS"),
+      "BCT hotbar-swap denials should leave the rider mounted"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "BCT hotbar-swap rider should dismount cleanly after storage denials");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MntHotBctR",
+      "MntHotBctS",
+      false,
+      "mounted rider BCT hotbar-swap detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
