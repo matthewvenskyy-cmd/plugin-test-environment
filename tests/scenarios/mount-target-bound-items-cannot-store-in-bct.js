@@ -6,9 +6,11 @@ import {
   isCoreItem,
   isCorebreakerItem,
   placeBiggerCraftingTable,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted target bound items cannot be stored in Bigger Crafting Table";
@@ -60,7 +62,13 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtTgtBct/i);
     assert(mounted, "rider should mount the target player before target BCT storage attempts");
-    await wait(500);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MtTgtBctR",
+      "MtTgtBct",
+      true,
+      "mounted target BCT-storage attachment"
+    );
 
     const coreItem = await waitForInventoryItem(target, isCoreItem, "mounted target bound core item");
     const corebreaker = await waitForInventoryItem(target, isCorebreakerItem, "mounted target bound Corebreaker");
@@ -85,6 +93,20 @@ export async function run(ctx) {
 
     assert(countMatchingItems(target, isCoreItem) === startingCoreItems, "ridden target bound core item should stay in inventory after BCT attempts");
     assert(countMatchingItems(target, isCorebreakerItem) === startingCorebreakers, "ridden target Corebreaker should stay in inventory after BCT attempts");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtTgtBctR", "MtTgtBct"),
+      "target bound-item BCT denials should leave the rider attached"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "rider should dismount cleanly after target BCT-storage denials");
+    await waitForPlayerPassengerState(
+      ctx,
+      "MtTgtBctR",
+      "MtTgtBct",
+      false,
+      "mounted target BCT-storage detachment"
+    );
   } finally {
     rider.chat("/unmount");
     await wait(500);
