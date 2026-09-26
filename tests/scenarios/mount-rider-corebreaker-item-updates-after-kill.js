@@ -5,10 +5,12 @@ import {
   displayText,
   isCorebreakerItem,
   queryCorebreakerCharges,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
   waitForEvent,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted rider Corebreaker item updates after unique kill";
@@ -56,17 +58,25 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MRLoreSeat/i);
     assert(mounted, "killer should mount the target before mounted Corebreaker lore checks");
-    await wait(750);
+    await waitForPlayerPassengerState(ctx, "MRLoreKiller", "MRLoreSeat", true, "mounted rider lore update attachment");
 
     await waitForInventoryItem(rider, isCorebreakerItem, "mounted rider Corebreaker before kill");
     const beforeCharges = await queryCorebreakerCharges(rider);
-    await killVictim(ctx, victim);
+    await killVictim(ctx, victim, "MRLoreKiller", "MRLoreSeat", "mounted rider lore kill");
     const afterCharges = await queryCorebreakerCharges(rider);
     assert(afterCharges === beforeCharges + 1, `mounted rider unique kill should add one Corebreaker charge; before=${beforeCharges}, after=${afterCharges}`);
 
     const corebreaker = await waitForInventoryItem(rider, isCorebreakerItem, "mounted rider updated Corebreaker item");
     const text = displayText(corebreaker);
     assert(text.includes("Charges: ") && text.includes(`"value":"${afterCharges}"`), `mounted rider Corebreaker item should show Charges: ${afterCharges}; item data=${text}`);
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MRLoreKiller", "MRLoreSeat"),
+      "mounted rider unique kill should leave the killer attached"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "mounted rider should dismount cleanly after the Corebreaker lore update");
+    await waitForPlayerPassengerState(ctx, "MRLoreKiller", "MRLoreSeat", false, "mounted rider lore update detachment");
   } finally {
     rider.chat("/unmount");
     await wait(500);
@@ -86,16 +96,15 @@ export async function run(ctx) {
   }
 }
 
-async function killVictim(ctx, victim) {
+async function killVictim(ctx, victim, riderName, vehicleName, label) {
   const { assert, command, wait } = ctx;
   await command("effect clear MRLoreVictim", 250);
   await command("attribute MRLoreVictim minecraft:max_health base set 20", 250);
-  await command("tp MRLoreKiller 428 80 -1 0 0", 250);
-  await command("tp MRLoreSeat 428 80 1 180 0", 250);
   await command("tp MRLoreVictim 429 80 -1 -90 0", 250);
   await wait(750);
   await command("data merge entity MRLoreVictim {Health:20.0f,HurtTime:0s,DeathTime:0s,Invulnerable:0b}", 250);
   await wait(750);
+  assert(await serverPlayerIsPassengerOf(ctx, riderName, vehicleName), `${label} should occur while the killer is mounted`);
 
   const respawned = waitForEvent(victim, "respawn", 8000);
   await applyServerDamage(ctx, "damage MRLoreVictim 40 minecraft:player_attack by MRLoreKiller", "mounted rider lore damage");
