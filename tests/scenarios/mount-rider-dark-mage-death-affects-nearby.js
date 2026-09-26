@@ -1,5 +1,15 @@
 import { Vec3 } from "vec3";
-import { applyServerDamage, serverCommandSucceeds, serverEntityExists, waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import {
+  applyServerDamage,
+  serverCommandSucceeds,
+  serverEntityExists,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForEvent,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted rider Dark Mage death affects nearby players";
 
@@ -51,7 +61,7 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MntDarkSeat/i);
     assert(mounted, "Dark Mage rider should mount the target before death effect check");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MntDarkRider", "MntDarkSeat", true, "mounted Dark Mage rider attachment");
 
     await command("classes give MntDarkRider dark_mage_staff", 500);
     const staff = await waitForInventoryItem(rider, (item) => item?.name === "blaze_rod", "mounted rider Dark Mage Staff");
@@ -60,15 +70,23 @@ export async function run(ctx) {
 
     const status = await waitForChat(rider, () => rider.chat("/classes status"), /Current class: Dark Mage/);
     assert(status, "mounted rider Dark Mage Staff should set class status before death");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MntDarkRider", "MntDarkSeat"),
+      "Dark Mage rider should still be mounted at lethal damage"
+    );
 
     const respawned = waitForEvent(rider, "respawn", 8000);
     await applyServerDamage(ctx, "damage MntDarkRider 40 minecraft:generic", "mounted Dark Mage rider death damage");
     await respawned;
+    await waitForPlayerPassengerState(ctx, "MntDarkRider", "MntDarkSeat", false, "mounted Dark Mage rider death detachment");
     await wait(1500);
 
     assert(await clearEffect(ctx, "MntDarkNear", "minecraft:wither", "Wither"), "mounted Dark Mage rider death should apply Wither to nearby players");
     assert(await clearEffect(ctx, "MntDarkNear", "minecraft:slowness", "Slowness"), "mounted Dark Mage rider death should apply Slowness to nearby players");
     assert(await playerExists(ctx, "MntDarkSeat"), "mounted Dark Mage rider death should not kill or disconnect the ridden target");
+
+    const notMounted = await waitForChat(rider, () => rider.chat("/unmount"), /not mounted/i);
+    assert(notMounted, "mounted Dark Mage rider death should clear the active mount session");
   } finally {
     rider.chat("/unmount");
     await wait(500);

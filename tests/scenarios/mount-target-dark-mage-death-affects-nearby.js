@@ -1,5 +1,15 @@
 import { Vec3 } from "vec3";
-import { applyServerDamage, serverCommandSucceeds, serverEntityExists, waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import {
+  applyServerDamage,
+  serverCommandSucceeds,
+  serverEntityExists,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForEvent,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted target Dark Mage death affects nearby players";
 
@@ -51,7 +61,7 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtDarkMage/i);
     assert(mounted, "rider should mount the Dark Mage target before target death effect check");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MtDarkRide", "MtDarkMage", true, "mounted Dark Mage target attachment");
 
     await command("classes give MtDarkMage dark_mage_staff", 500);
     const staff = await waitForInventoryItem(target, (item) => item?.name === "blaze_rod", "mounted target Dark Mage Staff");
@@ -60,10 +70,15 @@ export async function run(ctx) {
 
     const status = await waitForChat(target, () => target.chat("/classes status"), /Current class: Dark Mage/);
     assert(status, "mounted target Dark Mage Staff should set class status before death");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtDarkRide", "MtDarkMage"),
+      "Dark Mage target should still carry the rider at lethal damage"
+    );
 
     const respawned = waitForEvent(target, "respawn", 8000);
     await applyServerDamage(ctx, "damage MtDarkMage 40 minecraft:generic", "mounted Dark Mage target death damage");
     await respawned;
+    await waitForPlayerPassengerState(ctx, "MtDarkRide", "MtDarkMage", false, "mounted Dark Mage target death detachment");
     await wait(1500);
 
     assert(await clearEffect(ctx, "MtDarkNear", "minecraft:wither", "Wither"), "mounted Dark Mage target death should apply Wither to nearby players");
