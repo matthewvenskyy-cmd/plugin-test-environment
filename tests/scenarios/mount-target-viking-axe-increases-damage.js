@@ -1,5 +1,15 @@
 import { Vec3 } from "vec3";
-import { applyServerDamage, giveClassItem, queryPlayerHealth, serverEntityExists, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import {
+  applyServerDamage,
+  giveClassItem,
+  queryPlayerHealth,
+  serverEntityExists,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted target Viking axe increases damage";
 
@@ -51,9 +61,9 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtVikingHit/i);
     assert(mounted, "rider should mount the Viking target before mounted axe damage checks");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MtVikingRide", "MtVikingHit", true, "mounted Viking axe target attachment");
 
-    const plainDamage = await measureOutgoingDamage(ctx, "mounted target plain axe");
+    const plainDamage = await measureOutgoingDamage(ctx, "MtVikingRide", "MtVikingHit", "mounted target plain axe");
 
     await command("clear MtVikingHit", 250);
     await giveClassItem(ctx, "MtVikingHit", "double_long_axe", "mounted target Viking Axe give");
@@ -64,11 +74,19 @@ export async function run(ctx) {
     const status = await waitForChat(target, () => target.chat("/classes status"), /Current class: Viking/);
     assert(status, "mounted target Viking class axe should set class status before damage check");
 
-    const vikingDamage = await measureOutgoingDamage(ctx, "mounted target Viking axe");
+    const vikingDamage = await measureOutgoingDamage(ctx, "MtVikingRide", "MtVikingHit", "mounted target Viking axe");
     assert(vikingDamage > plainDamage + 1.0, `mounted Viking target axe damage should exceed plain axe damage; plain=${plainDamage}, viking=${vikingDamage}`);
     assert(await playerExists(ctx, "MtVikingRide"), "mounted target Viking axe checks should not kill or disconnect the rider");
     assert(await playerExists(ctx, "MtVikingHit"), "mounted target Viking axe checks should not kill or disconnect the target");
     assert(await playerExists(ctx, "MtVikingVictim"), "mounted target Viking axe checks should not kill or disconnect the victim");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtVikingRide", "MtVikingHit"),
+      "Viking target axe damage measurements should leave the rider attached"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "rider should dismount cleanly after Viking target axe checks");
+    await waitForPlayerPassengerState(ctx, "MtVikingRide", "MtVikingHit", false, "mounted Viking axe target detachment");
   } finally {
     rider.chat("/unmount");
     await wait(500);
@@ -86,17 +104,16 @@ export async function run(ctx) {
   }
 }
 
-async function measureOutgoingDamage(ctx, label) {
+async function measureOutgoingDamage(ctx, riderName, vehicleName, label) {
   const { assert, command, wait } = ctx;
   await command("effect clear MtVikingVictim", 250);
   await command("attribute MtVikingVictim minecraft:max_health base set 40", 250);
   await command("effect give MtVikingVictim minecraft:instant_health 1 10 true", 250);
-  await command("tp MtVikingRide 344 80 0 0 0", 250);
-  await command("tp MtVikingHit 344 80 2 180 0", 250);
   await command("tp MtVikingVictim 345 80 2 -90 0", 250);
   await wait(750);
   await command("data merge entity MtVikingVictim {Health:40.0f,HurtTime:0s,DeathTime:0s,Invulnerable:0b}", 250);
   await wait(1000);
+  assert(await serverPlayerIsPassengerOf(ctx, riderName, vehicleName), `${label} should be measured while mounted`);
 
   const before = await queryPlayerHealth(ctx, "MtVikingVictim");
   await applyServerDamage(ctx, "damage MtVikingVictim 10 minecraft:generic by MtVikingHit", `${label} damage`);
