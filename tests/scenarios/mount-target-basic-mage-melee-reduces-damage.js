@@ -1,5 +1,15 @@
 import { Vec3 } from "vec3";
-import { applyServerDamage, giveClassItem, queryPlayerHealth, serverEntityExists, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import {
+  applyServerDamage,
+  giveClassItem,
+  queryPlayerHealth,
+  serverEntityExists,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted target Basic Mage melee reduces damage";
 
@@ -48,9 +58,9 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtMageHit/i);
     assert(mounted, "rider should mount the Basic Mage target before mounted melee checks");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MtMageRide", "MtMageHit", true, "mounted Basic Mage target attachment");
 
-    const plainDamage = await measureOutgoingDamage(ctx, "mounted plain target");
+    const plainDamage = await measureOutgoingDamage(ctx, "MtMageRide", "MtMageHit", "mounted plain target");
 
     await giveClassItem(ctx, "MtMageHit", "basic_mage_staff", "mounted target Basic Mage Staff give");
     const staff = await waitForInventoryItem(target, (item) => item?.name === "blaze_rod", "mounted target Basic Mage Staff");
@@ -60,11 +70,19 @@ export async function run(ctx) {
     const status = await waitForChat(target, () => target.chat("/classes status"), /Current class: Basic Mage/);
     assert(status, "mounted target Basic Mage Staff should set class status before melee penalty check");
 
-    const mageDamage = await measureOutgoingDamage(ctx, "mounted Basic Mage target");
+    const mageDamage = await measureOutgoingDamage(ctx, "MtMageRide", "MtMageHit", "mounted Basic Mage target");
     assert(mageDamage < plainDamage * 0.6, `mounted Basic Mage target melee damage should be reduced; plain=${plainDamage}, mage=${mageDamage}`);
     assert(await playerExists(ctx, "MtMageRide"), "mounted target Basic Mage melee checks should not kill or disconnect the rider");
     assert(await playerExists(ctx, "MtMageHit"), "mounted target Basic Mage melee checks should not kill or disconnect the target");
     assert(await playerExists(ctx, "MtMageVictim"), "mounted target Basic Mage melee checks should not kill or disconnect the victim");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtMageRide", "MtMageHit"),
+      "Basic Mage target damage measurements should leave the rider attached"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "rider should dismount cleanly after Basic Mage target melee checks");
+    await waitForPlayerPassengerState(ctx, "MtMageRide", "MtMageHit", false, "mounted Basic Mage target detachment");
   } finally {
     rider.chat("/unmount");
     await wait(500);
@@ -82,17 +100,16 @@ export async function run(ctx) {
   }
 }
 
-async function measureOutgoingDamage(ctx, label) {
+async function measureOutgoingDamage(ctx, riderName, vehicleName, label) {
   const { assert, command, wait } = ctx;
   await command("effect clear MtMageVictim", 250);
   await command("attribute MtMageVictim minecraft:max_health base set 40", 250);
   await command("effect give MtMageVictim minecraft:instant_health 1 10 true", 250);
-  await command("tp MtMageRide 336 80 0 0 0", 250);
-  await command("tp MtMageHit 336 80 2 180 0", 250);
   await command("tp MtMageVictim 337 80 2 -90 0", 250);
   await wait(750);
   await command("data merge entity MtMageVictim {Health:40.0f,HurtTime:0s,DeathTime:0s,Invulnerable:0b}", 250);
   await wait(1000);
+  assert(await serverPlayerIsPassengerOf(ctx, riderName, vehicleName), `${label} should be measured while mounted`);
 
   const before = await queryPlayerHealth(ctx, "MtMageVictim");
   await applyServerDamage(ctx, "damage MtMageVictim 10 minecraft:generic by MtMageHit", `${label} damage`);
