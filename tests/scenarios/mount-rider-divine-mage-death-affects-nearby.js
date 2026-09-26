@@ -1,5 +1,15 @@
 import { Vec3 } from "vec3";
-import { applyServerDamage, serverCommandSucceeds, serverEntityExists, waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import {
+  applyServerDamage,
+  serverCommandSucceeds,
+  serverEntityExists,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForEvent,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted rider Divine Mage death affects nearby players";
 
@@ -51,7 +61,7 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MntDivSeat/i);
     assert(mounted, "Divine Mage rider should mount the target before death effect check");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MntDivRider", "MntDivSeat", true, "mounted Divine Mage rider attachment");
 
     await command("classes give MntDivRider divine_mage_staff", 500);
     const staff = await waitForInventoryItem(rider, (item) => item?.name === "blaze_rod", "mounted rider Divine Mage Staff");
@@ -60,15 +70,23 @@ export async function run(ctx) {
 
     const status = await waitForChat(rider, () => rider.chat("/classes status"), /Current class: Divine Mage/);
     assert(status, "mounted rider Divine Mage Staff should set class status before death");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MntDivRider", "MntDivSeat"),
+      "Divine Mage rider should still be mounted at lethal damage"
+    );
 
     const respawned = waitForEvent(rider, "respawn", 8000);
     await applyServerDamage(ctx, "damage MntDivRider 40 minecraft:generic", "mounted Divine Mage rider death damage");
     await respawned;
+    await waitForPlayerPassengerState(ctx, "MntDivRider", "MntDivSeat", false, "mounted Divine Mage rider death detachment");
     await wait(1500);
 
     assert(await clearEffect(ctx, "MntDivNear", "minecraft:blindness", "Blindness"), "mounted Divine Mage rider death should apply Blindness to nearby players");
     assert(await clearEffect(ctx, "MntDivNear", "minecraft:slowness", "Slowness"), "mounted Divine Mage rider death should apply Slowness to nearby players");
     assert(await playerExists(ctx, "MntDivSeat"), "mounted Divine Mage rider death should not kill or disconnect the ridden target");
+
+    const notMounted = await waitForChat(rider, () => rider.chat("/unmount"), /not mounted/i);
+    assert(notMounted, "mounted Divine Mage rider death should clear the active mount session");
   } finally {
     rider.chat("/unmount");
     await wait(500);

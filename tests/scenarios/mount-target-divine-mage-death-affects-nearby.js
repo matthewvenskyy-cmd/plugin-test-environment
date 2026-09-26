@@ -1,5 +1,15 @@
 import { Vec3 } from "vec3";
-import { applyServerDamage, serverCommandSucceeds, serverEntityExists, waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import {
+  applyServerDamage,
+  serverCommandSucceeds,
+  serverEntityExists,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForEvent,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted target Divine Mage death affects nearby players";
 
@@ -51,7 +61,7 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtDivMage/i);
     assert(mounted, "rider should mount the Divine Mage target before target death effect check");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MtDivRide", "MtDivMage", true, "mounted Divine Mage target attachment");
 
     await command("classes give MtDivMage divine_mage_staff", 500);
     const staff = await waitForInventoryItem(target, (item) => item?.name === "blaze_rod", "mounted target Divine Mage Staff");
@@ -60,10 +70,15 @@ export async function run(ctx) {
 
     const status = await waitForChat(target, () => target.chat("/classes status"), /Current class: Divine Mage/);
     assert(status, "mounted target Divine Mage Staff should set class status before death");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtDivRide", "MtDivMage"),
+      "Divine Mage target should still carry the rider at lethal damage"
+    );
 
     const respawned = waitForEvent(target, "respawn", 8000);
     await applyServerDamage(ctx, "damage MtDivMage 40 minecraft:generic", "mounted Divine Mage target death damage");
     await respawned;
+    await waitForPlayerPassengerState(ctx, "MtDivRide", "MtDivMage", false, "mounted Divine Mage target death detachment");
     await wait(1500);
 
     assert(await clearEffect(ctx, "MtDivNear", "minecraft:blindness", "Blindness"), "mounted Divine Mage target death should apply Blindness to nearby players");
