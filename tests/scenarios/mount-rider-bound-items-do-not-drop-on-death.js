@@ -9,7 +9,8 @@ import {
   waitForBlock,
   waitForChat,
   waitForEvent,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted rider bound items do not drop on death";
@@ -51,12 +52,25 @@ export async function run(ctx) {
     await rider.lookAt(seat.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MountDeathSeat/i);
     assert(mounted, "rider should mount the target player before bound item death-drop check");
-    await wait(500);
+    await waitForPlayerPassengerState(
+      ctx,
+      "MountDeathDrop",
+      "MountDeathSeat",
+      true,
+      "bound-item rider death initial attachment"
+    );
 
     await clearDroppedItems(ctx);
     const respawned = waitForEvent(rider, "respawn", 8000);
     await command("kill MountDeathDrop", 500);
     await respawned;
+    await waitForPlayerPassengerState(
+      ctx,
+      "MountDeathDrop",
+      "MountDeathSeat",
+      false,
+      "bound-item rider death detachment"
+    );
     await wait(1500);
 
     const droppedItems = await queryDroppedItemEntityCount(ctx, DEATH_POSITION, 5);
