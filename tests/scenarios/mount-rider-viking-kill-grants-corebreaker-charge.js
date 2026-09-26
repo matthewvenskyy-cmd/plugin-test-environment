@@ -1,5 +1,15 @@
 import { Vec3 } from "vec3";
-import { applyServerDamage, queryCorebreakerCharges, serverEntityExists, waitForBlock, waitForChat, waitForEvent, waitForInventoryItem } from "./helpers.js";
+import {
+  applyServerDamage,
+  queryCorebreakerCharges,
+  serverEntityExists,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForEvent,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted rider Viking kill grants one Corebreaker charge";
 
@@ -50,7 +60,7 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MntVikingSeat/i);
     assert(mounted, "Viking rider should mount before the mounted kill charge check");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MntVikingKill", "MntVikingSeat", true, "mounted Viking rider kill attachment");
 
     const axe = await waitForInventoryItem(rider, (item) => item?.name === "iron_axe", "mounted rider Viking class axe");
     await rider.equip(axe, "hand");
@@ -60,13 +70,21 @@ export async function run(ctx) {
     assert(status, "mounted rider Viking axe should set class status before the kill");
 
     const beforeCharges = await queryCorebreakerCharges(rider);
-    await killVictim(ctx, victim);
+    await killVictim(ctx, victim, "MntVikingKill", "MntVikingSeat", "mounted Viking rider kill");
     const afterCharges = await queryCorebreakerCharges(rider);
 
     assert(afterCharges === beforeCharges + 1, `mounted Viking rider kill should add exactly one Corebreaker charge; before=${beforeCharges}, after=${afterCharges}`);
     assert(await playerExists(ctx, "MntVikingKill"), "mounted Viking kill charge check should not kill or disconnect the rider");
     assert(await playerExists(ctx, "MntVikingSeat"), "mounted Viking kill charge check should not kill or disconnect the target");
     assert(await playerExists(ctx, "MntVikingVic"), "mounted Viking kill charge check should leave the victim online after respawn");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MntVikingKill", "MntVikingSeat"),
+      "Viking rider kill should leave the killer mounted"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "Viking rider should dismount cleanly after the charge check");
+    await waitForPlayerPassengerState(ctx, "MntVikingKill", "MntVikingSeat", false, "mounted Viking rider kill detachment");
   } finally {
     rider.chat("/unmount");
     await wait(500);
@@ -87,16 +105,15 @@ export async function run(ctx) {
   }
 }
 
-async function killVictim(ctx, victim) {
+async function killVictim(ctx, victim, riderName, vehicleName, label) {
   const { assert, command, wait } = ctx;
   await command("effect clear MntVikingVic", 250);
   await command("attribute MntVikingVic minecraft:max_health base set 20", 250);
-  await command("tp MntVikingKill 348 80 0 0 0", 250);
-  await command("tp MntVikingSeat 348 80 2 180 0", 250);
   await command("tp MntVikingVic 349 80 0 -90 0", 250);
   await wait(750);
   await command("data merge entity MntVikingVic {Health:20.0f,HurtTime:0s,DeathTime:0s,Invulnerable:0b}", 250);
   await wait(750);
+  assert(await serverPlayerIsPassengerOf(ctx, riderName, vehicleName), `${label} should occur while the killer is mounted`);
 
   const respawned = waitForEvent(victim, "respawn", 8000);
   await applyServerDamage(ctx, "damage MntVikingVic 40 minecraft:generic by MntVikingKill", "mounted Viking kill damage");
