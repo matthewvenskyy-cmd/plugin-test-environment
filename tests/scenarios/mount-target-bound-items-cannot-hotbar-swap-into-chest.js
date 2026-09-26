@@ -4,9 +4,11 @@ import {
   countMatchingItems,
   isCoreItem,
   isCorebreakerItem,
+  serverPlayerIsPassengerOf,
   waitForBlock,
   waitForChat,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForPlayerPassengerState
 } from "./helpers.js";
 
 export const name = "Mounted target bound items cannot hotbar-swap into chests";
@@ -49,18 +51,26 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtTgtHotbar/i);
     assert(mounted, "rider should mount the target player before target hotbar-swap attempts");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MtTgtHotbarR", "MtTgtHotbar", true, "mounted target chest hotbar-swap attachment");
 
     const startingCoreItems = countMatchingItems(target, isCoreItem);
     const startingCorebreakers = countMatchingItems(target, isCorebreakerItem);
     assert(startingCoreItems > 0, "ridden target bound core item should be present before hotbar-swap attempts");
     assert(startingCorebreakers > 0, "ridden target Corebreaker should be present before hotbar-swap attempts");
 
-    await assertCannotHotbarSwap(ctx, target, isCoreItem, startingCoreItems, "mounted target core item");
-    await assertCannotHotbarSwap(ctx, target, isCorebreakerItem, startingCorebreakers, "mounted target Corebreaker");
+    await assertCannotHotbarSwap(ctx, target, isCoreItem, startingCoreItems, "MtTgtHotbarR", "MtTgtHotbar", "mounted target core item");
+    await assertCannotHotbarSwap(ctx, target, isCorebreakerItem, startingCorebreakers, "MtTgtHotbarR", "MtTgtHotbar", "mounted target Corebreaker");
 
     assert(countMatchingItems(target, isCoreItem) === startingCoreItems, "ridden target bound core item count should stay stable after hotbar-swap attempts");
     assert(countMatchingItems(target, isCorebreakerItem) === startingCorebreakers, "ridden target Corebreaker count should stay stable after hotbar-swap attempts");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtTgtHotbarR", "MtTgtHotbar"),
+      "target chest hotbar-swap denials should leave the rider attached"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "rider should dismount cleanly after target chest hotbar-swap denials");
+    await waitForPlayerPassengerState(ctx, "MtTgtHotbarR", "MtTgtHotbar", false, "mounted target chest hotbar-swap detachment");
   } finally {
     rider.chat("/unmount");
     await wait(500);
@@ -71,7 +81,7 @@ export async function run(ctx) {
   }
 }
 
-async function assertCannotHotbarSwap(ctx, bot, predicate, startingCount, label) {
+async function assertCannotHotbarSwap(ctx, bot, predicate, startingCount, riderName, vehicleName, label) {
   const { assert, wait } = ctx;
   const item = await waitForInventoryItem(bot, predicate, `bound ${label}`);
   await bot.equip(item, "hand");
@@ -88,6 +98,7 @@ async function assertCannotHotbarSwap(ctx, bot, predicate, startingCount, label)
 
   const chest = await tryOpenChest(bot, chestBlock);
   if (!chest) {
+    assert(await serverPlayerIsPassengerOf(ctx, riderName, vehicleName), `${label} blocked chest access should leave the rider mounted`);
     assert(countMatchingItems(bot, predicate) === startingCount, `${label} should remain when mounted target chest access is blocked`);
     return;
   }
@@ -104,6 +115,7 @@ async function assertCannotHotbarSwap(ctx, bot, predicate, startingCount, label)
   }
   const denied = await deniedPromise;
   await wait(750);
+  assert(await serverPlayerIsPassengerOf(ctx, riderName, vehicleName), `${label} hotbar swap should leave the rider mounted`);
   if (denied) {
     assert(/Core items cannot be dropped, traded, or stored\./.test(denied), `${label} hotbar swap into chest should be denied`);
   }
