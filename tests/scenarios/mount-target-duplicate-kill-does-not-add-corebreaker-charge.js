@@ -1,5 +1,14 @@
 import { Vec3 } from "vec3";
-import { applyServerDamage, clearDroppedItems, queryCorebreakerCharges, waitForBlock, waitForChat, waitForEvent } from "./helpers.js";
+import {
+  applyServerDamage,
+  clearDroppedItems,
+  queryCorebreakerCharges,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForEvent,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted target duplicate kill does not add Corebreaker charge";
 
@@ -46,16 +55,24 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MTDupKiller/i);
     assert(mounted, "rider should mount the killer target before duplicate-kill charge checks");
-    await wait(750);
+    await waitForPlayerPassengerState(ctx, "MTDupRider", "MTDupKiller", true, "mounted target duplicate-kill attachment");
 
     const startingCharges = await queryCorebreakerCharges(target);
-    await killVictim(ctx, victim);
+    await killVictim(ctx, victim, "MTDupRider", "MTDupKiller", "mounted target first kill");
     const firstCharges = await queryCorebreakerCharges(target);
     assert(firstCharges === startingCharges + 1, `mounted target first unique kill should add one Corebreaker charge; before=${startingCharges}, after=${firstCharges}`);
 
-    await killVictim(ctx, victim);
+    await killVictim(ctx, victim, "MTDupRider", "MTDupKiller", "mounted target duplicate kill");
     const secondCharges = await queryCorebreakerCharges(target);
     assert(secondCharges === firstCharges, `mounted target duplicate victim kill should not add another Corebreaker charge; first=${firstCharges}, second=${secondCharges}`);
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MTDupRider", "MTDupKiller"),
+      "target duplicate-kill checks should leave the rider attached"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "rider should dismount cleanly after target duplicate-kill checks");
+    await waitForPlayerPassengerState(ctx, "MTDupRider", "MTDupKiller", false, "mounted target duplicate-kill detachment");
   } finally {
     rider.chat("/unmount");
     await wait(500);
@@ -74,16 +91,15 @@ export async function run(ctx) {
   }
 }
 
-async function killVictim(ctx, victim) {
+async function killVictim(ctx, victim, riderName, vehicleName, label) {
   const { assert, command, wait } = ctx;
   await command("effect clear MTDupVictim", 250);
   await command("attribute MTDupVictim minecraft:max_health base set 20", 250);
-  await command("tp MTDupRider 424 80 -1 0 0", 250);
-  await command("tp MTDupKiller 424 80 1 180 0", 250);
   await command("tp MTDupVictim 425 80 1 -90 0", 250);
   await wait(750);
   await command("data merge entity MTDupVictim {Health:20.0f,HurtTime:0s,DeathTime:0s,Invulnerable:0b}", 250);
   await wait(750);
+  assert(await serverPlayerIsPassengerOf(ctx, riderName, vehicleName), `${label} should occur while the killer is mounted`);
 
   const respawned = waitForEvent(victim, "respawn", 8000);
   await applyServerDamage(ctx, "damage MTDupVictim 40 minecraft:player_attack by MTDupKiller", "mounted target duplicate-kill damage");
