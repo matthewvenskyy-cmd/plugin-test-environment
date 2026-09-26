@@ -1,5 +1,14 @@
 import { Vec3 } from "vec3";
-import { applyServerDamage, queryPlayerHealth, serverEntityExists, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import {
+  applyServerDamage,
+  queryPlayerHealth,
+  serverEntityExists,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted target Knight reduces incoming sword damage";
 
@@ -52,9 +61,9 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtKnightHit/i);
     assert(mounted, "rider should mount the target before mounted Knight damage checks");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MtKnightHitR", "MtKnightHit", true, "mounted Knight target attachment");
 
-    const plainDamage = await measureIncomingDamage(ctx, "mounted plain target");
+    const plainDamage = await measureIncomingDamage(ctx, "MtKnightHitR", "MtKnightHit", "mounted plain target");
 
     await command("classes give MtKnightHit long_sword", 500);
     const classSword = await waitForInventoryItem(target, (item) => item?.name === "iron_sword", "mounted target Knight Long Sword");
@@ -64,10 +73,18 @@ export async function run(ctx) {
     const status = await waitForChat(target, () => target.chat("/classes status"), /Current class: Knight/);
     assert(status, "mounted target Long Sword should set class status before damage reduction check");
 
-    const knightDamage = await measureIncomingDamage(ctx, "mounted Knight target");
+    const knightDamage = await measureIncomingDamage(ctx, "MtKnightHitR", "MtKnightHit", "mounted Knight target");
     assert(knightDamage < plainDamage * 0.75, `mounted Knight target should reduce incoming sword damage; plain=${plainDamage}, knight=${knightDamage}`);
     assert(await playerExists(ctx, "MtKnightHitR"), "mounted Knight damage checks should not kill or disconnect the rider");
     assert(await playerExists(ctx, "MtKnightHit"), "mounted Knight damage checks should not kill or disconnect the target");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtKnightHitR", "MtKnightHit"),
+      "Knight target damage measurements should leave the rider attached"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "rider should dismount cleanly after Knight target damage checks");
+    await waitForPlayerPassengerState(ctx, "MtKnightHitR", "MtKnightHit", false, "mounted Knight target detachment");
   } finally {
     rider.chat("/unmount");
     await wait(500);
@@ -85,17 +102,16 @@ export async function run(ctx) {
   }
 }
 
-async function measureIncomingDamage(ctx, label) {
+async function measureIncomingDamage(ctx, riderName, vehicleName, label) {
   const { assert, command, wait } = ctx;
   await command("effect clear MtKnightHit", 250);
   await command("attribute MtKnightHit minecraft:max_health base set 40", 250);
   await command("effect give MtKnightHit minecraft:instant_health 1 10 true", 250);
-  await command("tp MtKnightHitR 320 80 0 0 0", 250);
-  await command("tp MtKnightHit 320 80 2 180 0", 250);
   await command("tp MtKnightAtk 321 80 2 -90 0", 250);
   await wait(750);
   await command("data merge entity MtKnightHit {Health:40.0f,HurtTime:0s,DeathTime:0s,Invulnerable:0b}", 250);
   await wait(1000);
+  assert(await serverPlayerIsPassengerOf(ctx, riderName, vehicleName), `${label} should be measured while mounted`);
 
   const before = await queryPlayerHealth(ctx, "MtKnightHit");
   await applyServerDamage(ctx, "damage MtKnightHit 10 minecraft:player_attack by MtKnightAtk", `${label} damage`);
