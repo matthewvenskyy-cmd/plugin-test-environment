@@ -1,5 +1,11 @@
 import { Vec3 } from "vec3";
-import { serverEntityExists, waitForBlock, waitForChat } from "./helpers.js";
+import {
+  serverEntityExists,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted target breakcore denies non-op players";
 
@@ -36,7 +42,7 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtTgtBreakNoOp/i);
     assert(mounted, "rider should mount before the ridden target /breakcore permission check");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MtTgtBreakR", "MtTgtBreakNoOp", true, "mounted target breakcore-denial attachment");
 
     const denied = await waitForChat(
       target,
@@ -45,9 +51,14 @@ export async function run(ctx) {
     );
     assert(denied, "ridden non-op target /breakcore should be denied before target handling");
     assert(await playerExists(ctx, "MtTgtBreakNoOp"), "ridden denied /breakcore should not disconnect or kill the target");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtTgtBreakR", "MtTgtBreakNoOp"),
+      "denied target /breakcore should preserve the mount relationship"
+    );
 
     const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
     assert(unmounted, "ridden denied /breakcore should leave the mount session cleanly unmountable");
+    await waitForPlayerPassengerState(ctx, "MtTgtBreakR", "MtTgtBreakNoOp", false, "mounted target breakcore-denial detachment");
   } finally {
     rider.chat("/unmount");
     await wait(500);
