@@ -1,5 +1,13 @@
 import { Vec3 } from "vec3";
-import { serverCommandSucceeds, serverEntityExists, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import {
+  serverCommandSucceeds,
+  serverEntityExists,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted rider Archer stillness grants invisibility";
 
@@ -37,7 +45,7 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MntArcherSeat/i);
     assert(mounted, "Archer rider should mount the target before the mounted stillness check");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MntArcherStill", "MntArcherSeat", true, "mounted Archer rider stillness attachment");
 
     const bow = await waitForInventoryItem(rider, (item) => item?.name === "bow", "mounted rider Long Bow class item");
     await rider.equip(bow, "hand");
@@ -50,6 +58,14 @@ export async function run(ctx) {
     assert(await clearEffect(ctx, "MntArcherStill", "minecraft:invisibility", "Invisibility"), "mounted Archer rider standing still should receive Invisibility");
     assert(await playerExists(ctx, "MntArcherStill"), "mounted Archer stillness check should not disconnect the rider");
     assert(await playerExists(ctx, "MntArcherSeat"), "mounted Archer stillness check should not disconnect the target");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MntArcherStill", "MntArcherSeat"),
+      "Archer rider should remain mounted throughout the stillness timer"
+    );
+
+    const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
+    assert(unmounted, "Archer rider should dismount cleanly after the stillness check");
+    await waitForPlayerPassengerState(ctx, "MntArcherStill", "MntArcherSeat", false, "mounted Archer rider stillness detachment");
   } finally {
     rider.chat("/unmount");
     await wait(500);
