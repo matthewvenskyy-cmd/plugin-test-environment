@@ -1,5 +1,11 @@
 import { Vec3 } from "vec3";
-import { waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import {
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted rider class item selects class";
 
@@ -41,7 +47,7 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MntClassSeat/i);
     assert(mounted, "rider should mount the target player before class selection");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MntClassRider", "MntClassSeat", true, "mounted rider class-selection attachment");
 
     const bow = await waitForInventoryItem(rider, (item) => item?.name === "bow", "mounted rider Long Bow class item");
     await rider.equip(bow, "hand");
@@ -49,9 +55,14 @@ export async function run(ctx) {
 
     const status = await waitForChat(rider, () => rider.chat("/classes status"), /Current class: Archer/);
     assert(status, "mounted rider holding the Long Bow class item should set class status to Archer");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MntClassRider", "MntClassSeat"),
+      "rider class selection should preserve the mount relationship"
+    );
 
     const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
     assert(unmounted, "mounted rider class selection should leave the mount session cleanly unmountable");
+    await waitForPlayerPassengerState(ctx, "MntClassRider", "MntClassSeat", false, "mounted rider class-selection detachment");
   } finally {
     rider.chat("/unmount");
     await wait(500);
