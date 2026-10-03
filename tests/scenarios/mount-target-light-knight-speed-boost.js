@@ -1,5 +1,12 @@
 import { Vec3 } from "vec3";
-import { queryPlayerAttribute, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import {
+  queryPlayerAttribute,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted target Light Knight applies speed boost";
 
@@ -44,7 +51,7 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtTgtLight/i);
     assert(mounted, "rider should mount the target player before target Light Knight selection");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MtTgtLightR", "MtTgtLight", true, "mounted Light Knight target attachment");
 
     await command("classes give MtTgtLight light_chain", 500);
     const chain = await waitForInventoryItem(target, (item) => item?.name === "chainmail_chestplate", "mounted target Light Knight Chain");
@@ -56,9 +63,14 @@ export async function run(ctx) {
 
     const lightSpeed = await queryPlayerAttribute(ctx, "MtTgtLight", "minecraft:movement_speed");
     assert(lightSpeed > defaultSpeed, `mounted target Light Knight should increase movement speed; default=${defaultSpeed}, light=${lightSpeed}`);
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtTgtLightR", "MtTgtLight"),
+      "target Light Knight speed boost should preserve the mount relationship"
+    );
 
     const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
     assert(unmounted, "target Light Knight speed selection should leave the mount session cleanly unmountable");
+    await waitForPlayerPassengerState(ctx, "MtTgtLightR", "MtTgtLight", false, "mounted Light Knight target detachment");
   } finally {
     rider.chat("/unmount");
     await wait(500);
