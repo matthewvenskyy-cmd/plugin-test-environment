@@ -1,5 +1,12 @@
 import { Vec3 } from "vec3";
-import { serverCommandSucceeds, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import {
+  serverCommandSucceeds,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted target Necromancer gains speed at night";
 
@@ -41,7 +48,7 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MtTgtNecro/i);
     assert(mounted, "rider should mount the target player before target Necromancer night-speed checks");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MtTgtNecroR", "MtTgtNecro", true, "mounted Necromancer target night-speed attachment");
 
     await command("classes give MtTgtNecro necromancer_staff", 500);
     const staff = await waitForInventoryItem(target, (item) => item?.name === "blaze_rod", "mounted target Necromancer Staff");
@@ -55,13 +62,22 @@ export async function run(ctx) {
     await command("time set day", 250);
     await wait(1500);
     assert(!(await clearEffect(ctx, "MtTgtNecro", "minecraft:speed", "Speed")), "mounted Necromancer target should not receive Speed during daytime");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtTgtNecroR", "MtTgtNecro"),
+      "target daytime Necromancer check should preserve the mount relationship"
+    );
 
     await command("time set night", 250);
     await wait(1500);
     assert(await clearEffect(ctx, "MtTgtNecro", "minecraft:speed", "Speed"), "mounted Necromancer target should receive Speed at night");
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MtTgtNecroR", "MtTgtNecro"),
+      "target nighttime Necromancer check should preserve the mount relationship"
+    );
 
     const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
     assert(unmounted, "target Necromancer night-speed checks should leave the mount session cleanly unmountable");
+    await waitForPlayerPassengerState(ctx, "MtTgtNecroR", "MtTgtNecro", false, "mounted Necromancer target night-speed detachment");
   } finally {
     rider.chat("/unmount");
     await wait(500);
