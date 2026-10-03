@@ -1,5 +1,12 @@
 import { Vec3 } from "vec3";
-import { queryPlayerAttribute, waitForBlock, waitForChat, waitForInventoryItem } from "./helpers.js";
+import {
+  queryPlayerAttribute,
+  serverPlayerIsPassengerOf,
+  waitForBlock,
+  waitForChat,
+  waitForInventoryItem,
+  waitForPlayerPassengerState
+} from "./helpers.js";
 
 export const name = "Mounted rider Heavy Knight applies speed penalty";
 
@@ -44,7 +51,7 @@ export async function run(ctx) {
     await rider.lookAt(target.entity.position.offset(0, 1.2, 0), true);
     const mounted = await waitForChat(rider, () => rider.chat("/mount"), /now riding MntHeavySeat/i);
     assert(mounted, "rider should mount the target player before Heavy Knight selection");
-    await wait(500);
+    await waitForPlayerPassengerState(ctx, "MntHeavyRider", "MntHeavySeat", true, "mounted Heavy Knight rider attachment");
 
     await command("classes give MntHeavyRider heavy_plate", 500);
     const plate = await waitForInventoryItem(rider, (item) => item?.name === "iron_chestplate", "mounted rider Heavy Knight Plate");
@@ -56,9 +63,14 @@ export async function run(ctx) {
 
     const heavySpeed = await queryPlayerAttribute(ctx, "MntHeavyRider", "minecraft:movement_speed");
     assert(heavySpeed < defaultSpeed, `mounted Heavy Knight should reduce movement speed; default=${defaultSpeed}, heavy=${heavySpeed}`);
+    assert(
+      await serverPlayerIsPassengerOf(ctx, "MntHeavyRider", "MntHeavySeat"),
+      "Heavy Knight speed penalty should preserve the mount relationship"
+    );
 
     const unmounted = await waitForChat(rider, () => rider.chat("/unmount"), /dismounted/i);
     assert(unmounted, "mounted Heavy Knight speed selection should leave the mount session cleanly unmountable");
+    await waitForPlayerPassengerState(ctx, "MntHeavyRider", "MntHeavySeat", false, "mounted Heavy Knight rider detachment");
   } finally {
     rider.chat("/unmount");
     await wait(500);
