@@ -103,6 +103,46 @@ export async function waitForPlayerPassengerState(ctx, riderName, vehicleName, h
   );
 }
 
+export async function setWorldTimePhase(ctx, phase, options = {}) {
+  if (phase !== "day" && phase !== "night") {
+    throw new Error(`Unsupported world time phase: ${phase}`);
+  }
+  const versionOutput = await ctx.commandUntil(
+    "version TimeMachine",
+    /TimeMachine version|not running any plugin by that name/i,
+    { timeoutMs: 3000, label: "TimeMachine availability" }
+  );
+  await ctx.wait(100);
+  if (!/TimeMachine version/i.test(versionOutput)) {
+    await ctx.command(`time set ${phase}`, options.settleMs ?? 250);
+  } else {
+    const statusOutput = await ctx.commandUntil(
+      "timemachine status",
+      /Present/i,
+      { timeoutMs: 3000, label: "TimeMachine current time" }
+    );
+    const plainStatus = statusOutput.replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, "");
+    const dayMatch = plainStatus.match(/Present:\s*day\s*(\d+)\s*at/i);
+    if (!dayMatch) {
+      throw new Error(`Could not parse TimeMachine day from command output: ${statusOutput}`);
+    }
+    await ctx.wait(100);
+    const targetDay = Number.parseInt(dayMatch[1], 10) + 1;
+    const targetTime = phase === "day" ? "2:00" : "16:00";
+    await ctx.commandUntil(
+      `timemachine set ${targetDay} ${targetTime}`,
+      /Server time set/i,
+      { timeoutMs: 3000, label: `TimeMachine ${phase} phase` }
+    );
+  }
+
+  const timeRange = phase === "day" ? [1000, 12000] : [13000, 23000];
+  await waitForCondition(
+    () => ctx.bot.time.timeOfDay >= timeRange[0] && ctx.bot.time.timeOfDay < timeRange[1],
+    { timeoutMs: 5000, label: `${phase} phase on the Mineflayer client` }
+  );
+}
+
 export async function waitForBlock(bot, position, blockName, label, timeoutMs = 5000) {
   return waitForCondition(
     () => {

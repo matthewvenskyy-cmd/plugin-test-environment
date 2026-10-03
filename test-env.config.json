@@ -127,6 +127,10 @@
     "tests/scenarios/classes-divine-mage-death-affects-nearby.js",
     "tests/scenarios/classes-necromancer-darkness-blinds-target.js",
     "tests/scenarios/classes-necromancer-night-speed.js",
+    {
+      "path": "tests/scenarios/timemachine-necromancer-night-speed.js",
+      "area": "TimeMachine"
+    },
     "tests/scenarios/classes-necromancer-reduces-melee-damage.js",
     "tests/scenarios/classes-knight-sword-reduces-incoming-damage.js",
     "tests/scenarios/rocketlytra-recipe-discoverable.js",
@@ -359,6 +363,23 @@
       "botCommands": [
         "/mount",
         "/unmount"
+      ]
+    },
+    {
+      "name": "Time-Machine-Plugin",
+      "path": "../Time-Machine-Plugin",
+      "build": "maven",
+      "buildArgs": [
+        "-DskipTests",
+        "package"
+      ],
+      "jar": "target/TimeMachine-*.jar",
+      "plugin": "TimeMachine",
+      "consoleCommands": [
+        "version TimeMachine"
+      ],
+      "botCommands": [
+        "/timemachine status"
       ]
     }
   ]

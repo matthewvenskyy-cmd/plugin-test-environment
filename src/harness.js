@@ -248,11 +248,11 @@ async function buildProjects(config) {
     const projectDir = path.resolve(root, project.path);
     console.log(`Building ${project.name}...`);
     if (project.build === "maven") {
-      await run(projectDir, commandName("mvn"), ["package"]);
+      await run(projectDir, commandName("mvn"), project.buildArgs ?? ["package"]);
     } else if (project.build === "gradle") {
       const wrapper = process.platform === "win32" ? "gradlew.bat" : "./gradlew";
       const gradleCommand = existsSync(path.join(projectDir, wrapper)) ? wrapper : commandName("gradle");
-      await run(projectDir, gradleCommand, ["build"]);
+      await run(projectDir, gradleCommand, project.buildArgs ?? ["build"]);
     } else {
       throw new Error(`Unsupported build type for ${project.name}: ${project.build}`);
     }
@@ -1034,6 +1034,16 @@ function projectConfigIssues(projects) {
     if (!project.jar) {
       issues.push({ severity: "error", path: label, message: "Project is missing a jar glob." });
     }
+    if (project.buildArgs !== undefined
+      && (!Array.isArray(project.buildArgs)
+        || project.buildArgs.length === 0
+        || project.buildArgs.some((argument) => typeof argument !== "string" || argument.trim() === ""))) {
+      issues.push({
+        severity: "error",
+        path: label,
+        message: "Project buildArgs must be a non-empty array of non-empty strings when present."
+      });
+    }
     const projectPath = project.path ? path.resolve(root, project.path) : "";
     if (!project.path) {
       issues.push({ severity: "error", path: label, message: "Project is missing a path." });
@@ -1397,7 +1407,8 @@ function inferScenarioArea(scenarioSpec) {
     ["CorePlugin", ["coreplugin", "corebreaker", "core"]],
     ["ClassesPlugin", ["classesplugin", "archer", "viking", "necromancer"]],
     ["FireworksElytraPlugin", ["firework", "rocketlytra", "elytra"]],
-    ["MountPlugin", ["mount", "mounted", "rider", "ridden"]]
+    ["MountPlugin", ["mount", "mounted", "rider", "ridden"]],
+    ["TimeMachine", ["timemachine", "time machine", "timeline"]]
   ];
   return knownAreas.find(([, tokens]) => tokens.some((token) => text.includes(token)))?.[0] ?? "Other";
 }
@@ -2153,7 +2164,7 @@ async function runSelfTest() {
   );
   const projectIssues = projectConfigIssues([
     { name: "Core-Plugin", plugin: "CorePlugin", path: ".", build: "maven", jar: "target/*.jar", consoleCommands: [], botCommands: [] },
-    { name: "Core-Plugin", plugin: "CorePlugin", path: "./missing-project", build: "ant", jar: "", consoleCommands: "version CorePlugin" }
+    { name: "Core-Plugin", plugin: "CorePlugin", path: "./missing-project", build: "ant", buildArgs: "package", jar: "", consoleCommands: "version CorePlugin" }
   ]);
   assertSelf(
     projectIssues.some((issue) => issue.message.includes("Project name is listed more than once"))
@@ -2161,6 +2172,7 @@ async function runSelfTest() {
       && projectIssues.some((issue) => issue.message.includes("Project path does not exist"))
       && projectIssues.some((issue) => issue.message.includes("Project build must be"))
       && projectIssues.some((issue) => issue.message.includes("Project is missing a jar glob"))
+      && projectIssues.some((issue) => issue.message.includes("buildArgs must be"))
       && projectIssues.some((issue) => issue.message.includes("consoleCommands must be an array")),
     "projectConfigIssues should catch invalid project config entries"
   );

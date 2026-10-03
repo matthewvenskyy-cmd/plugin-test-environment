@@ -1,4 +1,4 @@
-import { serverCommandSucceeds, waitForChat, waitForInventoryItem } from "./helpers.js";
+import { serverCommandSucceeds, setWorldTimePhase, waitForChat, waitForInventoryItem } from "./helpers.js";
 
 export const name = "Classes Necromancer gains speed at night";
 
@@ -9,7 +9,7 @@ export async function run(ctx) {
   try {
     await command("clear NightNecro", 250);
     await command("effect clear NightNecro", 250);
-    await command("time set day", 250);
+    await setWorldTimePhase(ctx, "day");
     await command("classes give NightNecro necromancer_staff", 500);
     await wait(1000);
 
@@ -21,15 +21,15 @@ export async function run(ctx) {
     assert(status, "Necromancer Staff should set class status before speed checks");
 
     await command("effect clear NightNecro minecraft:speed", 250);
-    await command("time set day", 250);
+    await setWorldTimePhase(ctx, "day");
     await wait(1500);
     assert(!(await clearEffect(ctx, "NightNecro", "minecraft:speed", "Speed")), "Necromancer should not receive Speed during daytime");
 
-    await command("time set night", 250);
+    await setWorldTimePhase(ctx, "night");
     await wait(1500);
     assert(await clearEffect(ctx, "NightNecro", "minecraft:speed", "Speed"), "Necromancer should receive Speed at night");
   } finally {
-    await command("time set day", 250);
+    await setWorldTimePhase(ctx, "day");
     await command("clear NightNecro", 250);
     await command("effect clear NightNecro", 250);
   }

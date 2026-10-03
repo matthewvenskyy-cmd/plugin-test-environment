@@ -2,6 +2,7 @@ import { Vec3 } from "vec3";
 import {
   serverCommandSucceeds,
   serverPlayerIsPassengerOf,
+  setWorldTimePhase,
   waitForBlock,
   waitForChat,
   waitForInventoryItem,
@@ -27,7 +28,7 @@ export async function run(ctx) {
     await command("clear MtTgtNecro", 250);
     await command("effect clear MtTgtNecroR", 250);
     await command("effect clear MtTgtNecro", 250);
-    await command("time set day", 250);
+    await setWorldTimePhase(ctx, "day");
     await command("fill 297 79 0 299 79 2 minecraft:stone", 500);
     await command("gamemode creative MtTgtNecroR", 250);
     await command("gamemode creative MtTgtNecro", 250);
@@ -59,7 +60,7 @@ export async function run(ctx) {
     assert(status, "mounted target Necromancer Staff should set class status to Necromancer");
 
     await command("effect clear MtTgtNecro minecraft:speed", 250);
-    await command("time set day", 250);
+    await setWorldTimePhase(ctx, "day");
     await wait(1500);
     assert(!(await clearEffect(ctx, "MtTgtNecro", "minecraft:speed", "Speed")), "mounted Necromancer target should not receive Speed during daytime");
     assert(
@@ -67,7 +68,7 @@ export async function run(ctx) {
       "target daytime Necromancer check should preserve the mount relationship"
     );
 
-    await command("time set night", 250);
+    await setWorldTimePhase(ctx, "night");
     await wait(1500);
     assert(await clearEffect(ctx, "MtTgtNecro", "minecraft:speed", "Speed"), "mounted Necromancer target should receive Speed at night");
     assert(
@@ -81,7 +82,7 @@ export async function run(ctx) {
   } finally {
     rider.chat("/unmount");
     await wait(500);
-    await command("time set day", 250);
+    await setWorldTimePhase(ctx, "day");
     await command("clear MtTgtNecroR", 250);
     await command("clear MtTgtNecro", 250);
     await command("effect clear MtTgtNecroR", 250);
