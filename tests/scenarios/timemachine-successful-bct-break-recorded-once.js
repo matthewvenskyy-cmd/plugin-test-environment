@@ -1,14 +1,13 @@
 import { Vec3 } from "vec3";
 import {
   clearBctArtifacts,
-  collectChatMessages,
   countBctItemsNear,
   digUntilServerBlock,
   placeBiggerCraftingTable,
   waitForBctDisplayCount,
   waitForBctItemsNear,
-  waitForCondition,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForTimeMachineProvenance
 } from "./helpers.js";
 
 export const name = "TimeMachine records one successful BCT break";
@@ -51,12 +50,10 @@ export async function run(ctx) {
     assert(returnedItems === 1, `successful BCT break should return exactly one table, found ${returnedItems}`);
 
     await command(`setblock ${BCT_BLOCK.x} ${BCT_BLOCK.y} ${BCT_BLOCK.z} minecraft:stone`, 250);
-    await bot.lookAt(BCT_BLOCK.offset(0.5, 0.5, 0.5), true);
-    const provenance = await waitForCondition(async () => {
-      const messages = await collectChatMessages(bot, () => bot.chat("/timemachine why"), 500);
-      const transcript = messages.join("\n");
-      return /Provenance of/i.test(transcript) && /PLAYER_BREAK/i.test(transcript) ? transcript : null;
-    }, { timeoutMs: 5000, intervalMs: 100, label: "TimeMachine successful BCT break provenance" });
+    const provenance = await waitForTimeMachineProvenance(ctx, bot, BCT_BLOCK, {
+      requiredPattern: /PLAYER_BREAK/i,
+      label: "TimeMachine successful BCT break provenance"
+    });
 
     assert(/PLAYER_PLACE/i.test(provenance), `BCT provenance should retain the player placement; provenance=${provenance}`);
     const breakEntries = provenance.match(/PLAYER_BREAK/gi) ?? [];

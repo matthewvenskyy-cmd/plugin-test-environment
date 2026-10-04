@@ -1335,7 +1335,7 @@ async function scenarioListDetails(scenarios) {
       expectedFailure: Boolean(spec.expectedFailure),
       failurePattern: spec.failurePattern ?? "",
       reason: spec.reason ?? "",
-      area: spec.area ?? inferScenarioArea(spec)
+      area: resolveScenarioArea(spec)
     };
   }));
 }
@@ -1390,7 +1390,7 @@ function scenarioAreaSummary(details) {
 
 function groupExpectedFailuresByArea(details) {
   return details.reduce((groups, detail) => {
-    const area = detail.area ?? inferScenarioArea(detail);
+    const area = resolveScenarioArea(detail);
     groups[area] ??= [];
     groups[area].push(detail);
     return groups;
@@ -1411,6 +1411,10 @@ function inferScenarioArea(scenarioSpec) {
     ["TimeMachine", ["timemachine", "time machine", "timeline"]]
   ];
   return knownAreas.find(([, tokens]) => tokens.some((token) => text.includes(token)))?.[0] ?? "Other";
+}
+
+function resolveScenarioArea(scenarioSpec) {
+  return scenarioSpec.area ?? inferScenarioArea(scenarioSpec);
 }
 
 async function runScenarioBatch(config, server, scenarios) {
@@ -1473,7 +1477,7 @@ function scenarioResult(scenarioSpec, name, progress, started, status, error = n
     name,
     progress,
     path: scenarioSpec.path,
-    area: scenarioSpec.area ?? inferScenarioArea(scenarioSpec),
+    area: resolveScenarioArea(scenarioSpec),
     expectedFailure: Boolean(scenarioSpec.expectedFailure),
     failurePattern: scenarioSpec.failurePattern ?? "",
     reason: scenarioSpec.reason ?? "",
@@ -1709,7 +1713,7 @@ async function selectedScenarios(config) {
   const selectedAreas = splitFlagValues(flags.area).map(normalizeAreaToken);
   if (selectedAreas.length === 0) return scenarios;
   return scenarios.filter((scenario) => {
-    const area = normalizeAreaToken(inferScenarioArea(normalizeScenarioSpec(scenario)));
+    const area = normalizeAreaToken(resolveScenarioArea(normalizeScenarioSpec(scenario)));
     return selectedAreas.includes(area);
   });
 }
@@ -1929,6 +1933,13 @@ async function runSelfTest() {
       reason: "Bigger Crafting Table currently loses stored contents."
     }) === "BiggerCraftingTable",
     "inferScenarioArea should prefer the failure owner over mounted context"
+  );
+  assertSelf(
+    resolveScenarioArea({
+      path: "tests/scenarios/timemachine-corebreaker-core-break-recorded.js",
+      area: "TimeMachine"
+    }) === "TimeMachine",
+    "resolveScenarioArea should honor an explicit area over filename inference"
   );
   assertSelf(
     expectedFailureSummary([

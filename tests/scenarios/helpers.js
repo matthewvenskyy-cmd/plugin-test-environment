@@ -312,6 +312,20 @@ export async function collectChatMessages(bot, action, durationMs = 750) {
   }
 }
 
+export async function waitForTimeMachineProvenance(ctx, bot, position, options = {}) {
+  const requiredPattern = options.requiredPattern ?? /Provenance of/i;
+  await bot.lookAt(position.offset(0.5, 0.5, 0.5), true);
+  return waitForCondition(async () => {
+    const messages = await collectChatMessages(bot, () => bot.chat("/timemachine why"), options.collectMs ?? 500);
+    const transcript = messages.join("\n");
+    return /Provenance of/i.test(transcript) && patternMatches(requiredPattern, transcript) ? transcript : null;
+  }, {
+    timeoutMs: options.timeoutMs ?? 5000,
+    intervalMs: options.intervalMs ?? 100,
+    label: options.label ?? "TimeMachine provenance"
+  });
+}
+
 export function waitForEvent(emitter, eventName, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {

@@ -2,11 +2,10 @@ import { Vec3 } from "vec3";
 import {
   assertBctStateStable,
   clearBctArtifacts,
-  collectChatMessages,
   isCorebreakerItem,
   placeBiggerCraftingTable,
-  waitForCondition,
-  waitForInventoryItem
+  waitForInventoryItem,
+  waitForTimeMachineProvenance
 } from "./helpers.js";
 
 export const name = "TimeMachine ignores cancelled BCT Corebreaker breaks";
@@ -47,12 +46,10 @@ export async function run(ctx) {
       durationMs: 1000
     });
 
-    await bot.lookAt(BCT_BLOCK.offset(0.5, 0.5, 0.5), true);
-    const provenance = await waitForCondition(async () => {
-      const messages = await collectChatMessages(bot, () => bot.chat("/timemachine why"), 500);
-      const transcript = messages.join("\n");
-      return /Provenance of/i.test(transcript) && /PLAYER_PLACE/i.test(transcript) ? transcript : null;
-    }, { timeoutMs: 5000, intervalMs: 100, label: "TimeMachine BCT placement provenance" });
+    const provenance = await waitForTimeMachineProvenance(ctx, bot, BCT_BLOCK, {
+      requiredPattern: /PLAYER_PLACE/i,
+      label: "TimeMachine BCT placement provenance"
+    });
 
     assert(!/PLAYER_BREAK/i.test(provenance), `cancelled Corebreaker break must not enter TimeMachine history; provenance=${provenance}`);
   } finally {

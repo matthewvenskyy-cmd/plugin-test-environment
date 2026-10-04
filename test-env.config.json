@@ -37,6 +37,13 @@
       "path": "tests/scenarios/timemachine-successful-bct-break-recorded-once.js",
       "area": "TimeMachine"
     },
+    {
+      "path": "tests/scenarios/timemachine-corebreaker-core-break-recorded.js",
+      "area": "TimeMachine",
+      "expectedFailure": true,
+      "failurePattern": "successful Corebreaker core destruction should appear exactly once in TimeMachine history",
+      "reason": "CorePlugin cancels the vanilla placement and break events and mutates core blocks directly, so TimeMachine currently records neither the core placement nor its successful Corebreaker destruction."
+    },
     "tests/scenarios/bct-non-op-corebreaker-no-dupe.js",
     "tests/scenarios/bct-repeated-corebreaker-no-leak.js",
     {
