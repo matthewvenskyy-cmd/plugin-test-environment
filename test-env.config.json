@@ -33,6 +33,10 @@
       "path": "tests/scenarios/timemachine-cancelled-corebreaker-not-recorded.js",
       "area": "TimeMachine"
     },
+    {
+      "path": "tests/scenarios/timemachine-successful-bct-break-recorded-once.js",
+      "area": "TimeMachine"
+    },
     "tests/scenarios/bct-non-op-corebreaker-no-dupe.js",
     "tests/scenarios/bct-repeated-corebreaker-no-leak.js",
     {
