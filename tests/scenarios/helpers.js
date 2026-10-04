@@ -299,6 +299,19 @@ export function waitForNoChat(bot, action, pattern, timeoutMs = 1500) {
   });
 }
 
+export async function collectChatMessages(bot, action, durationMs = 750) {
+  const messages = [];
+  const onMessage = (message) => messages.push(message.toString());
+  bot.on("message", onMessage);
+  try {
+    await action();
+    await new Promise((resolve) => setTimeout(resolve, durationMs));
+    return messages;
+  } finally {
+    bot.off("message", onMessage);
+  }
+}
+
 export function waitForEvent(emitter, eventName, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
